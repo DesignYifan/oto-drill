@@ -38,11 +38,4 @@
 
 ## 中身
 
-HTML 1枚。ビルドも依存もない。
-
-| | |
-|---|---|
-| `index.html` | 公開しているもの。単体でも動くので、ダウンロードしてダブルクリックでも使える |
-| `artifact-source.html` | claude.ai の Artifact 版の素。`index.html` から `<!DOCTYPE>`〜`<body>` の外枠を外しただけ |
-
-直すときは `index.html` を直し、`artifact-source.html` にも同じ変更を入れる。
+`index.html` 1枚。ビルドも依存もない。ダウンロードしてダブルクリックでも動く。
