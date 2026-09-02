@@ -402,7 +402,8 @@ function paintList(){
     items[i].classList.toggle('current', i===idx);
     items[i].querySelector('.done').textContent = done.has(tracks[i].name) ? '✓' : '';
   }
-  $('#tally').textContent = tracks.length ? (done.size + '/' + tracks.length) : '';
+  const shown = tracks.filter(t => done.has(t.name)).length;
+  $('#tally').textContent = tracks.length ? (shown + '/' + tracks.length) : '';
 }
 
 function applyFilter(){
