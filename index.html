@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>音声ドリル</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F5F2;
+  --surface:#FFFFFF;
+  --line:#DCDFDA;
+  --hair:#E8EAE6;
+  --ink:#1B2637;
+  --muted:#6B7585;
+  --accent:#C2451F;
+  --accent-soft:#FAEDE8;
+  --ok:#2F6B4F;
+  --shadow:0 1px 1px rgba(27,38,55,.04), 0 10px 30px rgba(27,38,55,.07);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#141821;
+    --surface:#1B202B;
+    --line:#2C3340;
+    --hair:#242A35;
+    --ink:#E6E9EE;
+    --muted:#8D96A6;
+    --accent:#E8663C;
+    --accent-soft:#2A1E1A;
+    --ok:#6FBF94;
+    --shadow:0 1px 1px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#141821;
+  --surface:#1B202B;
+  --line:#2C3340;
+  --hair:#242A35;
+  --ink:#E6E9EE;
+  --muted:#8D96A6;
+  --accent:#E8663C;
+  --accent-soft:#2A1E1A;
+  --ok:#6FBF94;
+  --shadow:0 1px 1px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans JP","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.app{min-height:100dvh; display:flex; flex-direction:column}
+
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10px; font-weight:500; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--muted);
+}
+
+/* ---- ヘッダー ---- */
+header{
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  padding:14px 24px;
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+}
+.wordmark{display:flex; align-items:baseline; gap:10px}
+.wordmark b{font-size:15px; font-weight:600; letter-spacing:.04em}
+.folder{
+  margin-left:auto; color:var(--muted); font-size:12px; text-align:right;
+  display:flex; align-items:center; gap:8px;
+}
+.folder .name{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  color:var(--ink); font-size:12px;
+}
+
+button{
+  font:inherit; font-size:13px;
+  color:var(--ink); background:var(--surface);
+  border:1px solid var(--line); border-radius:6px;
+  padding:6px 12px; cursor:pointer;
+  transition:border-color .12s, background .12s, color .12s;
+}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+button.primary{
+  background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500;
+}
+button.primary:hover{filter:brightness(1.07)}
+button.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+/* ---- 本体 ---- */
+main{flex:1; display:grid; grid-template-columns:minmax(0,1fr) 352px; min-height:0}
+@media (max-width:820px){
+  main{grid-template-columns:1fr; grid-template-rows:auto minmax(320px,1fr)}
+}
+
+.panel{padding:30px 32px 24px; display:flex; flex-direction:column; gap:26px; min-width:0}
+
+/* 計器 */
+.readout{display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap}
+.bignum{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:64px; font-weight:600; line-height:.9; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.oftotal{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:15px; color:var(--muted); font-variant-numeric:tabular-nums;
+  padding-bottom:5px;
+}
+.fname{
+  font-size:16px; font-weight:500; word-break:break-all; text-wrap:balance;
+  margin-top:10px;
+}
+.fname.blank{color:var(--muted); font-weight:400}
+
+/* 進行 */
+.track{display:flex; align-items:center; gap:14px}
+.clock{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:42px;
+}
+.clock.right{text-align:right}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; flex:1; height:20px; background:transparent; cursor:pointer;
+}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:4px; border-radius:4px}
+input[type=range]::-webkit-slider-runnable-track{height:2px; background:var(--line)}
+input[type=range]::-moz-range-track{height:2px; background:var(--line)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:3px; height:20px; margin-top:-9px;
+  background:var(--accent); border:0; border-radius:1px;
+}
+input[type=range]::-moz-range-thumb{
+  width:3px; height:20px; background:var(--accent); border:0; border-radius:1px;
+}
+input[type=range]:disabled::-webkit-slider-thumb{background:var(--line)}
+
+/* 送り */
+.transport{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.transport button{padding:9px 14px}
+#play{min-width:112px; padding:11px 20px; font-size:14px}
+.transport .mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px}
+
+/* 設定行 */
+.setting{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.setting > .eyebrow{min-width:58px}
+.speeds{display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--line); border-radius:6px; overflow:hidden}
+.speeds button{
+  border:0; border-right:1px solid var(--line); border-radius:0;
+  padding:6px 11px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.speeds button:last-child{border-right:0}
+.rate-now{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px;
+  color:var(--muted); font-variant-numeric:tabular-nums; min-width:56px;
+}
+select{
+  font:inherit; font-size:13px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:6px; padding:5px 8px;
+}
+select:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+label.opt{display:flex; align-items:center; gap:6px; color:var(--muted); font-size:13px; cursor:pointer}
+label.opt input[type=checkbox]{accent-color:var(--accent)}
+
+/* キー一覧 */
+.keys{
+  margin-top:auto; padding-top:18px; border-top:1px solid var(--hair);
+  color:var(--muted); font-size:12px; line-height:2.1;
+  display:flex; flex-wrap:wrap; gap:4px 18px;
+}
+.keys span{white-space:nowrap}
+kbd{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px;
+  background:var(--ground); border:1px solid var(--line);
+  border-radius:4px; padding:1px 5px; margin-right:3px; color:var(--ink);
+}
+
+/* ---- 帳簿 ---- */
+aside{
+  background:var(--surface); border-left:1px solid var(--line);
+  display:flex; flex-direction:column; min-height:0;
+}
+@media (max-width:820px){ aside{border-left:0; border-top:1px solid var(--line)} }
+.ledger-head{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 16px; border-bottom:1px solid var(--line);
+}
+.ledger-head input{
+  flex:1; font:inherit; font-size:13px; color:var(--ink);
+  background:var(--ground); border:1px solid var(--line);
+  border-radius:6px; padding:5px 9px;
+}
+.ledger-head input:focus-visible{outline:2px solid var(--accent); outline-offset:-1px}
+.tally{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px;
+  color:var(--muted); font-variant-numeric:tabular-nums;
+}
+ol{list-style:none; margin:0; padding:0; overflow-y:auto; flex:1}
+ol:empty{flex:0 0 auto}
+li{
+  display:flex; align-items:center; gap:12px;
+  padding:8px 16px 8px 13px;
+  border-bottom:1px solid var(--hair);
+  border-left:3px solid transparent;
+  cursor:pointer; font-size:13px;
+}
+li:hover{background:var(--ground)}
+li.current{background:var(--accent-soft); border-left-color:var(--accent)}
+li .n{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px;
+  color:var(--muted); font-variant-numeric:tabular-nums; min-width:30px;
+}
+li.current .n{color:var(--accent); font-weight:600}
+li.current .nm{font-weight:600}
+li .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+li .done{color:var(--ok); font-size:12px}
+li.hidden{display:none}
+.ledger-empty{padding:22px 18px; color:var(--muted); font-size:13px; line-height:1.8}
+
+/* ドロップ */
+#drop{
+  position:fixed; inset:0; z-index:60; display:none;
+  align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--ground) 88%, transparent);
+  border:3px dashed var(--accent);
+  color:var(--accent); font-size:19px; font-weight:600; letter-spacing:.02em;
+  pointer-events:none;
+}
+#drop.show{display:flex}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important; animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="wordmark">
+      <b>音声ドリル</b>
+      <span class="eyebrow">folder player</span>
+    </div>
+    <button class="primary" id="pick">フォルダを選ぶ</button>
+    <input type="file" id="picker" webkitdirectory directory multiple hidden>
+    <div class="folder"><span class="name" id="folder">未読み込み</span></div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div>
+        <div class="readout">
+          <div class="bignum" id="bignum">—</div>
+          <div class="oftotal" id="oftotal"></div>
+        </div>
+        <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
+      </div>
+
+      <div class="track">
+        <span class="clock" id="cur">0:00</span>
+        <input type="range" id="seek" value="0" min="0" max="1000" step="1" disabled aria-label="再生位置">
+        <span class="clock right" id="dur">0:00</span>
+      </div>
+
+      <div class="transport">
+        <button id="prev">⟵ 前</button>
+        <button id="back" class="mono">− 5秒</button>
+        <button class="primary" id="play">再生</button>
+        <button id="fwd" class="mono">＋ 5秒</button>
+        <button id="next">次 ⟶</button>
+      </div>
+
+      <div class="setting">
+        <span class="eyebrow">速度</span>
+        <div class="speeds" id="speeds"></div>
+        <span class="rate-now" id="rateNow"></span>
+      </div>
+
+      <div class="setting">
+        <span class="eyebrow">ドリル</span>
+        <label class="opt">1本を
+          <select id="repeatN" aria-label="1本あたりの再生回数">
+            <option value="1">1回</option>
+            <option value="2">2回</option>
+            <option value="3">3回</option>
+            <option value="5">5回</option>
+            <option value="0">ずっと</option>
+          </select>
+        </label>
+        <label class="opt">次まで
+          <select id="gap" aria-label="次のトラックまでの間">
+            <option value="0">間をあけない</option>
+            <option value="1">1秒あける</option>
+            <option value="2">2秒あける</option>
+            <option value="3">3秒あける</option>
+            <option value="5">5秒あける</option>
+          </select>
+        </label>
+        <label class="opt"><input type="checkbox" id="loopAll"> 最後まで行ったら最初へ</label>
+      </div>
+
+      <div class="keys">
+        <span><kbd>space</kbd>再生／停止</span>
+        <span><kbd>←</kbd><kbd>→</kbd>5秒</span>
+        <span><kbd>⇧←</kbd><kbd>⇧→</kbd>前後の本</span>
+        <span><kbd>↑</kbd><kbd>↓</kbd>速度</span>
+        <span><kbd>0</kbd>速度を1.0に</span>
+        <span><kbd>R</kbd>頭から</span>
+      </div>
+    </section>
+
+    <aside>
+      <div class="ledger-head">
+        <input id="filter" placeholder="番号や名前でしぼる" autocomplete="off" aria-label="一覧をしぼる">
+        <span class="tally" id="tally"></span>
+      </div>
+      <ol id="list"></ol>
+      <div class="ledger-empty" id="ledgerEmpty">
+        まだ何も読み込まれていません。<br>
+        「フォルダを選ぶ」を押すか、Finderからフォルダをこの画面に落としてください。
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div id="drop">フォルダをここに落とす</div>
+
+<script>
+(function(){
+'use strict';
+
+const $ = s => document.querySelector(s);
+const AUDIO_RE = /\.(mp3|m4a|m4b|aac|wav|aiff?|ogg|oga|opus|flac|webm|mp4)$/i;
+const RATES = [0.5,0.75,0.8,0.9,1,1.1,1.25,1.5,2];
+
+const audio = new Audio();
+audio.preload = 'auto';
+['preservesPitch','mozPreservesPitch','webkitPreservesPitch'].forEach(k=>{ try{ audio[k]=true; }catch(e){} });
+
+let tracks = [];
+let idx = -1;
+let url = null;
+let folderKey = '';
+let done = new Set();
+let playsLeft = 1;
+let gapTimer = null;
+let lastSave = 0;
+let rate = 1;
+
+/* ---------- 保存（使えない環境でも動く） ---------- */
+function load(key, fallback){
+  try{ const v = localStorage.getItem('otodrill:'+key); return v===null ? fallback : JSON.parse(v); }
+  catch(e){ return fallback; }
+}
+function save(key, val){
+  try{ localStorage.setItem('otodrill:'+key, JSON.stringify(val)); }catch(e){}
+}
+
+/* ---------- 表示 ---------- */
+function fmt(s){
+  if(!isFinite(s) || s<0) s = 0;
+  const m = Math.floor(s/60), r = Math.floor(s%60);
+  return m + ':' + String(r).padStart(2,'0');
+}
+function label(r){ return r.toFixed(2).replace(/0$/,'').replace(/\.$/,'') + '×'; }
+
+function renderList(){
+  const ol = $('#list');
+  ol.innerHTML = '';
+  tracks.forEach((t,i)=>{
+    const li = document.createElement('li');
+    li.dataset.i = i;
+    li.innerHTML = '<span class="n"></span><span class="nm"></span><span class="done"></span>';
+    li.querySelector('.n').textContent = String(i+1).padStart(String(tracks.length).length,'0');
+    li.querySelector('.nm').textContent = t.name;
+    li.addEventListener('click', ()=> play(i, true));
+    ol.appendChild(li);
+  });
+  $('#ledgerEmpty').style.display = 'none';
+  paintList();
+  applyFilter();
+}
+
+function paintList(){
+  const items = $('#list').children;
+  for(let i=0;i<items.length;i++){
+    items[i].classList.toggle('current', i===idx);
+    items[i].querySelector('.done').textContent = done.has(tracks[i].name) ? '✓' : '';
+  }
+  $('#tally').textContent = tracks.length ? (done.size + '/' + tracks.length) : '';
+}
+
+function applyFilter(){
+  const q = $('#filter').value.trim().toLowerCase();
+  const items = $('#list').children;
+  for(let i=0;i<items.length;i++){
+    items[i].classList.toggle('hidden', !!q && !tracks[i].name.toLowerCase().includes(q));
+  }
+}
+
+function scrollToCurrent(){
+  const el = $('#list').children[idx];
+  if(el) el.scrollIntoView({block:'nearest'});
+}
+
+/* ---------- 読み込み ---------- */
+function loadFiles(files){
+  const list = files.filter(f => AUDIO_RE.test(f.name) && !f.name.startsWith('.'));
+  if(!list.length){
+    $('#fname').textContent = '音声ファイルが見つかりませんでした。mp3・m4a・wav などが入ったフォルダを選んでください。';
+    $('#fname').classList.add('blank');
+    return;
+  }
+
+  list.forEach(f => { f._rel = f._rel || f.webkitRelativePath || f.name; });
+  list.sort((a,b)=> a._rel.localeCompare(b._rel, 'ja', {numeric:true, sensitivity:'base'}));
+
+  tracks = list.map(f => ({file:f, name:f.name, rel:f._rel}));
+  const first = tracks[0].rel;
+  folderKey = first.includes('/') ? first.split('/')[0] : 'files';
+
+  $('#folder').textContent = folderKey + ' · ' + tracks.length + '本';
+  done = new Set(load('done:'+folderKey, []));
+  renderList();
+
+  const last = load('last:'+folderKey, null);
+  let start = 0, at = 0;
+  if(last){
+    const i = tracks.findIndex(t => t.name === last.name);
+    if(i >= 0){ start = i; at = last.time || 0; }
+  }
+  play(start, false, at);
+}
+
+async function filesFromDrop(dt){
+  const entries = [...dt.items].map(it => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+  if(!entries.length) return [...dt.files];
+  const out = [];
+  async function walk(entry, prefix){
+    if(entry.isFile){
+      const f = await new Promise((res,rej)=> entry.file(res, rej));
+      f._rel = prefix + entry.name;
+      out.push(f);
+    }else if(entry.isDirectory){
+      const reader = entry.createReader();
+      let batch;
+      do{
+        batch = await new Promise((res,rej)=> reader.readEntries(res, rej));
+        for(const e of batch) await walk(e, prefix + entry.name + '/');
+      }while(batch.length);
+    }
+  }
+  for(const e of entries) await walk(e, '');
+  return out;
+}
+
+/* ---------- 再生 ---------- */
+function play(i, autoplay, seekTo){
+  if(i < 0 || i >= tracks.length) return;
+  clearTimeout(gapTimer);
+  if(url) URL.revokeObjectURL(url);
+  idx = i;
+  url = URL.createObjectURL(tracks[i].file);
+  audio.src = url;
+  audio.playbackRate = rate;
+  playsLeft = Number($('#repeatN').value) || 0;
+
+  const width = String(tracks.length).length;
+  $('#bignum').textContent = String(i+1).padStart(width,'0');
+  $('#oftotal').textContent = '/ ' + tracks.length + '　残り ' + (tracks.length-i-1) + '本';
+  $('#fname').textContent = tracks[i].name;
+  $('#fname').classList.remove('blank');
+  $('#seek').disabled = false;
+  paintList();
+  scrollToCurrent();
+
+  if(seekTo){
+    audio.addEventListener('loadedmetadata', ()=>{ audio.currentTime = seekTo; }, {once:true});
+  }
+  if(autoplay) audio.play().catch(()=>{});
+  saveLast();
+}
+
+function setRate(r){
+  rate = Math.min(3, Math.max(0.25, Math.round(r*100)/100));
+  save('rate', rate);
+  audio.playbackRate = rate;
+  $('#rateNow').textContent = 'いま ' + label(rate);
+  [...$('#speeds').children].forEach(b => b.classList.toggle('on', Number(b.dataset.r) === rate));
+}
+
+function toggle(){
+  if(idx < 0) return;
+  if(audio.paused) audio.play().catch(()=>{}); else audio.pause();
+}
+
+function step(sec){
+  if(idx>=0) audio.currentTime = Math.max(0, Math.min(audio.duration||0, audio.currentTime + sec));
+}
+
+function goNext(byHand){
+  clearTimeout(gapTimer);
+  if(idx + 1 < tracks.length) play(idx+1, true);
+  else if($('#loopAll').checked && !byHand) play(0, true);
+  else $('#play').textContent = '再生';
+}
+
+function saveLast(){
+  if(idx < 0) return;
+  save('last:'+folderKey, {name: tracks[idx].name, time: audio.currentTime||0});
+}
+
+/* ---------- イベント ---------- */
+audio.addEventListener('play',  ()=> $('#play').textContent = '一時停止');
+audio.addEventListener('pause', ()=> $('#play').textContent = '再生');
+audio.addEventListener('loadedmetadata', ()=> $('#dur').textContent = fmt(audio.duration));
+
+audio.addEventListener('timeupdate', ()=>{
+  $('#cur').textContent = fmt(audio.currentTime);
+  if(audio.duration) $('#seek').value = Math.round(audio.currentTime / audio.duration * 1000);
+  const now = Date.now();
+  if(now - lastSave > 3000){ lastSave = now; saveLast(); }
+});
+
+audio.addEventListener('ended', ()=>{
+  if(idx >= 0 && !done.has(tracks[idx].name)){
+    done.add(tracks[idx].name);
+    save('done:'+folderKey, [...done]);
+    paintList();
+  }
+  const n = Number($('#repeatN').value);
+  const g = Number($('#gap').value) * 1000;
+  if(n === 0 || playsLeft > 1){
+    if(n !== 0) playsLeft--;
+    gapTimer = setTimeout(()=>{ audio.currentTime = 0; audio.play().catch(()=>{}); }, g);
+    return;
+  }
+  gapTimer = setTimeout(()=> goNext(false), g);
+});
+
+$('#pick').addEventListener('click', ()=> $('#picker').click());
+$('#picker').addEventListener('change', e => loadFiles([...e.target.files]));
+
+$('#play').addEventListener('click', e => { toggle(); e.currentTarget.blur(); });
+$('#prev').addEventListener('click', e => { play(idx-1, true); e.currentTarget.blur(); });
+$('#next').addEventListener('click', e => { goNext(true); e.currentTarget.blur(); });
+$('#back').addEventListener('click', e => { step(-5); e.currentTarget.blur(); });
+$('#fwd').addEventListener('click',  e => { step(5);  e.currentTarget.blur(); });
+
+$('#seek').addEventListener('input', e => {
+  if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration;
+});
+
+$('#filter').addEventListener('input', applyFilter);
+
+['repeatN','gap','loopAll'].forEach(id=>{
+  const el = $('#'+id);
+  const key = 'opt:'+id;
+  const saved = load(key, null);
+  if(saved !== null){ if(el.type === 'checkbox') el.checked = saved; else el.value = saved; }
+  el.addEventListener('change', ()=>{
+    save(key, el.type === 'checkbox' ? el.checked : el.value);
+    if(id === 'repeatN') playsLeft = Number(el.value) || 0;
+  });
+});
+
+RATES.forEach(r=>{
+  const b = document.createElement('button');
+  b.dataset.r = r;
+  b.textContent = label(r);
+  b.addEventListener('click', e => { setRate(r); e.currentTarget.blur(); });
+  $('#speeds').appendChild(b);
+});
+setRate(load('rate', 1));
+
+document.addEventListener('keydown', e=>{
+  if(e.target === $('#filter')) return;
+  const k = e.key;
+  if(k === ' '){ e.preventDefault(); toggle(); }
+  else if(k === 'ArrowLeft'){  e.preventDefault(); e.shiftKey ? play(idx-1, true) : step(-5); }
+  else if(k === 'ArrowRight'){ e.preventDefault(); e.shiftKey ? goNext(true)      : step(5); }
+  else if(k === 'ArrowUp'){    e.preventDefault(); setRate(rate + 0.1); }
+  else if(k === 'ArrowDown'){  e.preventDefault(); setRate(rate - 0.1); }
+  else if(k === '0'){ setRate(1); }
+  else if(k === 'r' || k === 'R'){ audio.currentTime = 0; audio.play().catch(()=>{}); }
+});
+
+let dragDepth = 0;
+window.addEventListener('dragenter', e=>{ e.preventDefault(); dragDepth++; $('#drop').classList.add('show'); });
+window.addEventListener('dragover',  e=> e.preventDefault());
+window.addEventListener('dragleave', ()=>{ if(--dragDepth <= 0) $('#drop').classList.remove('show'); });
+window.addEventListener('drop', async e=>{
+  e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('show');
+  loadFiles(await filesFromDrop(e.dataTransfer));
+});
+
+window.addEventListener('beforeunload', saveLast);
+})();
+</script>
+</body>
+</html>
