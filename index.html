@@ -730,13 +730,41 @@ function renderScript(name){
     el.addEventListener('click', ()=>{ audio.currentTime = seg.start; audio.play().catch(()=>{}); });
     box.appendChild(el);
     sentEls.push({el, start:seg.start, end:seg.end});
-    const note = notes[norm(seg.text)];
-    if(note){
+    notesFor(seg.text).forEach(n => {
       const nd = document.createElement('div');
-      nd.className = 'note'; nd.textContent = note;
+      nd.className = 'note';
+      if(n.title){
+        const b = document.createElement('b');
+        b.textContent = n.title + '　';
+        nd.appendChild(b);
+      }
+      nd.appendChild(document.createTextNode(n.body));
       box.appendChild(nd);
-    }
+    });
   });
+}
+
+/* 文法メモ。1文ずつ書くのではなく「型」を書いて文に当てる。
+   （同じ型の練習が何十回も出るので、型で書くほうが行き渡る）
+   古い形式（文 → メモ の平たい辞書）もそのまま読める。 */
+function matchable(text){
+  return ' ' + text.normalize('NFC').toLowerCase().replace(/[,;:"'()\[\]…—–]/g,'').replace(/\s+/g,' ').trim() + ' ';
+}
+
+function notesFor(text){
+  const out = [];
+  const flat = !notes.patterns && !notes.sentences;
+  const one = flat ? notes[norm(text)] : (notes.sentences || {})[norm(text)];
+  if(one) out.push({title:'この文', body:one});
+  if(!flat){
+    const t = matchable(text);
+    // p.not がある型は、その語を含む文では出さない
+    // （例：có phải là の文に「phải＝しなければならない」を出さない）
+    (notes.patterns || []).forEach(p => {
+      if(t.includes(p.match) && !(p.not && t.includes(p.not))) out.push(p);
+    });
+  }
+  return out.slice(0, 3);
 }
 
 function tokenize(text){
