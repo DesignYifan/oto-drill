@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>音声ドリル</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap">
 <style>
 :root{
   --ground:#F2F4F1;
@@ -53,7 +53,7 @@
 body{
   background:var(--ground);
   color:var(--ink);
-  font-family:"IBM Plex Sans JP","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  font-family:"IBM Plex Sans","IBM Plex Sans JP","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
   font-size:14px;
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
@@ -190,6 +190,61 @@ kbd{
   border-radius:4px; padding:1px 5px; margin-right:3px; color:var(--ink);
 }
 
+/* ---- 本文（transcript.json があるときだけ出る） ---- */
+.script{
+  flex:1; min-height:0; overflow-y:auto;
+  border-top:1px solid var(--hair); padding-top:16px;
+  display:flex; flex-direction:column; gap:2px;
+}
+.sent{
+  padding:7px 10px; border-radius:6px; cursor:pointer;
+  border-left:3px solid transparent; line-height:1.9;
+}
+.sent:hover{background:var(--surface)}
+.sent.now{background:var(--accent-soft); border-left-color:var(--accent)}
+.sent .t{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px;
+  color:var(--muted); font-variant-numeric:tabular-nums; margin-right:10px;
+}
+.w{border-radius:3px; padding:0 1px; cursor:pointer}
+.w:hover{background:var(--accent); color:var(--on-accent)}
+.w.picked{box-shadow:inset 0 -2px 0 var(--accent)}
+.note{
+  font-size:12px; color:var(--muted); margin:2px 0 6px 13px;
+  padding-left:10px; border-left:2px solid var(--line); line-height:1.7;
+}
+.script-empty{color:var(--muted); font-size:13px; padding:8px 2px}
+
+/* ---- 引いた語 ---- */
+.lookup{
+  position:fixed; right:20px; bottom:20px; width:min(400px, calc(100vw - 40px));
+  max-height:min(60vh, 520px); overflow-y:auto; z-index:40;
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); padding:16px 18px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.lookup .head{display:flex; align-items:baseline; gap:12px}
+.lookup .word{font-size:22px; font-weight:600; word-break:break-word}
+.lookup .close{margin-left:auto; padding:2px 8px; font-size:12px}
+.han{display:flex; flex-wrap:wrap; gap:8px}
+.han .cell{
+  border:1px solid var(--line); border-radius:7px; padding:6px 10px;
+  display:flex; align-items:baseline; gap:8px; background:var(--ground);
+}
+.han .kanji{font-size:19px; font-weight:600}
+.han .yomi{font-size:11px; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace}
+.gloss{font-size:14px; line-height:1.7}
+.gloss .src{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:2px;
+}
+.from{
+  font-size:12px; color:var(--muted); line-height:1.8;
+  border-top:1px solid var(--hair); padding-top:10px;
+}
+.from b{color:var(--ink); font-weight:500}
+.lookup .keep{align-self:flex-start}
+
 /* ---- 帳簿 ---- */
 aside{
   background:var(--surface); border-left:1px solid var(--line);
@@ -258,7 +313,7 @@ li.hidden{display:none}
     </div>
     <button class="primary" id="pick">フォルダを選ぶ</button>
     <input type="file" id="picker" webkitdirectory directory multiple hidden>
-    <div class="folder"><span class="name" id="folder">未読み込み</span></div>
+    <div class="folder"><button id="export" hidden>貯めた語を書き出す</button><span class="name" id="folder">未読み込み</span></div>
   </header>
 
   <main>
@@ -314,6 +369,8 @@ li.hidden{display:none}
         <label class="opt"><input type="checkbox" id="loopAll"> 最後まで行ったら最初へ</label>
       </div>
 
+      <div class="script" id="script" hidden></div>
+
       <div class="keys">
         <span><kbd>space</kbd>再生／停止</span>
         <span><kbd>←</kbd><kbd>→</kbd>5秒</span>
@@ -337,6 +394,8 @@ li.hidden{display:none}
     </aside>
   </main>
 </div>
+
+<div class="lookup" id="lookup" hidden></div>
 
 <div id="drop">フォルダをここに落とす</div>
 
@@ -428,6 +487,8 @@ function loadFiles(files){
     return;
   }
 
+  loadSidecars(files);
+
   list.forEach(f => { f._rel = f._rel || f.webkitRelativePath || f.name; });
   list.sort((a,b)=> a._rel.localeCompare(b._rel, 'ja', {numeric:true, sensitivity:'base'}));
 
@@ -487,6 +548,7 @@ function play(i, autoplay, seekTo){
   $('#fname').textContent = tracks[i].name;
   $('#fname').classList.remove('blank');
   $('#seek').disabled = false;
+  renderScript(tracks[i].name);
   paintList();
   scrollToCurrent();
 
@@ -533,6 +595,7 @@ audio.addEventListener('loadedmetadata', ()=> $('#dur').textContent = fmt(audio.
 
 audio.addEventListener('timeupdate', ()=>{
   $('#cur').textContent = fmt(audio.currentTime);
+  syncScript(audio.currentTime);
   if(audio.duration) $('#seek').value = Math.round(audio.currentTime / audio.duration * 1000);
   const now = Date.now();
   if(now - lastSave > 3000){ lastSave = now; saveLast(); }
@@ -608,6 +671,211 @@ window.addEventListener('dragleave', ()=>{ if(--dragDepth <= 0) $('#drop').class
 window.addEventListener('drop', async e=>{
   e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('show');
   loadFiles(await filesFromDrop(e.dataTransfer));
+});
+
+/* ================= 読む ================= */
+/* 音声と同じフォルダに置いた transcript.json / lexicon.json / notes.json を読む。
+   ⛔ どれもこの端末の中だけ。公開しているのはこのプログラムだけで、教材の文は上がらない。 */
+
+let script = null;    // { "001.mp3": {lang, segments:[{start,end,text,words}]} }
+let lex = {morphemes:{}, words:{}};
+let notes = {};       // 文（正規化した本文）→ 文法メモ
+let kept = [];        // 貯めた語
+let sentEls = [];     // いま出している文の要素
+let nowSent = -1;
+
+const norm = t => t.normalize('NFC').trim().toLowerCase().replace(/[.,!?;:"'()\[\]…—–]/g,'').replace(/\s+/g,' ');
+
+async function loadSidecars(files){
+  const pick = n => files.find(f => f.name.toLowerCase() === n);
+  const read = async f => { try{ return JSON.parse(await f.text()); }catch(e){ return null; } };
+  const t = pick('transcript.json'), l = pick('lexicon.json'), n = pick('notes.json');
+  if(t) script = await read(t);
+  if(l){ const d = await read(l); if(d) lex = {morphemes:d.morphemes||{}, words:d.words||{}}; }
+  if(n) notes = await read(n) || {};
+  kept = load('kept:'+folderKey, []);
+  paintExport();
+  if(idx >= 0) renderScript(tracks[idx].name);
+}
+
+function renderScript(name){
+  const box = $('#script');
+  sentEls = []; nowSent = -1;
+  if(!script){ box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  const data = script[name];
+  if(!data || !data.segments.length){
+    box.innerHTML = '<div class="script-empty">この音声の本文はありません。</div>';
+    return;
+  }
+  box.innerHTML = '';
+  data.segments.forEach((seg, si) => {
+    const el = document.createElement('div');
+    el.className = 'sent';
+    const t = document.createElement('span');
+    t.className = 't'; t.textContent = fmt(seg.start);
+    el.appendChild(t);
+    let wi = 0;
+    tokenize(seg.text).forEach(tok => {
+      if(/[\p{L}]/u.test(tok)){
+        const at = wi++;
+        const w = document.createElement('span');
+        w.className = 'w'; w.textContent = tok;
+        w.addEventListener('click', ev => { ev.stopPropagation(); lookup(tok, at, seg, name); });
+        el.appendChild(w);
+      }else{
+        el.appendChild(document.createTextNode(tok));
+      }
+    });
+    el.addEventListener('click', ()=>{ audio.currentTime = seg.start; audio.play().catch(()=>{}); });
+    box.appendChild(el);
+    sentEls.push({el, start:seg.start, end:seg.end});
+    const note = notes[norm(seg.text)];
+    if(note){
+      const nd = document.createElement('div');
+      nd.className = 'note'; nd.textContent = note;
+      box.appendChild(nd);
+    }
+  });
+}
+
+function tokenize(text){
+  return text.split(/(\s+|[.,!?;:"'()\[\]…—–]+)/).filter(Boolean);
+}
+
+function syncScript(t){
+  if(!sentEls.length) return;
+  let hit = -1;
+  for(let i=0;i<sentEls.length;i++){
+    if(t >= sentEls[i].start && t < sentEls[i].end){ hit = i; break; }
+  }
+  if(hit === nowSent) return;
+  if(nowSent >= 0) sentEls[nowSent].el.classList.remove('now');
+  nowSent = hit;
+  if(hit >= 0){
+    sentEls[hit].el.classList.add('now');
+    sentEls[hit].el.scrollIntoView({block:'nearest'});
+  }
+}
+
+/* ---- 語を引く ---- */
+/* ベトナム語は「học sinh」のように音節が組み合わさるので、長いほうから当てる。 */
+function bestForm(sentence, at, token){
+  const syl = sentence.text.split(/\s+/).map(w => w.replace(/[.,!?;:"'()\[\]…—–]/g,''));
+  if(at < 0 || at >= syl.length || syl[at].toLowerCase() !== token.toLowerCase()){
+    // 位置が合わないときだけ本文から探す（記号の入り方が想定外だった場合の保険）
+    at = syl.findIndex(w => w.toLowerCase() === token.toLowerCase());
+  }
+  if(at < 0) return {form: token, hit: lex.words[norm(token)] || null};
+  for(let n = Math.min(4, syl.length - at); n >= 1; n--){
+    const form = syl.slice(at, at+n).join(' ');
+    const hit = lex.words[norm(form)];
+    if(hit) return {form, hit};
+  }
+  return {form: token, hit: null};
+}
+
+async function lookup(token, at, seg, file){
+  const box = $('#lookup');
+  const {form, hit} = bestForm(seg, at, token);
+  const syls = form.split(/\s+/);
+
+  const han = syls.map(sy => ({sy, m: lex.morphemes[norm(sy)]})).filter(x => x.m);
+  box.hidden = false;
+  box.innerHTML = '';
+
+  const head = document.createElement('div');
+  head.className = 'head';
+  head.innerHTML = '<span class="word"></span><button class="close">閉じる</button>';
+  head.querySelector('.word').textContent = form;
+  head.querySelector('.close').addEventListener('click', ()=> box.hidden = true);
+  box.appendChild(head);
+
+  if(han.length){
+    const h = document.createElement('div');
+    h.className = 'han';
+    han.forEach(({sy, m})=>{
+      const c = document.createElement('div');
+      c.className = 'cell';
+      c.innerHTML = '<span class="kanji"></span><span class="yomi"></span>';
+      c.querySelector('.kanji').textContent = m.kanji || '？';
+      c.querySelector('.yomi').textContent = sy + '　' + [m.on, m.ko].filter(Boolean).join(' ');
+      h.appendChild(c);
+    });
+    box.appendChild(h);
+  }
+
+  if(hit && hit.ja){
+    const g = document.createElement('div');
+    g.className = 'gloss';
+    g.innerHTML = '<span class="src">手元の台帳</span>';
+    g.appendChild(document.createTextNode(hit.ja));
+    box.appendChild(g);
+  }
+
+  const wk = document.createElement('div');
+  wk.className = 'gloss';
+  wk.innerHTML = '<span class="src">Wiktionary</span>';
+  const wkBody = document.createElement('span');
+  wkBody.textContent = '引いています…';
+  wk.appendChild(wkBody);
+  box.appendChild(wk);
+
+  const from = document.createElement('div');
+  from.className = 'from';
+  from.innerHTML = '<b></b><br><span class="meta"></span>';
+  from.querySelector('b').textContent = seg.text;
+  from.querySelector('.meta').textContent = file + '　' + fmt(seg.start);
+  box.appendChild(from);
+
+  const keep = document.createElement('button');
+  keep.className = 'keep';
+  const already = kept.some(k => k.form === form && k.sentence === seg.text);
+  keep.textContent = already ? '貯めてある' : 'この文ごと貯める';
+  keep.disabled = already;
+  keep.addEventListener('click', ()=>{
+    kept.push({form, ja: (hit && hit.ja) || '', kanji: han.map(x => x.m.kanji).join(''),
+               sentence: seg.text, file, start: seg.start, at: new Date().toISOString().slice(0,10)});
+    save('kept:'+folderKey, kept);
+    keep.textContent = '貯めてある'; keep.disabled = true;
+    paintExport();
+  });
+  box.appendChild(keep);
+
+  // Wiktionary（無料・鍵なし。引けなくても他の表示は残る）
+  try{
+    const tryForms = form === token ? [form] : [form, token];
+    let defs = null;
+    for(const f of tryForms){
+      const r = await fetch('https://en.wiktionary.org/api/rest_v1/page/definition/' + encodeURIComponent(f));
+      if(!r.ok) continue;
+      const d = await r.json();
+      if(d.vi && d.vi.length){ defs = d.vi; break; }
+    }
+    wkBody.textContent = defs
+      ? defs.slice(0,3).map(e => (e.partOfSpeech ? e.partOfSpeech + '：' : '') +
+          e.definitions[0].definition.replace(/<[^>]+>/g,'')).join(' / ')
+      : '項目がありません。';
+  }catch(e){
+    wkBody.textContent = 'いま引けませんでした（通信）。';
+  }
+}
+
+/* ---- 貯めた語を書き出す ---- */
+function paintExport(){
+  const b = $('#export');
+  b.hidden = !kept.length;
+  b.textContent = '貯めた語 ' + kept.length + ' を書き出す';
+}
+$('#export').addEventListener('click', ()=>{
+  const head = ['word','kanji','gloss_ja','sentence','file','start','date'].join('\t');
+  const body = kept.map(k => [k.form, k.kanji, k.ja, k.sentence, k.file, k.start, k.at].join('\t'));
+  const blob = new Blob([head + '\n' + body.join('\n') + '\n'], {type:'text/tab-separated-values'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (folderKey || 'kept') + '_kept.tsv';
+  a.click();
+  setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
 });
 
 window.addEventListener('beforeunload', saveLast);
