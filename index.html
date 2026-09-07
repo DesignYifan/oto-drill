@@ -111,6 +111,18 @@ main{flex:1; display:grid; grid-template-columns:minmax(0,1fr) 352px; min-height
   min-width:0; min-height:0; overflow-y:auto;
 }
 
+/* 一覧をたたむ。幅を取るのが困るので、閉じたら列ごと消して本体を広げる。 */
+.app.list-off aside{display:none}
+.app.list-off main{grid-template-columns:minmax(0,1fr)}
+@media (max-width:820px){
+  .app.list-off main{grid-template-rows:minmax(0,1fr)}
+}
+#toggleList .caret{
+  font-size:10px; margin-right:5px; display:inline-block;
+  transition:transform .12s;
+}
+.app.list-off #toggleList .caret{transform:rotate(-90deg)}
+
 /* 計器 */
 .readout{display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap}
 .bignum{
@@ -385,7 +397,11 @@ li.hidden{display:none}
     <button class="primary" id="pick">フォルダを選ぶ</button>
     <button id="reopen" hidden></button>
     <input type="file" id="picker" webkitdirectory directory multiple hidden>
-    <div class="folder"><button id="export" hidden>貯めた語を書き出す</button><span class="name" id="folder">未読み込み</span></div>
+    <div class="folder">
+      <button id="toggleList" aria-controls="list" aria-expanded="true"><span class="caret">▼</span><span class="lbl">一覧を隠す</span></button>
+      <button id="export" hidden>貯めた語を書き出す</button>
+      <span class="name" id="folder">未読み込み</span>
+    </div>
   </header>
 
   <main>
@@ -803,6 +819,24 @@ $('#rateUp').addEventListener('click',   e => { setRate(rate + 0.1); e.currentTa
 
 $('#seek').addEventListener('input', e => {
   if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration;
+});
+
+/* ---------- 一覧の開け閉め ---------- */
+/* 一覧が画面の幅を取るのが困る、というところから。閉じても、いま何本目かは下の操作卓に出ている。 */
+function paintListToggle(){
+  const off = document.querySelector('.app').classList.contains('list-off');
+  $('#toggleList').querySelector('.lbl').textContent = off ? '一覧を出す' : '一覧を隠す';
+  $('#toggleList').setAttribute('aria-expanded', String(!off));
+}
+if(load('listOff', false)) document.querySelector('.app').classList.add('list-off');
+paintListToggle();
+
+$('#toggleList').addEventListener('click', e => {
+  const off = document.querySelector('.app').classList.toggle('list-off');
+  save('listOff', off);
+  paintListToggle();
+  if(!off) scrollToCurrent();   // 開いたら、いま鳴っている本まで戻す
+  e.currentTarget.blur();
 });
 
 $('#filter').addEventListener('input', applyFilter);
