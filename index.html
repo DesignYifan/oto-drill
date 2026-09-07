@@ -111,17 +111,36 @@ main{flex:1; display:grid; grid-template-columns:minmax(0,1fr) 352px; min-height
   min-width:0; min-height:0; overflow-y:auto;
 }
 
-/* 一覧をたたむ。幅を取るのが困るので、閉じたら列ごと消して本体を広げる。 */
-.app.list-off aside{display:none}
-.app.list-off main{grid-template-columns:minmax(0,1fr)}
+/* 一覧をたたむ。閉じたら中身を消す。 */
+.app.list-off #filter,
+.app.list-off ol,
+.app.list-off .ledger-empty{display:none}
+
+/* 広いとき：右の列ごと消して、本体を広げる（幅を取るのが困るので） */
+@media (min-width:821px){
+  .app.list-off aside{display:none}
+  .app.list-off main{grid-template-columns:minmax(0,1fr)}
+  #foldList{display:none}
+}
+/* 狭いとき：下にたたむ。開ける手掛かりを画面の下に残す
+   （窓を半分にして教科書と並べて使うため、下が一番手が届く） */
 @media (max-width:820px){
-  .app.list-off main{grid-template-rows:minmax(0,1fr)}
+  #toggleList{display:none}
+  .app.list-off main{grid-template-rows:minmax(0,1fr) auto}
+  .app.list-off aside{border-top:1px solid var(--line)}
 }
-#toggleList .caret{
-  font-size:10px; margin-right:5px; display:inline-block;
-  transition:transform .12s;
+
+.caret{font-size:10px; margin-right:5px; display:inline-block; transition:transform .12s}
+.app.list-off .caret{transform:rotate(-90deg)}
+
+/* 一覧の頭に置く開け閉め。閉じているときは、この帯ごと押せるようにする。 */
+button.fold{
+  border:0; background:transparent; color:var(--muted);
+  padding:5px 6px; font-size:12px; white-space:nowrap; flex:none;
+  display:flex; align-items:center;
 }
-.app.list-off #toggleList .caret{transform:rotate(-90deg)}
+button.fold:hover{color:var(--ink); border-color:transparent}
+.app.list-off button.fold{flex:1; justify-content:flex-start}
 
 /* 計器 */
 .readout{display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap}
@@ -339,7 +358,7 @@ aside{
   padding:12px 16px; border-bottom:1px solid var(--line);
 }
 .ledger-head input{
-  flex:1; font:inherit; font-size:13px; color:var(--ink);
+  flex:1; min-width:0; font:inherit; font-size:13px; color:var(--ink);
   background:var(--ground); border:1px solid var(--line);
   border-radius:6px; padding:5px 9px;
 }
@@ -457,6 +476,7 @@ li.hidden{display:none}
 
     <aside>
       <div class="ledger-head">
+        <button class="fold" id="foldList" aria-controls="list" aria-expanded="true"><span class="caret">▼</span><span class="lbl">一覧を隠す</span></button>
         <input id="filter" placeholder="番号や名前でしぼる" autocomplete="off" aria-label="一覧をしぼる">
         <span class="tally" id="tally"></span>
       </div>
@@ -823,20 +843,26 @@ $('#seek').addEventListener('input', e => {
 
 /* ---------- 一覧の開け閉め ---------- */
 /* 一覧が画面の幅を取るのが困る、というところから。閉じても、いま何本目かは下の操作卓に出ている。 */
+/* 開け閉めのボタンは2つある。広いときはヘッダー（列ごと消えるので一覧側に置けない）、
+   狭いときは一覧の頭（下にたたむので、そこに手掛かりを残す）。状態はひとつ。 */
 function paintListToggle(){
   const off = document.querySelector('.app').classList.contains('list-off');
-  $('#toggleList').querySelector('.lbl').textContent = off ? '一覧を出す' : '一覧を隠す';
-  $('#toggleList').setAttribute('aria-expanded', String(!off));
+  ['#toggleList','#foldList'].forEach(sel=>{
+    $(sel).querySelector('.lbl').textContent = off ? '一覧を出す' : '一覧を隠す';
+    $(sel).setAttribute('aria-expanded', String(!off));
+  });
 }
 if(load('listOff', false)) document.querySelector('.app').classList.add('list-off');
 paintListToggle();
 
-$('#toggleList').addEventListener('click', e => {
-  const off = document.querySelector('.app').classList.toggle('list-off');
-  save('listOff', off);
-  paintListToggle();
-  if(!off) scrollToCurrent();   // 開いたら、いま鳴っている本まで戻す
-  e.currentTarget.blur();
+['#toggleList','#foldList'].forEach(sel=>{
+  $(sel).addEventListener('click', e => {
+    const off = document.querySelector('.app').classList.toggle('list-off');
+    save('listOff', off);
+    paintListToggle();
+    if(!off) scrollToCurrent();   // 開いたら、いま鳴っている本まで戻す
+    e.currentTarget.blur();
+  });
 });
 
 $('#filter').addEventListener('input', applyFilter);
