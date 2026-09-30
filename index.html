@@ -426,13 +426,30 @@ li.hidden{display:none}
 .gridwrap{display:flex; flex-direction:column; gap:22px}
 .ghead{margin:0 0 8px}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px}
-.cell{
+.pcell{
   display:flex; flex-direction:column; align-items:center; gap:2px;
   padding:14px 6px 10px; background:var(--surface);
 }
-.cell .big{font-size:26px; font-weight:500; line-height:1.2}
-.cell .say{font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace}
-.cell.playing{border-color:var(--accent); background:var(--accent-soft)}
+.pcell .big{font-size:26px; font-weight:500; line-height:1.2}
+.pcell .say{font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace}
+.pcell.playing{border-color:var(--accent); background:var(--accent-soft)}
+/* 文の組：1行ずつ左に寄せて並べる */
+.grid.text{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.grid.text .pcell{flex-direction:row; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; text-align:left}
+.grid.text .pcell .big{font-size:16px; font-weight:400; line-height:1.5}
+.grid.text .pcell .meter{margin-top:0; flex:none}
+#pdecks{max-width:100%; min-width:0; padding:6px 8px}
+.unchecked{font-size:12px; color:var(--muted); margin:-12px 0 18px}
+.quiz .ask.long{font-size:30px; line-height:1.45}
+.choices.text{grid-template-columns:1fr}
+.choices.text button{font-size:17px; padding:13px 14px; align-items:flex-start; text-align:left}
+/* 並べる */
+.slots{min-height:58px; width:100%; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+  padding:12px; border:1px dashed var(--line); border-radius:8px; background:var(--surface)}
+.tiles{display:flex; flex-wrap:wrap; gap:8px; justify-content:center}
+.tiles button, .slots button{font-size:18px; padding:9px 14px}
+.slots.right{border-style:solid; border-color:var(--ok); background:var(--accent-soft)}
+.slots.wrong{border-style:solid; border-color:var(--miss); background:var(--miss-soft)}
 .meter{display:flex; gap:3px; margin-top:6px}
 .meter i{width:6px; height:6px; border-radius:50%; background:var(--line)}
 .meter i.f{background:var(--accent)}
@@ -448,7 +465,7 @@ li.hidden{display:none}
 .choices button.right{border-color:var(--ok); background:var(--accent-soft); color:var(--ok)}
 .choices button.wrong{border-color:var(--miss); background:var(--miss-soft); color:var(--miss)}
 .quiz .say{font-size:14px; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace; min-height:22px}
-.quiz .note{font-size:12px; color:var(--muted); text-align:center; min-height:20px}
+.quiz .pnote{font-size:12px; color:var(--muted); text-align:center; min-height:20px}
 .row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
 .row button{padding:11px 20px; min-width:140px}
 .row button.miss{border-color:var(--miss); color:var(--miss)}
@@ -579,11 +596,12 @@ li.hidden{display:none}
 
   <section class="practice" id="practice" hidden>
     <div class="pbar">
-      <div class="seg" id="pdecks"></div>
+      <select id="pdecks" aria-label="練習する組"></select>
       <div class="seg" id="pviews">
         <button data-v="table">表</button>
         <button data-v="hear">聞いて選ぶ</button>
         <button data-v="say">見て言う</button>
+        <button data-v="order">並べる</button>
       </div>
       <span class="stat" id="pstat"></span>
     </div>
@@ -1270,25 +1288,38 @@ function setMode(m){
 }
 $('#modes').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ setMode(b.dataset.mode); b.blur(); } });
 
-function decks(){ return pdata ? pdata.decks.filter(d => pdeck === 'all' || d.id === pdeck) : []; }
+function decks(){
+  if(!pdata) return [];
+  return pdata.decks.filter(d => pdeck === 'all' || d.id === pdeck || pdeck === 'sec:' + (d.section || d.book));
+}
+const srcOf = it => it.src || it.deck.src;   // 1つの組に複数の音声がまたがることがある（文法編は1ユニット4〜6本）
 function items(){
   const seen = new Set(), out = [];
   decks().forEach(d => d.items.forEach(it => { if(!seen.has(it.id)){ seen.add(it.id); out.push({...it, deck:d}); } }));
   return out;
 }
 
+/* 組が多い（本1冊で48組）ので、ボタンを並べず選ぶ形にする。
+   「編ごと全部」も選べる（sec:文法編 のように持つ）。 */
+function sections(){ return [...new Set(pdata.decks.map(d => d.section || d.book))]; }
 function paintDecks(){
-  const box = $('#pdecks');
-  box.innerHTML = '';
-  if(pdeck !== 'all' && !pdata.decks.some(d => d.id === pdeck)) pdeck = 'all';
-  [{id:'all', title:'すべて'}, ...pdata.decks].forEach(d=>{
-    const b = document.createElement('button');
-    b.textContent = d.title; b.dataset.d = d.id;
-    b.classList.toggle('on', d.id === pdeck);
-    b.addEventListener('click', ()=>{ pdeck = d.id; save('p:deck', pdeck); q = null; paintDecks(); renderPractice(); b.blur(); });
-    box.appendChild(b);
+  const sel = $('#pdecks');
+  const ok = pdeck === 'all' || pdata.decks.some(d => d.id === pdeck) || sections().some(s => 'sec:'+s === pdeck);
+  if(!ok) pdeck = 'all';
+  let html = '<option value="all">すべて（' + pdata.decks.reduce((n,d)=> n + d.items.length, 0) + '）</option>';
+  sections().forEach(s=>{
+    const ds = pdata.decks.filter(d => (d.section || d.book) === s);
+    html += '<optgroup label="' + esc(s) + '">';
+    html += '<option value="sec:' + esc(s) + '">' + esc(s) + ' を全部（' + ds.reduce((n,d)=> n + d.items.length, 0) + '）</option>';
+    ds.forEach(d => { html += '<option value="' + esc(d.id) + '">' + esc(d.title) + '（' + d.items.length + '）</option>'; });
+    html += '</optgroup>';
   });
+  sel.innerHTML = html;
+  sel.value = pdeck;
 }
+$('#pdecks').addEventListener('change', e=>{
+  pdeck = e.target.value; save('p:deck', pdeck); q = null; renderPractice(); e.target.blur();
+});
 $('#pviews').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   pview = b.dataset.v; save('p:view', pview); q = null; renderPractice(); b.blur();
@@ -1300,7 +1331,7 @@ function urlFor(src){
   return purls[src];
 }
 function say(it){
-  const u = urlFor(it.deck.src);
+  const u = urlFor(srcOf(it));
   if(!u) return;
   cancelAnimationFrame(raf); clearTimeout(stopTimer);
   const go = ()=>{
@@ -1315,8 +1346,8 @@ function say(it){
       stopTimer = setTimeout(()=> clip.pause(), Math.max(0, (stopAt - clip.currentTime) * 1000 + 40));
     }, {once:true});
   };
-  if(clip.dataset.src !== it.deck.src){
-    clip.dataset.src = it.deck.src;
+  if(clip.dataset.src !== srcOf(it)){
+    clip.dataset.src = srcOf(it);
     clip.src = u;
     clip.addEventListener('loadedmetadata', go, {once:true});
   }else go();
@@ -1344,10 +1375,14 @@ function paintStat(){
 }
 
 /* 次に出す1つ：期限が来たものを、箱の低い順・最後に見たのが古い順に */
+const words = t => t.replace(/[.,!?;:“”"]/g, '').split(/\s+/).filter(Boolean);
+const orderable = it => it.deck.kind === 'text' && words(it.show).length >= 3 && words(it.show).length <= 12;
 function nextItem(prevId){
   const now = Date.now();
-  let pool = items().filter(it => it.id !== prevId);
-  if(!pool.length) pool = items();
+  const all = pview === 'order' ? items().filter(orderable) : items();
+  let pool = all.filter(it => it.id !== prevId);
+  if(!pool.length) pool = all;
+  if(!pool.length) return null;
   const due = pool.filter(it => rec(it.id).due <= now);
   const from = due.length ? due : pool;
   from.sort((a,b)=> (rec(a.id).box - rec(b.id).box) || ((rec(a.id).last||0) - (rec(b.id).last||0)) || (Math.random() - .5));
@@ -1362,7 +1397,16 @@ function choicesFor(it){
   const near = new Set();
   (d.confusable || []).forEach(g => { if(g.includes(it.id)) g.forEach(id => { if(id !== it.id && byId[id]) near.add(id); }); });
   const pick = [...near].sort(()=> Math.random() - .5).slice(0, 3);
-  const rest = d.items.map(x => x.id).filter(id => id !== it.id && !pick.includes(id)).sort(()=> Math.random() - .5);
+  let rest = d.items.map(x => x.id).filter(id => id !== it.id && !pick.includes(id)).sort(()=> Math.random() - .5);
+  if(d.kind === 'text'){
+    // 文の組：言葉が重なるもの・長さが近いものを先に（まったく違う文だと、聞かなくても選べてしまう）
+    const mine = new Set(words(it.show.toLowerCase()));
+    const score = id => { const w = words(byId[id].show.toLowerCase());
+      return w.filter(x => mine.has(x)).length * 2 - Math.abs(w.length - mine.size) * .5 + Math.random(); };
+    rest = rest.filter(id => byId[id].show.toLowerCase() !== it.show.toLowerCase())
+               .sort((a,b)=> score(b) - score(a));
+    rest = rest.slice(0, 6).sort(()=> Math.random() - .5).concat(rest.slice(6));
+  }
   while(pick.length < 3 && rest.length) pick.push(rest.shift());
   return [it.id, ...pick].sort(()=> Math.random() - .5).map(id => ({...byId[id], deck:d}));
 }
@@ -1373,6 +1417,7 @@ function renderPractice(){
   [...$('#pviews').children].forEach(b => b.classList.toggle('on', b.dataset.v === pview));
   paintStat();
   if(pview === 'table') renderTable();
+  else if(pview === 'order') renderOrder();
   else renderQuiz();
 }
 
@@ -1393,20 +1438,21 @@ function renderTable(){
     const groups = [];
     d.items.forEach(it => { let g = groups.find(x => x.name === it.group); if(!g) groups.push(g = {name:it.group, list:[]}); g.list.push(it); });
     const sec = document.createElement('section');
-    sec.innerHTML = '<div class="eyebrow ghead">' + esc(d.book + '　' + d.title) + '</div>';
+    sec.innerHTML = '<div class="eyebrow ghead">' + esc(d.book + '　' + (d.section ? d.section + '　' : '') + d.title) + '</div>' +
+      (d.items.some(x => x.checked === false) ? '<div class="unchecked" style="margin:0 0 8px">綴りは付属音声の聞き取りで、本とはまだ照らしていません</div>' : '');
     groups.forEach(g=>{
       if(groups.length > 1){
         const h = document.createElement('div'); h.className = 'ghead'; h.style.fontSize = '12px'; h.style.color = 'var(--muted)';
         h.textContent = g.name; sec.appendChild(h);
       }
-      const grid = document.createElement('div'); grid.className = 'grid';
+      const grid = document.createElement('div'); grid.className = 'grid' + (d.kind === 'text' ? ' text' : '');
       g.list.forEach(it0=>{
         const it = {...it0, deck:d};
         const b = document.createElement('button');
-        b.className = 'cell';
-        b.innerHTML = '<span class="big">' + esc(it.show) + '</span><span class="say">' + esc(it.say) + '</span>' + meter(it.id);
+        b.className = 'pcell';
+        b.innerHTML = '<span class="big">' + esc(it.show) + '</span>' + (it.say ? '<span class="say">' + esc(it.say) + '</span>' : '') + meter(it.id);
         b.addEventListener('click', ()=>{
-          body.querySelectorAll('.cell.playing').forEach(x => x.classList.remove('playing'));
+          body.querySelectorAll('.pcell.playing').forEach(x => x.classList.remove('playing'));
           b.classList.add('playing'); say(it); b.blur();
         });
         grid.appendChild(b);
@@ -1438,7 +1484,7 @@ function renderQuiz(){
     hear.addEventListener('click', ()=>{ say(it); hear.blur(); });
     box.appendChild(hear);
 
-    const ch = document.createElement('div'); ch.className = 'choices';
+    const ch = document.createElement('div'); ch.className = 'choices' + (it.deck.kind === 'text' ? ' text' : '');
     q.choices.forEach((c, i)=>{
       const b = document.createElement('button');
       b.innerHTML = esc(c.show) + '<small>' + (q.done ? esc(c.say) : (i+1)) + '</small>';
@@ -1454,16 +1500,16 @@ function renderQuiz(){
     });
     box.appendChild(ch);
 
-    const note = document.createElement('div'); note.className = 'note';
+    const note = document.createElement('div'); note.className = 'pnote';
     note.textContent = q.done
       ? (q.picked === it.id ? '正解。' : '正しくは「' + it.show + '」。') + '選択肢を押すと、それぞれの音を聞き比べられます'
-      : '聞こえた音を選んでください';
+      : '聞こえた' + (it.deck.ask || '音') + 'を選んでください';
     box.appendChild(note);
     if(q.done) box.appendChild(nextRow());
     box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聞く　<kbd>enter</kbd> 次へ</div>');
     if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
   }else{
-    box.insertAdjacentHTML('beforeend', '<div class="ask">' + esc(it.show) + '</div>');
+    box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
     box.insertAdjacentHTML('beforeend', '<div class="say">' + (q.heard ? esc(it.say) : '') + '</div>');
     if(!q.heard){
       const b = document.createElement('button'); b.className = 'primary hear'; b.textContent = '声に出してから、答えを聞く';
@@ -1485,6 +1531,61 @@ function renderQuiz(){
   }
   body.appendChild(box);
 }
+/* ---- 並べる：文をばらした語を、聞いた順に押して組み立てる ---- */
+function orderQ(it){
+  if(!it) return null;
+  const w = words(it.show);
+  const tiles = w.map((x,i)=> ({x,i}));
+  do { tiles.sort(()=> Math.random() - .5); } while(tiles.every((t,i)=> t.i === i));
+  return {it, done:false, heard:false, tiles, picked:[]};
+}
+function renderOrder(){
+  const body = $('#pbody');
+  if(!q) q = orderQ(nextItem(null));
+  if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">この組には並べられる文がありません。文法編やまとめ問題を選んでください</div></div>'; return; }
+  const it = q.it, w = words(it.show);
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz';
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
+  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聞く';
+  hear.addEventListener('click', ()=>{ say(it); hear.blur(); });
+  box.appendChild(hear);
+
+  const slots = document.createElement('div'); slots.className = 'slots';
+  q.picked.forEach((ti, k)=>{
+    const b = document.createElement('button'); b.textContent = q.tiles[ti].x;
+    if(!q.done) b.addEventListener('click', ()=>{ q.picked.splice(k, 1); renderOrder(); });   // 押すと戻せる
+    slots.appendChild(b);
+  });
+  if(q.done) slots.classList.add(q.ok ? 'right' : 'wrong');
+  box.appendChild(slots);
+
+  const tiles = document.createElement('div'); tiles.className = 'tiles';
+  q.tiles.forEach((t, ti)=>{
+    if(q.picked.includes(ti)) return;
+    const b = document.createElement('button'); b.textContent = t.x;
+    b.addEventListener('click', ()=>{
+      q.picked.push(ti);
+      if(q.picked.length === w.length){
+        q.done = true;
+        q.ok = q.picked.map(i => q.tiles[i].x.toLowerCase()).join(' ') === w.map(x => x.toLowerCase()).join(' ');
+        mark(it, q.ok); say(it);
+      }
+      renderOrder();
+    });
+    tiles.appendChild(b);
+  });
+  box.appendChild(tiles);
+
+  const note = document.createElement('div'); note.className = 'pnote';
+  note.textContent = q.done ? (q.ok ? '正解' : '正しくは「' + it.show + '」') : '聞こえた順に語を押してください。並べた語を押すと戻せます';
+  box.appendChild(note);
+  if(q.done) box.appendChild(nextRow());
+  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> もう一度聞く　<kbd>enter</kbd> 次へ</div>');
+  body.appendChild(box);
+  if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
+}
+
 function answerSay(ok){ q.done = true; mark(q.it, ok); nextQ(); }
 function nextRow(){
   const row = document.createElement('div'); row.className = 'row';
@@ -1497,6 +1598,8 @@ function nextRow(){
 function nextQ(){
   const prev = q && q.it.id;
   const it = nextItem(prev);
+  if(pview === 'order'){ q = orderQ(it); renderOrder(); return; }
+  if(!it){ q = null; renderQuiz(); return; }
   q = {it, done:false, heard:false, choices: pview === 'hear' ? choicesFor(it) : null};
   renderQuiz();
 }
@@ -1505,6 +1608,11 @@ document.addEventListener('keydown', e=>{
   if(mode !== 'practice' || !q || pview === 'table') return;
   if(e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
+  if(pview === 'order'){
+    if(k === ' '){ e.preventDefault(); say(q.it); }
+    else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
+    return;
+  }
   if(pview === 'hear'){
     if(!q.done && /^[1-4]$/.test(k)){ const c = q.choices[Number(k)-1]; if(c){ q.done = true; q.picked = c.id; mark(q.it, c.id === q.it.id); renderQuiz(); } }
     else if(k === ' '){ e.preventDefault(); say(q.it); }
