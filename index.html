@@ -471,6 +471,80 @@ li.hidden{display:none}
 .row button.miss{border-color:var(--miss); color:var(--miss)}
 .pkeys{color:var(--muted); font-size:12px; margin-top:6px}
 
+/* 穴埋め・書く */
+.blank{display:inline-block; min-width:3.5em; border-bottom:2px solid var(--accent); text-align:center}
+.blank.right{color:var(--ok)} .blank.wrong{color:var(--miss); border-color:var(--miss)}
+.typein{width:100%; font:inherit; font-size:22px; padding:12px 14px; border:1px solid var(--line); border-radius:8px;
+  background:var(--surface); color:var(--ink)}
+.typein:focus{outline:2px solid var(--accent); outline-offset:1px}
+.diff{font-size:24px; line-height:2.2; text-align:center}
+.diff .w{display:inline-flex; flex-direction:column; align-items:center; padding:0 6px; border-radius:6px}
+.diff .w small{font-size:11px; line-height:1.3; font-family:"IBM Plex Mono",ui-monospace,monospace}
+.diff .ok{color:var(--ok)}
+.diff .near{background:var(--near-soft); color:var(--near)}
+.diff .bad, .diff .miss{background:var(--miss-soft); color:var(--miss)}
+.diff .extra{color:var(--muted)}
+.legend{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:8px}
+.lg{display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--muted)}
+.lg i{width:10px; height:10px; border-radius:3px; display:inline-block}
+.lg i.ok{background:var(--ok)} .lg i.near{background:var(--near)} .lg i.bad{background:var(--miss)}
+
+/* 見渡す：段は1色（緑）の濃淡。未着手は線の色 */
+:root{ --lv0:var(--line); --lv1:#A9D1BB; --lv2:var(--accent); --near:#8A6A12; --near-soft:#F5EDD3 }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --lv1:#3C6B52; --near:#D9B85C; --near-soft:#2E2819 } }
+:root[data-theme="dark"]{ --lv1:#3C6B52; --near:#D9B85C; --near-soft:#2E2819 }
+.overview{max-width:1080px; margin:0 auto; width:100%}
+.overview[hidden]{display:none}
+.tiles4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px}
+.tile{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 14px}
+.tile .big{font-size:30px; font-weight:600; font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+.tile .big small{font-size:14px; color:var(--muted); font-weight:400}
+.legend.ov{justify-content:flex-start; margin:0 0 12px}
+.legend.ov .lg i.lv0, .wchip.lv0{background:var(--lv0)}
+.lg i.lv1{background:var(--lv1)} .lg i.lv2{background:var(--lv2)}
+.ovgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px}
+.ovsec{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 14px}
+.ovhead{display:flex; justify-content:space-between; margin-bottom:6px}
+.ovhead span, .ovrow .ct{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums}
+.sbar{display:flex; gap:2px; height:10px; flex:1; min-width:40px}
+.sbar i{border-radius:4px; min-width:3px}
+.sbar i.lv0{background:var(--lv0)} .sbar i.lv1{background:var(--lv1)} .sbar i.lv2{background:var(--lv2)}
+.ovsec > .sbar{height:14px; margin-bottom:10px}
+.ovrow{display:grid; grid-template-columns:minmax(0,9em) 1fr 4.5em; align-items:center; gap:10px; width:100%;
+  border:0; background:transparent; padding:4px 2px; text-align:left}
+.ovrow:hover{background:var(--ground)}
+.ovrow .nm{font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ovrow .ct{text-align:right}
+.ovh{font-size:14px; margin:26px 0 10px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+.ovh small{font-weight:400; font-size:12px; color:var(--muted)}
+.skills{display:flex; flex-direction:column; gap:8px; max-width:560px}
+.skill{display:grid; grid-template-columns:7em 1fr 7.5em; gap:10px; align-items:center; font-size:13px}
+.track1{height:10px; background:var(--lv0); border-radius:4px; overflow:hidden}
+.track1 i{display:block; height:100%; background:var(--lv2); border-radius:4px}
+.skill .ct{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; color:var(--muted)}
+.heat{display:flex; gap:3px}
+.hdays{display:flex; flex-direction:column; gap:3px; margin-right:4px}
+.hdays span{height:14px; font-size:10px; line-height:14px; color:var(--muted)}
+.hcol{display:flex; flex-direction:column; gap:3px}
+.h{width:14px; height:14px; border-radius:3px; display:inline-block}
+.h0{background:var(--lv0)} .h1{background:#D3E8DC} .h2{background:#A9D1BB} .h3{background:#5E9C7B} .h4{background:var(--accent)}
+.h.none{background:transparent}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .h1{background:#243A2E} :root:not([data-theme="light"]) .h2{background:#2F5341}
+  :root:not([data-theme="light"]) .h3{background:#46846A} }
+:root[data-theme="dark"] .h1{background:#243A2E} :root[data-theme="dark"] .h2{background:#2F5341} :root[data-theme="dark"] .h3{background:#46846A}
+.legend.ov .h{width:10px; height:10px}
+.wf{margin-bottom:10px; display:inline-flex; flex-wrap:wrap; border:1px solid var(--line); border-radius:6px; overflow:hidden}
+.wf button{border:0; border-radius:0; padding:5px 11px; font-size:12px}
+.wf button + button{border-left:1px solid var(--line)}
+.wmap{display:flex; flex-wrap:wrap; gap:5px}
+.wchip{padding:3px 8px; font-size:13px; border:0; border-radius:5px}
+.wchip.lv1{background:var(--lv1)} .wchip.lv2{background:var(--lv2); color:var(--on-accent)}
+.wchip.typed{text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:2px}
+.weak{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:8px}
+.wk{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:9px 12px}
+.wk small{color:var(--muted); font-size:11px}
+@media (max-width:820px){ .tiles4{grid-template-columns:1fr 1fr} .skill{grid-template-columns:6em 1fr 6.5em} }
+
 @media (max-width:820px){
   .practice{padding:16px 16px 32px}
   .quiz .ask{font-size:56px}
@@ -492,6 +566,7 @@ li.hidden{display:none}
     <div class="modes" id="modes" hidden>
       <button data-mode="listen" class="on">聴く</button>
       <button data-mode="practice">練習</button>
+      <button data-mode="overview">見渡す</button>
     </div>
     <button class="primary" id="pick">フォルダを選ぶ</button>
     <button id="reopen" hidden></button>
@@ -600,13 +675,17 @@ li.hidden{display:none}
       <div class="seg" id="pviews">
         <button data-v="table">表</button>
         <button data-v="hear">聞いて選ぶ</button>
-        <button data-v="say">見て言う</button>
         <button data-v="order">並べる</button>
+        <button data-v="cloze">穴埋め</button>
+        <button data-v="type">聞いて書く</button>
+        <button data-v="say">見て言う</button>
       </div>
       <span class="stat" id="pstat"></span>
     </div>
     <div id="pbody"></div>
   </section>
+
+  <section class="practice overview" id="overview" hidden></section>
 </div>
 
 <div class="lookup" id="lookup" hidden></div>
@@ -984,7 +1063,7 @@ setRate(load('rate', 1));
 
 document.addEventListener('keydown', e=>{
   if(e.target === $('#filter')) return;
-  if(mode === 'practice') return;   // 練習中のキーは練習の側で受ける
+  if(mode !== 'listen') return;   // 練習と見渡すのキーは、その側で受ける
   const k = e.key;
   if(k === ' '){ e.preventDefault(); toggle(); }
   else if(k === 'ArrowLeft'){  e.preventDefault(); e.shiftKey ? play(idx-1, true) : step(-5); }
@@ -1274,16 +1353,19 @@ function setPractice(data, files){
   $('#modes').hidden = !pdata;
   if(!pdata){ setMode('listen'); return; }
   paintDecks();
-  if(load('p:mode','listen') === 'practice') setMode('practice');
+  const m0 = load('p:mode','listen');
+  if(m0 === 'practice' || m0 === 'overview') setMode(m0);
 }
 
 function setMode(m){
   mode = m;
   save('p:mode', m);
-  document.querySelector('.app').classList.toggle('practicing', m === 'practice');
+  document.querySelector('.app').classList.toggle('practicing', m !== 'listen');
   $('#practice').hidden = m !== 'practice';
+  $('#overview').hidden = m !== 'overview';
   [...$('#modes').children].forEach(b => b.classList.toggle('on', b.dataset.mode === m));
   if(m === 'practice'){ audio.pause(); renderPractice(); }
+  else if(m === 'overview'){ audio.pause(); renderOverview(); }
   else clip.pause();
 }
 $('#modes').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ setMode(b.dataset.mode); b.blur(); } });
@@ -1355,10 +1437,14 @@ function say(it){
 
 /* ---- 記録 ---- */
 function rec(id){ return srs[id] || {box:0, due:0, seen:0, miss:0}; }
-function mark(it, ok){
+let hist = load('hist', []);   // [時刻, 項目, 練習, 正誤(1/0)]
+function mark(it, ok, skill, gain){
   const r = rec(it.id);
   r.seen++;
-  if(ok){ r.box = Math.min(MAXBOX, r.box + 1); }
+  hist.push([Date.now(), it.id, skill || pview, ok ? 1 : 0]);
+  if(hist.length > 20000) hist = hist.slice(-20000);
+  save('hist', hist);
+  if(ok){ r.box = Math.min(MAXBOX, r.box + (gain || 1)); }
   else { r.box = 0; r.miss++; }
   r.due = Date.now() + WAIT[r.box];
   r.last = Date.now();
@@ -1377,9 +1463,13 @@ function paintStat(){
 /* 次に出す1つ：期限が来たものを、箱の低い順・最後に見たのが古い順に */
 const words = t => t.replace(/[.,!?;:“”"]/g, '').split(/\s+/).filter(Boolean);
 const orderable = it => it.deck.kind === 'text' && words(it.show).length >= 3 && words(it.show).length <= 12;
+const clozable = it => it.deck.kind === 'text' && words(it.show).length >= 2 && words(it.show).length <= 14;
+// 書く：文と語、発音編の語（ma・cam など）。字の名前（A a）と音の断片（-ng）は書く対象にしない
+const typable = it => it.deck.kind === 'text' || (!/[\s\/]/.test(it.show) && !/^-/.test(it.show) && it.group !== 'letter');
+const FILTER = {order: orderable, cloze: clozable, type: typable};
 function nextItem(prevId){
   const now = Date.now();
-  const all = pview === 'order' ? items().filter(orderable) : items();
+  const all = FILTER[pview] ? items().filter(FILTER[pview]) : items();
   let pool = all.filter(it => it.id !== prevId);
   if(!pool.length) pool = all;
   if(!pool.length) return null;
@@ -1418,6 +1508,8 @@ function renderPractice(){
   paintStat();
   if(pview === 'table') renderTable();
   else if(pview === 'order') renderOrder();
+  else if(pview === 'cloze') renderCloze();
+  else if(pview === 'type') renderType();
   else renderQuiz();
 }
 
@@ -1493,7 +1585,7 @@ function renderQuiz(){
         else if(c.id === q.picked) b.classList.add('wrong');
       }
       b.addEventListener('click', ()=>{
-        if(!q.done){ q.done = true; q.picked = c.id; mark(it, c.id === it.id); renderQuiz(); }
+        if(!q.done){ q.done = true; q.picked = c.id; mark(it, c.id === it.id, 'hear'); renderQuiz(); }
         else say(c);   // 答えたあとは、どの選択肢も押して聞き比べられる
       });
       ch.appendChild(b);
@@ -1531,6 +1623,211 @@ function renderQuiz(){
   }
   body.appendChild(box);
 }
+/* ---- 穴埋め：1語だけ抜く。文法の語を優先して抜く ---- */
+const FUNC = ['không','có','là','đã','rồi','chưa','sẽ','đang','vừa','mới','của','ở','được','cho','với','bằng','hơn','nhất',
+  'lắm','quá','rất','hơi','mấy','gì','ai','đâu','nào','bao','nhiêu','phải','muốn','cần','nên','thích','cũng','và','nhưng',
+  'hãy','đi','nhé','nhỉ','ạ','này','đó','kia','ấy','các','những','một','từ','đến','để','thì','nếu','vì','khi','hay','biết','thể'];
+function clozeQ(it){
+  if(!it) return null;
+  const w = words(it.show);
+  const lw = w.map(x => x.toLowerCase());
+  let cand = lw.map((x,i)=> i).filter(i => FUNC.includes(lw[i]));
+  if(!cand.length) cand = lw.map((x,i)=> i).filter(i => i > 0 || w.length === 1);
+  if(!cand.length) cand = [0];
+  const at = cand[Math.floor(Math.random() * cand.length)];
+  const ans = lw[at];
+  // 選択肢：文法の語なら文法の語から。そうでなければ同じ組の語から、長さの近いもの
+  const pool = FUNC.includes(ans) ? FUNC
+    : [...new Set(it.deck.items.flatMap(x => words(x.show).map(y => y.toLowerCase())))];
+  const others = pool.filter(x => x !== ans && !lw.includes(x))
+    .map(x => [x, Math.abs(x.length - ans.length) + Math.random() * 3]).sort((a,b)=> a[1] - b[1]).slice(0, 8)
+    .sort(()=> Math.random() - .5).slice(0, 3).map(x => x[0]);
+  return {it, at, ans, w, opts:[ans, ...others].sort(()=> Math.random() - .5), done:false};
+}
+function answerCloze(c){
+  q.done = true; q.picked = c;
+  mark(q.it, c === q.ans, 'cloze');
+  say(q.it);
+  renderCloze();
+}
+function renderCloze(){
+  const body = $('#pbody');
+  if(!q) q = clozeQ(nextItem(null));
+  if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">この組には穴埋めにできる文がありません。文法編やまとめ問題を選んでください</div></div>'; return; }
+  const it = q.it;
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz';
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
+  const line = q.w.map((x,i)=> i === q.at
+    ? '<span class="blank' + (q.done ? (q.picked === q.ans ? ' right' : ' wrong') : '') + '">' + (q.done ? esc(x) : '　　') + '</span>'
+    : esc(x)).join(' ');
+  box.insertAdjacentHTML('beforeend', '<div class="ask long">' + line + '</div>');
+  const ch = document.createElement('div'); ch.className = 'choices';
+  q.opts.forEach((c, i)=>{
+    const b = document.createElement('button');
+    b.innerHTML = esc(c) + '<small>' + (i+1) + '</small>';
+    if(q.done){ if(c === q.ans) b.classList.add('right'); else if(c === q.picked) b.classList.add('wrong'); }
+    b.addEventListener('click', ()=>{ if(!q.done) answerCloze(c); });
+    ch.appendChild(b);
+  });
+  box.appendChild(ch);
+  const note = document.createElement('div'); note.className = 'pnote';
+  note.textContent = q.done ? (q.picked === q.ans ? '正解。文を聞いて確かめてください' : '正しくは「' + q.ans + '」') : '空いているところに入る語を選んでください（答えると文が鳴ります）';
+  box.appendChild(note);
+  if(q.done){
+    const again = document.createElement('button'); again.textContent = 'もう一度聞く';
+    again.addEventListener('click', ()=>{ say(it); again.blur(); });
+    box.appendChild(again);
+    box.appendChild(nextRow());
+  }
+  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聞く　<kbd>enter</kbd> 次へ</div>');
+  body.appendChild(box);
+}
+
+/* ---- 聞いて書く：語ごとに「合っている／声調・記号だけ違う／違う／抜けた」を返す ---- */
+const TONE_RE = /[̣̀́̃̉]/g;
+function wparts(w){
+  const d = w.normalize('NFD').toLowerCase().replace(/[.,!?;:“”"]/g, '');
+  const tone = (d.match(TONE_RE) || [''])[0];
+  const shape = d.replace(TONE_RE, '').normalize('NFC');
+  const base = shape.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+  return {tone, shape, base};
+}
+function checkTyped(target, typed){
+  const T = words(target).map(wparts), Y = words(typed).map(wparts);
+  // 文字（記号なし）で並びを合わせる（LCS）
+  const n = T.length, m = Y.length, L = Array.from({length:n+1}, ()=> new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--)
+    L[i][j] = T[i].base === Y[j].base ? L[i+1][j+1] + 1 : Math.max(L[i+1][j], L[i][j+1]);
+  const res = []; let i = 0, j = 0;
+  while(i < n || j < m){
+    if(i < n && j < m && T[i].base === Y[j].base){
+      const exact = T[i].shape === Y[j].shape && T[i].tone === Y[j].tone;
+      res.push({t:words(target)[i], y:words(typed)[j], k: exact ? 'ok' : 'near'}); i++; j++;
+    }else if(j < m && (i >= n || L[i][j+1] >= L[i+1][j])){
+      res.push({t:null, y:words(typed)[j], k:'extra'}); j++;
+    }else{
+      res.push({t:words(target)[i], y:null, k:'miss'}); i++;
+    }
+  }
+  // 抜けと余りが隣り合っていたら「違う語」として1つにまとめる
+  const out = [];
+  for(const r of res){
+    const prev = out[out.length-1];
+    if(prev && ((prev.k === 'miss' && r.k === 'extra') || (prev.k === 'extra' && r.k === 'miss'))){
+      out[out.length-1] = {t: prev.t || r.t, y: prev.y || r.y, k:'wrong'};
+    }else out.push(r);
+  }
+  return out;
+}
+
+/* Telex：aa→â aw→ă ee→ê oo→ô ow→ơ uw→ư w→ư dd→đ、語の終わりの s f r x j で声調 */
+const TMARK = {s:'́', f:'̀', r:'̉', x:'̃', j:'̣'};
+function placeTone(w, t){
+  const d = w.normalize('NFC');
+  const plain = d.normalize('NFD').replace(TONE_RE, '').normalize('NFC');
+  const chars = [...plain], low = chars.map(c => c.toLowerCase());
+  const V = 'aăâeêioôơuưy';
+  let idx = low.map((c,i)=> V.includes(c) ? i : -1).filter(i => i >= 0);
+  if((low[0] === 'q' && low[1] === 'u') || (low[0] === 'g' && low[1] === 'i' && idx.length > 1)) idx = idx.filter(i => i !== 1);
+  if(!idx.length) return w;
+  const cl = [idx[0]]; for(const i of idx.slice(1)) if(i === cl[cl.length-1] + 1) cl.push(i);
+  const marked = cl.filter(i => 'ăâêôơư'.includes(low[i]));
+  let at;
+  if(marked.length) at = marked[marked.length-1];
+  else if(cl.length === 1) at = cl[0];
+  else if(cl.length === 3) at = cl[1];
+  else at = cl[cl.length-1] === chars.length - 1 ? cl[0] : cl[1];
+  chars[at] = (chars[at].normalize('NFD') + TMARK[t]).normalize('NFC');
+  return chars.join('');
+}
+function telexWord(w){
+  if(!/^[\p{L}]+$/u.test(w)) return w;
+  let tone = '';
+  const m = w.match(/^(.*[aeiouyăâêôơư].*?)([sfrxj])$/iu);
+  if(m){ w = m[1]; tone = m[2].toLowerCase(); }
+  w = w.replace(/dd/g,'đ').replace(/DD|Dd/g,'Đ').replace(/uow/gi,'ươ').replace(/aa/g,'â').replace(/AA|Aa/g,'Â')
+       .replace(/aw/g,'ă').replace(/ee/g,'ê').replace(/EE|Ee/g,'Ê').replace(/oo/g,'ô').replace(/OO|Oo/g,'Ô')
+       .replace(/ow/g,'ơ').replace(/uw/g,'ư').replace(/w/g,'ư');
+  return tone ? placeTone(w, tone) : w;
+}
+function telexLine(s){ return s.replace(/[\p{L}]+/gu, telexWord); }
+
+function renderType(){
+  const body = $('#pbody');
+  if(!q){ const it = nextItem(null); q = it ? {it, done:false, heard:false} : null; }
+  if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">この組には書く問題がありません</div></div>'; return; }
+  const it = q.it;
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz';
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
+  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聞く';
+  hear.addEventListener('click', ()=>{ say(it); $('#typein') && $('#typein').focus(); });
+  box.appendChild(hear);
+
+  if(!q.done){
+    const inp = document.createElement('input');
+    inp.id = 'typein'; inp.className = 'typein'; inp.autocomplete = 'off'; inp.spellcheck = false;
+    inp.setAttribute('autocapitalize', 'off');
+    inp.placeholder = '聞こえたとおりに書く（enter で答え合わせ）';
+    inp.value = q.draft || '';
+    inp.addEventListener('input', e=>{
+      if(!e.isComposing && load('telex', true)){   // Mac のベトナム語入力で打っているあいだは触らない
+        const v = telexLine(inp.value);
+        if(v !== inp.value){ inp.value = v; }
+      }
+      q.draft = inp.value;
+    });
+    inp.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); gradeType(inp.value); }
+      else if(e.key === 'Tab'){ e.preventDefault(); say(it); }
+    });
+    box.appendChild(inp);
+    const opt = document.createElement('label'); opt.className = 'opt';
+    opt.innerHTML = '<input type="checkbox"' + (load('telex', true) ? ' checked' : '') + '> 画面の Telex で打つ（aa→â　dd→đ　s f r x j で声調）';
+    opt.querySelector('input').addEventListener('change', e => { save('telex', e.target.checked); inp.focus(); });
+    box.appendChild(opt);
+    const row = document.createElement('div'); row.className = 'row';
+    const give = document.createElement('button'); give.textContent = '分からない'; give.className = 'miss';
+    give.addEventListener('click', ()=> gradeType(''));
+    const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = '答え合わせ';
+    ok.addEventListener('click', ()=> gradeType(inp.value));
+    row.append(give, ok); box.appendChild(row);
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>tab</kbd> もう一度聞く　<kbd>enter</kbd> 答え合わせ</div>');
+    setTimeout(()=> inp.focus(), 0);
+  }else{
+    const diff = document.createElement('div'); diff.className = 'diff';
+    diff.innerHTML = q.res.map(r => {
+      if(r.k === 'ok') return '<span class="w ok">' + esc(r.t) + '</span>';
+      if(r.k === 'near') return '<span class="w near" title="あなた：' + esc(r.y) + '">' + esc(r.t) + '<small>' + esc(r.y) + '</small></span>';
+      if(r.k === 'wrong') return '<span class="w bad" title="あなた：' + esc(r.y) + '">' + esc(r.t) + '<small>' + esc(r.y) + '</small></span>';
+      if(r.k === 'miss') return '<span class="w miss">' + esc(r.t) + '<small>抜け</small></span>';
+      return '<span class="w extra"><s>' + esc(r.y) + '</s><small>余り</small></span>';
+    }).join(' ');
+    box.appendChild(diff);
+    const legend = '<span class="lg"><i class="ok"></i>合っている</span><span class="lg"><i class="near"></i>声調・記号だけ違う</span><span class="lg"><i class="bad"></i>違う・抜け</span>';
+    const note = document.createElement('div'); note.className = 'pnote';
+    note.innerHTML = (q.ok ? '正解。' : q.close ? '文字は合っています。声調と記号を直せば正解です。' : '正しい文は上のとおりです。') + '<div class="legend">' + legend + '</div>';
+    box.appendChild(note);
+    box.appendChild(nextRow());
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 次へ</div>');
+  }
+  body.appendChild(box);
+  if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
+}
+function gradeType(v){
+  const res = checkTyped(q.it.show, v);
+  q.res = res; q.done = true;
+  q.ok = res.every(r => r.k === 'ok');
+  q.close = !q.ok && res.every(r => r.k === 'ok' || r.k === 'near');
+  mark(q.it, q.ok, 'type', 2);   // 音だけから書けたら、箱を2つ上げる
+  if(q.ok) typedOk(q.it);
+  say(q.it);
+  renderType();
+}
+let typed = new Set(load('typed', []));   // 書いて正解した語
+function typedOk(it){ words(it.show).forEach(w => typed.add(w.toLowerCase())); save('typed', [...typed]); }
+
 /* ---- 並べる：文をばらした語を、聞いた順に押して組み立てる ---- */
 function orderQ(it){
   if(!it) return null;
@@ -1569,7 +1866,7 @@ function renderOrder(){
       if(q.picked.length === w.length){
         q.done = true;
         q.ok = q.picked.map(i => q.tiles[i].x.toLowerCase()).join(' ') === w.map(x => x.toLowerCase()).join(' ');
-        mark(it, q.ok); say(it);
+        mark(it, q.ok, 'order'); say(it);
       }
       renderOrder();
     });
@@ -1586,7 +1883,7 @@ function renderOrder(){
   if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
 }
 
-function answerSay(ok){ q.done = true; mark(q.it, ok); nextQ(); }
+function answerSay(ok){ q.done = true; mark(q.it, ok, 'say'); nextQ(); }
 function nextRow(){
   const row = document.createElement('div'); row.className = 'row';
   const b = document.createElement('button'); b.className = 'primary'; b.textContent = '次へ';
@@ -1599,6 +1896,8 @@ function nextQ(){
   const prev = q && q.it.id;
   const it = nextItem(prev);
   if(pview === 'order'){ q = orderQ(it); renderOrder(); return; }
+  if(pview === 'cloze'){ q = clozeQ(it); renderCloze(); return; }
+  if(pview === 'type'){ q = it ? {it, done:false, heard:false} : null; renderType(); return; }
   if(!it){ q = null; renderQuiz(); return; }
   q = {it, done:false, heard:false, choices: pview === 'hear' ? choicesFor(it) : null};
   renderQuiz();
@@ -1608,13 +1907,24 @@ document.addEventListener('keydown', e=>{
   if(mode !== 'practice' || !q || pview === 'table') return;
   if(e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
+  if(pview === 'type'){   // 書く欄の中では space と enter を欄に任せる
+    if(e.target.id === 'typein') return;
+    if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
+    return;
+  }
+  if(pview === 'cloze'){
+    if(!q.done && /^[1-4]$/.test(k)){ const c = q.opts[Number(k)-1]; if(c) answerCloze(c); }
+    else if(k === ' '){ e.preventDefault(); if(q.done) say(q.it); }
+    else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
+    return;
+  }
   if(pview === 'order'){
     if(k === ' '){ e.preventDefault(); say(q.it); }
     else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
     return;
   }
   if(pview === 'hear'){
-    if(!q.done && /^[1-4]$/.test(k)){ const c = q.choices[Number(k)-1]; if(c){ q.done = true; q.picked = c.id; mark(q.it, c.id === q.it.id); renderQuiz(); } }
+    if(!q.done && /^[1-4]$/.test(k)){ const c = q.choices[Number(k)-1]; if(c){ q.done = true; q.picked = c.id; mark(q.it, c.id === q.it.id, 'hear'); renderQuiz(); } }
     else if(k === ' '){ e.preventDefault(); say(q.it); }
     else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
   }else{
@@ -1623,6 +1933,135 @@ document.addEventListener('keydown', e=>{
     else if(q.heard && !q.done && k === 'ArrowLeft'){ e.preventDefault(); answerSay(false); }
   }
 });
+
+/* ================= 見渡す ================= */
+/* どこまで覚えたかを、項目・語・練習の3つの目で見る。数え方は README と実現方式に書いた。 */
+const SKILL = [['hear','聞いて選ぶ'], ['order','並べる'], ['cloze','穴埋め'], ['type','聞いて書く'], ['say','見て言う']];
+const dayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); };
+function level(id){ const r = rec(id); return r.box >= 3 ? 2 : (r.seen > 0 ? 1 : 0); }   // 0 未着手 1 覚えかけ 2 覚えた
+
+function stackBar(counts, total){
+  const lab = ['未着手','覚えかけ','覚えた'];
+  return '<div class="sbar">' + [2,1,0].filter(k => counts[k]).map(k =>
+    '<i class="lv' + k + '" style="flex:' + counts[k] + '" title="' + lab[k] + '　' + counts[k] + '/' + total + '"></i>').join('') + '</div>';
+}
+
+function renderOverview(){
+  const box = $('#overview');
+  if(!pdata){ box.innerHTML = ''; return; }
+  // すべての項目（id で1つに）
+  const all = new Map();
+  pdata.decks.forEach(d => d.items.forEach(it => { if(!all.has(it.id)) all.set(it.id, {...it, deck:d}); }));
+  const list = [...all.values()];
+  const known = list.filter(it => level(it.id) === 2).length;
+
+  // 語：文と語の組に出てくる語。その語を含む項目のうち一番進んだ段で色を付ける
+  const wmap = new Map();
+  list.filter(it => it.deck.kind === 'text').forEach(it => words(it.show).forEach(w0 => {
+    const w = w0.toLowerCase(); if(!/\p{L}/u.test(w)) return;
+    const e = wmap.get(w) || {w, n:0, lv:0, items:[]};
+    e.n++; e.lv = Math.max(e.lv, level(it.id)); e.items.push(it);
+    wmap.set(w, e);
+  }));
+  const wl = [...wmap.values()].sort((a,b)=> b.n - a.n || a.w.localeCompare(b.w, 'vi'));
+  const wSeen = wl.filter(e => e.lv > 0).length;
+
+  const today = dayKey(Date.now());
+  const perDay = {};
+  hist.forEach(h => { const k = dayKey(h[0]); perDay[k] = (perDay[k] || 0) + 1; });
+  let streak = 0;
+  for(let t = Date.now(); ; t -= DAY){ if(perDay[dayKey(t)]) streak++; else if(dayKey(t) !== today) break; if(streak > 999) break; }
+
+  let html = '<div class="tiles4">' +
+    tile('覚えた項目', known, list.length) +
+    tile('出会った語', wSeen, wl.length) +
+    tile('今日答えた数', perDay[today] || 0, null) +
+    tile('続けた日数', streak, null) + '</div>';
+
+  html += '<div class="legend ov"><span class="lg"><i class="lv2"></i>覚えた（箱3以上）</span><span class="lg"><i class="lv1"></i>覚えかけ</span><span class="lg"><i class="lv0"></i>未着手</span></div>';
+
+  // 編とユニットの帯
+  html += '<div class="ovgrid">';
+  sections().forEach(sec => {
+    const ds = pdata.decks.filter(d => (d.section || d.book) === sec);
+    const ids = new Set(ds.flatMap(d => d.items.map(i => i.id)));
+    const c = [0,0,0]; ids.forEach(id => c[level(id)]++);
+    html += '<section class="ovsec"><div class="ovhead"><b>' + esc(sec) + '</b><span>' + c[2] + ' / ' + ids.size + '</span></div>' + stackBar(c, ids.size);
+    ds.forEach(d => {
+      const cc = [0,0,0]; d.items.forEach(i => cc[level(i.id)]++);
+      html += '<button class="ovrow" data-deck="' + esc(d.id) + '" title="押すとこの組の練習へ"><span class="nm">' + esc(d.title) + '</span>' +
+        stackBar(cc, d.items.length) + '<span class="ct">' + cc[2] + '/' + d.items.length + '</span></button>';
+    });
+    html += '</section>';
+  });
+  html += '</div>';
+
+  // 練習ごとの正答率（直近50回）
+  html += '<h3 class="ovh">練習ごとの正答率<small>それぞれ直近50回</small></h3><div class="skills">';
+  SKILL.forEach(([k, name]) => {
+    const hs = hist.filter(h => h[2] === k).slice(-50);
+    const rate = hs.length ? Math.round(hs.reduce((n,h)=> n + h[3], 0) / hs.length * 100) : null;
+    html += '<div class="skill"><span class="nm">' + name + '</span><div class="track1"><i style="width:' + (rate || 0) + '%"></i></div>' +
+      '<span class="ct">' + (rate === null ? 'まだ' : rate + '%　' + hs.length + '回') + '</span></div>';
+  });
+  html += '</div>';
+
+  // 12週の積み上げ
+  html += '<h3 class="ovh">12週の積み上げ<small>1日に答えた数</small></h3>' + heatmap(perDay);
+
+  // 語の地図
+  const wf = load('ov:wf', 'all');
+  const cnt = [0,0,0]; wl.forEach(e => cnt[e.lv]++);
+  html += '<h3 class="ovh">語の地図<small>よく出る語から。色はその語を含む文の進み具合、下線は書いて正解した語。押すと鳴る</small></h3>' +
+    '<div class="seg wf">' + [['all','すべて ' + wl.length], ['2','覚えた ' + cnt[2]], ['1','覚えかけ ' + cnt[1]], ['0','未着手 ' + cnt[0]]]
+      .map(([k,l]) => '<button data-wf="' + k + '"' + (wf === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="wmap">' + wl.filter(e => wf === 'all' || String(e.lv) === wf).map(e =>
+      '<button class="wchip lv' + e.lv + (typed.has(e.w) ? ' typed' : '') + '" data-w="' + esc(e.w) + '" title="' + e.n + 'の文に出てくる">' + esc(e.w) + '</button>').join('') + '</div>';
+
+  // 苦手
+  const weak = list.filter(it => rec(it.id).miss > 0).sort((a,b)=> rec(b.id).miss - rec(a.id).miss).slice(0, 12);
+  html += '<h3 class="ovh">よく間違えるもの</h3>' + (weak.length ? '<div class="weak">' + weak.map(it =>
+    '<button class="wk" data-id="' + esc(it.id) + '"><span>' + esc(it.show) + '</span><small>' + esc(it.deck.title) + '　×' + rec(it.id).miss + '</small></button>').join('') + '</div>'
+    : '<p class="pnote" style="text-align:left">まだありません</p>');
+
+  box.innerHTML = html;
+  box.querySelectorAll('.ovrow').forEach(b => b.addEventListener('click', ()=>{
+    pdeck = b.dataset.deck; save('p:deck', pdeck); q = null; paintDecks(); setMode('practice');
+  }));
+  box.querySelectorAll('[data-wf]').forEach(b => b.addEventListener('click', ()=>{ save('ov:wf', b.dataset.wf); renderOverview(); }));
+  box.querySelectorAll('.wchip').forEach(b => b.addEventListener('click', ()=>{
+    const e = wmap.get(b.dataset.w);
+    const it = e.items.slice().sort((x,y)=> x.show.length - y.show.length)[0];   // 一番短い項目（多くはその語だけ）を鳴らす
+    say(it);
+  }));
+  box.querySelectorAll('.wk').forEach(b => b.addEventListener('click', ()=> say(all.get(b.dataset.id))));
+}
+function tile(label, n, total){
+  return '<div class="tile"><div class="eyebrow">' + label + '</div><div class="big">' + n +
+    (total !== null ? '<small> / ' + total + '</small>' : '') + '</div></div>';
+}
+function heatmap(perDay){
+  // 列＝週（古い→新しい）、行＝月〜日。色は1色の濃淡（多いほど濃い）
+  const end = new Date(); end.setHours(0,0,0,0);
+  const dow = (end.getDay() + 6) % 7;             // 月曜を0に
+  const start = new Date(end.getTime() - (7*11 + dow) * DAY);
+  const max = Math.max(1, ...Object.values(perDay));
+  let cells = '';
+  for(let w = 0; w < 12; w++){
+    cells += '<div class="hcol">';
+    for(let d = 0; d < 7; d++){
+      const t = start.getTime() + (w*7 + d) * DAY;
+      if(t > end.getTime()){ cells += '<i class="h none"></i>'; continue; }
+      const n = perDay[dayKey(t)] || 0;
+      const lv = n === 0 ? 0 : Math.min(4, 1 + Math.floor(n / max * 3.999));
+      const dt = new Date(t);
+      cells += '<i class="h h' + lv + '" title="' + (dt.getMonth()+1) + '/' + dt.getDate() + '　' + n + '問"></i>';
+    }
+    cells += '</div>';
+  }
+  return '<div class="heat"><div class="hdays"><span>月</span><span></span><span>水</span><span></span><span>金</span><span></span><span>日</span></div>' + cells +
+    '</div><div class="legend ov"><span class="lg">少ない</span><i class="h h1"></i><i class="h h2"></i><i class="h h3"></i><i class="h h4"></i><span class="lg">多い</span></div>';
+}
 
 /* 操作卓の高さは画面幅で変わる。引いた語の窓が下に潜らないよう、実測して渡す。 */
 (function(){
