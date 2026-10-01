@@ -550,6 +550,56 @@ li.hidden{display:none}
   .quiz .ask{font-size:56px}
 }
 
+
+/* 教材 */
+.blib{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin-bottom:22px}
+.bcard{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:10px 12px}
+.bcard small{color:var(--muted); font-size:11px}
+.bcard.on{border-color:var(--accent); background:var(--accent-soft)}
+.bhead{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.bhead h2{font-size:20px; margin:0; font-weight:600}
+.bnote, .bfoot{font-size:12px; color:var(--muted)}
+.bfoot{margin:10px 0 0}
+.btable{background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.brow{display:grid; grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr)); gap:10px; padding:8px 14px; font-size:13px;
+  font-variant-numeric:tabular-nums}
+.brow + .brow{border-top:1px solid var(--hair)}
+.brow.bth{color:var(--muted); font-size:11px}
+.brow .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bpaper{margin-bottom:12px}
+.pex{display:grid; grid-template-columns:minmax(0,10em) 1fr; gap:10px; align-items:center; padding:4px 0}
+.pex .nm{font-size:13px}
+.pcells{display:flex; flex-wrap:wrap; gap:4px}
+.pc{width:38px; height:38px; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:16px; line-height:1}
+.pc small{font-size:9px; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace}
+.pc.ro{border-color:var(--ok); background:var(--accent-soft); color:var(--ok)}
+.pc.rs{border-color:var(--near); background:var(--near-soft); color:var(--near)}
+.pc.rx{border-color:var(--miss); background:var(--miss-soft); color:var(--miss)}
+.addex{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px}
+.addex input{font:inherit; font-size:12px; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)}
+.addex input[name=label]{flex:1; min-width:10em}
+.addex input[name=count]{width:5em}
+.addex button{font-size:12px; padding:5px 10px}
+.bsec .ovh{margin-top:18px}
+.gram{border:1px solid var(--line); border-radius:8px; background:var(--surface); margin-bottom:6px; overflow:hidden}
+.gt{display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; border:0; border-radius:0; text-align:left; padding:10px 12px; background:transparent}
+.gt span{font-size:12px; color:var(--muted)}
+.gram.open{border-color:var(--accent)}
+.gex{display:flex; flex-direction:column; gap:4px; padding:0 12px 12px}
+.gs{text-align:left; font-size:14px; padding:6px 10px}
+.bfilter{font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); width:100%; max-width:320px; margin-bottom:6px}
+.vgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:6px}
+.vw{display:flex; flex-direction:column; align-items:flex-start; gap:1px; text-align:left; padding:7px 10px; border-left-width:4px}
+.vw b{font-weight:500; font-size:14px}
+.vw i{font-style:normal; font-size:12px; color:var(--muted)}
+.vw span{font-size:12px; color:var(--muted)}
+.vw em{font-style:normal; font-size:10px; color:var(--accent)}
+.vw.lv0{border-left-color:var(--lv0)} .vw.lv1{border-left-color:var(--lv1)} .vw.lv2{border-left-color:var(--lv2)}
+.bport{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-top:32px; padding:12px 14px; border:1px dashed var(--line); border-radius:8px; font-size:12px}
+.bport span{color:var(--muted); flex:1 1 18em}
+@media (max-width:820px){ .brow{grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,1fr)); gap:6px; padding:8px 10px; font-size:12px}
+  .pex{grid-template-columns:1fr} }
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -564,6 +614,7 @@ li.hidden{display:none}
       <span class="eyebrow">folder player</span>
     </div>
     <div class="modes" id="modes" hidden>
+      <button data-mode="book">教材</button>
       <button data-mode="listen" class="on">聴く</button>
       <button data-mode="practice">練習</button>
       <button data-mode="overview">見渡す</button>
@@ -686,6 +737,8 @@ li.hidden{display:none}
   </section>
 
   <section class="practice overview" id="overview" hidden></section>
+
+  <section class="practice overview book" id="book" hidden></section>
 </div>
 
 <div class="lookup" id="lookup" hidden></div>
@@ -713,7 +766,10 @@ let playsLeft = 1;
 let gapTimer = null;
 let lastSave = 0;
 let rate = 1;
-let mode = 'listen';   // listen ／ practice
+let mode = 'listen';   // listen ／ practice ／ overview ／ book
+let afiles = {};       // 音声のファイル名 → File（教材の面から区間を鳴らすため）
+let lastHandle = null; // いま開いているフォルダの手掛かり（教材ごとに覚え直す）
+let pendingHandle = null;
 
 /* ---------- 保存（使えない環境でも動く） ---------- */
 function load(key, fallback){
@@ -781,18 +837,21 @@ function loadFiles(files){
     return;
   }
 
-  loadSidecars(files);
-
   list.forEach(f => { f._rel = f._rel || f.webkitRelativePath || f.name; });
   list.sort((a,b)=> a._rel.localeCompare(b._rel, 'ja', {numeric:true, sensitivity:'base'}));
 
   tracks = list.map(f => ({file:f, name:f.name, rel:f._rel}));
+  afiles = {}; list.forEach(f => { afiles[f.name] = f; });
   const first = tracks[0].rel;
   folderKey = first.includes('/') ? first.split('/')[0] : 'files';
 
   $('#folder').textContent = folderKey + ' · ' + tracks.length + '本';
   done = new Set(load('done:'+folderKey, []));
   renderList();
+  // 開いたフォルダの手掛かり（ファイル選び・落とした場合は無いことがある）
+  lastHandle = pendingHandle; pendingHandle = null;
+  // ⛔ folderKey と tracks が決まってから読む（付属ファイルが無いと待たずに走り、前のフォルダの値で教材を登録してしまう）
+  loadSidecars(files);
 
   const last = load('last:'+folderKey, null);
   let start = 0, at = 0;
@@ -880,8 +939,9 @@ function goNext(byHand){
   else $('#play').textContent = '再生';
 }
 
+let importing = false;   // 記録を読み込んで読み直すあいだは、聴いた位置を書かない（読み込んだ値を上書きするため）
 function saveLast(){
-  if(idx < 0) return;
+  if(idx < 0 || importing) return;
   save('last:'+folderKey, {name: tracks[idx].name, time: audio.currentTime||0});
 }
 
@@ -926,22 +986,22 @@ function idb(){
     r.onerror = ()=> rej(r.error);
   });
 }
-async function putDir(h){
+async function putDir(h, key){
   try{
     const db = await idb();
     await new Promise((res,rej)=>{
       const t = db.transaction('handles','readwrite');
-      t.objectStore('handles').put(h,'last');
+      t.objectStore('handles').put(h, key || 'last');
       t.oncomplete = res; t.onerror = ()=> rej(t.error);
     });
   }catch(e){}
 }
-async function getDir(){
+async function getDir(key){
   try{
     const db = await idb();
     return await new Promise((res,rej)=>{
       const t = db.transaction('handles','readonly');
-      const q = t.objectStore('handles').get('last');
+      const q = t.objectStore('handles').get(key || 'last');
       q.onsuccess = ()=> res(q.result || null);
       q.onerror = ()=> rej(q.error);
     });
@@ -965,6 +1025,7 @@ async function filesFromDir(dir, prefix){
 }
 
 async function openDir(h, remember){
+  pendingHandle = h;
   const files = await filesFromDir(h, h.name + '/');
   if(remember) await putDir(h);
   $('#reopen').hidden = true;
@@ -1084,12 +1145,13 @@ window.addEventListener('drop', async e=>{
   const handles = [...e.dataTransfer.items]
     .map(it => it.getAsFileSystemHandle ? it.getAsFileSystemHandle().catch(()=>null) : null)
     .filter(Boolean);
-  loadFiles(await filesFromDrop(e.dataTransfer));
-  // 落とした先がフォルダなら、次も出せるように覚えておく
-  for(const p of handles){
-    const h = await p;
-    if(h && h.kind === 'directory'){ await putDir(h); $('#reopen').hidden = true; break; }
-  }
+  const files = await filesFromDrop(e.dataTransfer);
+  // 落とした先がフォルダなら、次も出せるように覚えておく（教材の手掛かりにもなるので、読み込む前に取る）
+  let dirH = null;
+  for(const p of handles){ const h = await p; if(h && h.kind === 'directory'){ dirH = h; break; } }
+  pendingHandle = dirH;
+  loadFiles(files);
+  if(dirH){ await putDir(dirH); $('#reopen').hidden = true; }
 });
 
 /* ================= 読む ================= */
@@ -1108,15 +1170,18 @@ const norm = t => t.normalize('NFC').trim().toLowerCase().replace(/[.,!?;:"'()\[
 async function loadSidecars(files){
   const pick = n => files.find(f => f.name.toLowerCase() === n);
   const read = async f => { try{ return JSON.parse(await f.text()); }catch(e){ return null; } };
+  script = null; lex = {morphemes:{}, words:{}}; notes = {};
   const t = pick('transcript.json'), l = pick('lexicon.json'), n = pick('notes.json');
   if(t) script = await read(t);
   if(l){ const d = await read(l); if(d) lex = {morphemes:d.morphemes||{}, words:d.words||{}}; }
   if(n) notes = await read(n) || {};
   const p = pick('practice.json');
+  const bk = pick('book.json');
   setPractice(p ? await read(p) : null, files);
   kept = load('kept:'+folderKey, []);
+  setBook(bk ? await read(bk) : null);
   paintExport();
-  if(idx >= 0) renderScript(tracks[idx].name);
+  if(idx >= 0 && tracks[idx]) renderScript(tracks[idx].name);
 }
 
 function renderScript(name){
@@ -1349,12 +1414,15 @@ function setPractice(data, files){
   pdata = data && Array.isArray(data.decks) ? data : null;
   pfiles = {};
   Object.values(purls).forEach(u => URL.revokeObjectURL(u)); purls = {};
+  clip.dataset.src = '';
   if(pdata) files.forEach(f => { if(AUDIO_RE.test(f.name)) pfiles[f.name] = f; });
-  $('#modes').hidden = !pdata;
-  if(!pdata){ setMode('listen'); return; }
-  paintDecks();
+  $('#modes').hidden = false;
+  $('#modes [data-mode="practice"]').hidden = !pdata;
+  $('#modes [data-mode="overview"]').hidden = !pdata;
   const m0 = load('p:mode','listen');
-  if(m0 === 'practice' || m0 === 'overview') setMode(m0);
+  if(!pdata){ setMode(m0 === 'book' ? 'book' : 'listen'); return; }
+  paintDecks();
+  if(m0 === 'practice' || m0 === 'overview' || m0 === 'book') setMode(m0);
 }
 
 function setMode(m){
@@ -1363,9 +1431,11 @@ function setMode(m){
   document.querySelector('.app').classList.toggle('practicing', m !== 'listen');
   $('#practice').hidden = m !== 'practice';
   $('#overview').hidden = m !== 'overview';
+  $('#book').hidden = m !== 'book';
   [...$('#modes').children].forEach(b => b.classList.toggle('on', b.dataset.mode === m));
   if(m === 'practice'){ audio.pause(); renderPractice(); }
   else if(m === 'overview'){ audio.pause(); renderOverview(); }
+  else if(m === 'book'){ audio.pause(); renderBook(); }
   else clip.pause();
 }
 $('#modes').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ setMode(b.dataset.mode); b.blur(); } });
@@ -1409,7 +1479,8 @@ $('#pviews').addEventListener('click', e=>{
 
 /* ---- 鳴らす：start〜end だけ ---- */
 function urlFor(src){
-  if(!purls[src] && pfiles[src]) purls[src] = URL.createObjectURL(pfiles[src]);
+  const f = pfiles[src] || afiles[src];
+  if(!purls[src] && f) purls[src] = URL.createObjectURL(f);
   return purls[src];
 }
 function say(it){
@@ -2061,6 +2132,347 @@ function heatmap(perDay){
   }
   return '<div class="heat"><div class="hdays"><span>月</span><span></span><span>水</span><span></span><span>金</span><span></span><span>日</span></div>' + cells +
     '</div><div class="legend ov"><span class="lg">少ない</span><i class="h h1"></i><i class="h h2"></i><i class="h h3"></i><i class="h h4"></i><span class="lg">多い</span></div>';
+}
+
+/* ================= 教材 ================= */
+/* 教材ごとに、進み具合・紙の問題・文法・語彙を1か所で見る（本人 2026-09-30）。
+   教材＝開いたフォルダ。課はフォルダの中の book.json で決める（無ければサブフォルダで仮に切る）。
+   ⭕ 練習の箱と履歴は言語の側の id のまま全教材で1つ。教材ごとの数字は、その教材の項目で絞って数える。
+   ⭕ 紙の問題の記録は足していくだけ。上書きしない（やり直した回も残る）。 */
+
+let book = null, bookId = '';
+let bview = load('b:view', 'progress');
+let bopen = null;      // 文法で開いている型
+const PAPER = {o:['○',1], s:['△',.5], x:['×',0]};
+
+function setBook(data){
+  book = data && Array.isArray(data.lessons) ? data : null;
+  bookId = (book && book.id) || folderKey;
+  // 教材の一覧に載せる。手掛かりは教材ごとに覚える（一覧から開き直すため）
+  const lib = load('books', {});
+  lib[bookId] = {title: (book && book.title) || folderKey, folder: folderKey, lessons: lessons().length, last: Date.now()};
+  save('books', lib);
+  if(lastHandle) putDir(lastHandle, 'book:' + bookId);
+  lessonCache = null; shows = null;
+  if(mode === 'book') renderBook();
+}
+
+/* 課の並び。book.json が無いときは、サブフォルダごと（無ければ全体で1つ） */
+function lessons(){
+  if(book) return book.lessons;
+  const subs = [...new Set(tracks.map(t => t.rel.split('/')).filter(a => a.length > 2).map(a => a[1]))];
+  if(subs.length) return subs.map(sb => ({id: sb, title: sb, folder: sb}));
+  return [{id: 'all', title: '全体'}];
+}
+function inLesson(L, t){
+  if(L.match){
+    if(L._re === undefined){ try{ L._re = new RegExp(L.match, 'i'); }catch(e){ L._re = null; } }
+    return !!L._re && L._re.test(t.name);
+  }
+  if(L.tracks) return L.tracks.includes(t.name);
+  if(L.folder) return t.rel.split('/')[1] === L.folder;
+  return L.id === 'all';
+}
+
+/* 課ごとに：音声・本文の文・練習の項目。開くたびに数えるのは重いので1回だけ */
+let lessonCache = null;
+function lessonData(){
+  if(lessonCache) return lessonCache;
+  const ls = lessons();
+  const allItems = pdata ? pdata.decks.flatMap(d => d.items.map(it => ({...it, deck: d}))) : [];
+  lessonCache = ls.map(L => {
+    const ts = tracks.filter(t => inLesson(L, t));
+    const names = new Set(ts.map(t => t.name));
+    const sents = [];
+    ts.forEach(t => ((script && script[t.name]) ? script[t.name].segments : []).forEach(seg =>
+      sents.push({file: t.name, seg, m: matchable(seg.text), n: ' ' + norm(seg.text) + ' ', long: norm(seg.text).split(' ').length >= 3})));
+    const dk = new Set(L.decks || []);
+    const its = allItems.filter(it => dk.has(it.deck.id) || names.has(srcOf(it)));
+    return {L, tracks: ts, sents, items: its, ids: new Set(its.map(i => i.id))};
+  });
+  return lessonCache;
+}
+
+/* 語と型を、最初に出てくる課に寄せる（lesson が書いてあればそちら） */
+function firstLesson(text, given){
+  const ld = lessonData();
+  if(given){ const i = ld.findIndex(x => x.L.id === given); if(i >= 0) return i; }
+  // 文法の型は前後の空白まで含めて書いてある（matchable と突き合わせる）。語は記号を落とした本文と突き合わせる
+  const isPat = text.startsWith(' ');
+  const m = isPat ? text : ' ' + norm(text) + ' ';
+  // ⛔ 発音の練習の1語だけの区間（「Đã」など）で課を決めない。3語以上の文で探し、無ければ何でも
+  // book.json で assign:false の課（発音の練習など）は、ほかに無いときだけ使う
+  const f = s => (isPat ? s.m : s.n).includes(m);
+  for(const ok of [x => x.L.assign !== false && x.sents.some(s => s.long && f(s)), x => x.sents.some(s => s.long && f(s)), x => x.sents.some(f)]){
+    const i = ld.findIndex(ok); if(i >= 0) return i;
+  }
+  return -1;
+}
+function sentsWith(m, li, field){
+  field = field || 'm';
+  const ld = lessonData();
+  const pool = li >= 0 ? ld[li].sents.concat(...ld.filter((_, i) => i !== li).map(x => x.sents)) : ld.flatMap(x => x.sents);
+  const hit = pool.filter(s => s[field].includes(m));
+  return hit.filter(s => s.long).concat(hit.filter(s => !s.long));
+}
+function playSent(s){ say({src: s.file, start: s.seg.start, end: s.seg.end, deck: {}}); }
+
+/* 語の覚えた具合：その語を含む練習の項目のうち、一番進んだ段 */
+let wlMemo = new Map(), shows = null;
+function wordLevel(w){
+  if(wlMemo.has(w)) return wlMemo.get(w);
+  let lv = typed.has(w) ? 2 : 0;
+  if(pdata){
+    if(!shows) shows = pdata.decks.flatMap(d => d.items.map(it => [' ' + norm(it.show) + ' ', it.id]));
+    const m = ' ' + w + ' ';
+    for(const [sh, id] of shows){ if(lv === 2) break; if(sh.includes(m)) lv = Math.max(lv, level(id)); }
+  }
+  wlMemo.set(w, lv);
+  return lv;
+}
+
+function vocab(){
+  const ld = lessonData();
+  const out = ld.map(() => []);
+  const rest = [];
+  const seen = new Set();
+  const put = (li, e) => { if(seen.has(e.w)) return; seen.add(e.w); (li >= 0 ? out[li] : rest).push(e); };
+  Object.entries(lex.words || {}).forEach(([w, v]) => {
+    const k = norm(w);
+    put(firstLesson(k, v.lesson), {w: k, ja: v.ja || '', mo: v.morphemes});
+  });
+  kept.forEach(k => {
+    const w = norm(k.form);
+    const li = ld.findIndex(x => x.tracks.some(t => t.name === k.file));
+    put(li, {w, ja: k.ja || '', kept: true});
+  });
+  // 台帳が無い教材：本文に出た語（1音節ずつ）を、最初に出た課に置く
+  if(!Object.keys(lex.words || {}).length){
+    ld.forEach((x, li) => x.sents.forEach(s => s.n.trim().split(' ').forEach(w => {
+      if(/^\p{L}+$/u.test(w) && !/^\d/.test(w)) put(li, {w, ja: '', syl: true});
+    })));
+  }
+  const keptSet = new Set(kept.map(k => norm(k.form)));
+  out.concat([rest]).forEach(a => a.forEach(e => { e.kept = e.kept || keptSet.has(e.w); }));
+  return {out, rest};
+}
+
+function grammar(){
+  const ld = lessonData();
+  const out = ld.map(() => []), rest = [];
+  (notes.patterns || []).forEach(p => {
+    const li = firstLesson(p.match, p.lesson);
+    (li >= 0 ? out[li] : rest).push({...p, li});
+  });
+  return {out, rest};
+}
+
+/* ---- 紙の問題 ---- */
+function paperDefs(){
+  const own = load('paperdef:' + bookId, {});
+  const ls = lessons();
+  const defs = {};
+  ls.forEach(L => { defs[L.id] = (L.exercises || []).concat(own[L.id] || []); });
+  return defs;
+}
+function paperRecs(){ return load('paper:' + bookId, []); }
+function paperLatest(){
+  const last = {};
+  paperRecs().forEach(r => { last[r.l + '|' + r.ex + '|' + r.n] = r; });
+  return last;
+}
+function paperScore(lid, defs, last){
+  let got = 0, tot = 0, done = 0;
+  (defs[lid] || []).forEach(ex => { for(let n = 1; n <= ex.count; n++){
+    tot++; const r = last[lid + '|' + ex.id + '|' + n]; if(r){ done++; got += PAPER[r.r][1]; }
+  }});
+  return {got, tot, done};
+}
+
+function rateOf(ids){
+  const hs = hist.filter(h => ids.has(h[1])).slice(-50);
+  return hs.length ? {r: Math.round(hs.reduce((n, h) => n + h[3], 0) / hs.length * 100), n: hs.length} : null;
+}
+
+function renderBook(){
+  const box = $('#book');
+  wlMemo = new Map();
+  const lib = load('books', {});
+  const ld = lessonData();
+  const title = (book && book.title) || folderKey || '（未読み込み）';
+
+  // 教材の一覧
+  let html = '<h3 class="ovh" style="margin-top:0">教材<small>開いたことのある教材。押すとそのフォルダを開く</small></h3><div class="blib">' +
+    Object.entries(lib).sort((a, b) => b[1].last - a[1].last).map(([id, b]) =>
+      '<button class="bcard' + (id === bookId ? ' on' : '') + '" data-book="' + esc(id) + '"><b>' + esc(b.title) + '</b><small>' +
+      esc(b.folder) + '　' + b.lessons + '課　' + new Date(b.last).toLocaleDateString('ja-JP') + '</small></button>').join('') + '</div>';
+  if(!tracks.length){ box.innerHTML = html + '<p class="pnote" style="text-align:left">フォルダを選ぶと、ここに教材の中身が出ます。</p>'; wireBook(box); return; }
+
+  html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
+    (book && book.answers ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
+  html += '<div class="seg wf bviews">' + [['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
+    .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
+
+  const defs = paperDefs(), last = paperLatest();
+  if(bview === 'progress'){
+    const V = vocab();
+    html += '<div class="btable"><div class="brow bth"><span>課</span><span>聴いた</span><span>練習の正答率</span><span>紙の問題</span><span>覚えた語</span></div>';
+    ld.forEach((x, li) => {
+      const heard = x.tracks.filter(t => done.has(t.name)).length;
+      const rt = rateOf(x.ids);
+      const ps = paperScore(x.L.id, defs, last);
+      const vs = V.out[li]; const vk = vs.filter(e => wordLevel(e.w) === 2).length;
+      html += '<div class="brow"><span class="nm">' + esc(x.L.title) + '</span>' +
+        '<span>' + heard + ' / ' + x.tracks.length + '</span>' +
+        '<span>' + (x.ids.size ? (rt ? rt.r + '%　' + rt.n + '回' : 'まだ') : '—') + '</span>' +
+        '<span>' + (ps.tot ? (ps.done ? fmtN(ps.got) + ' / ' + ps.tot : 'まだ　' + ps.tot + '問') : '—') + '</span>' +
+        '<span>' + (vs.length ? vk + ' / ' + vs.length : '—') + '</span></div>';
+    });
+    html += '</div><p class="bfoot">— はその課にまだ中身が無いもの。練習の正答率は直近50回。紙の問題は ○＝1・△＝0.5 で数える（最後に付けた印）。</p>';
+  }
+  else if(bview === 'paper'){
+    html += '<p class="bfoot" style="margin-top:0">マスを押すと ○ → △ → × の順に付く。前の印は消さずに残る（やり直した回も履歴に残る）。問題は解きながら足していく。</p>';
+    ld.forEach(x => {
+      const L = x.L, exs = defs[L.id] || [];
+      const ps = paperScore(L.id, defs, last);
+      html += '<section class="ovsec bpaper"><div class="ovhead"><b>' + esc(L.title) + '</b><span>' + (ps.tot ? fmtN(ps.got) + ' / ' + ps.tot : '') + '</span></div>';
+      exs.forEach(ex => {
+        html += '<div class="pex"><span class="nm">' + esc(ex.label) + '</span><div class="pcells">';
+        for(let n = 1; n <= ex.count; n++){
+          const r = last[L.id + '|' + ex.id + '|' + n];
+          html += '<button class="pc' + (r ? ' r' + r.r : '') + '" data-l="' + esc(L.id) + '" data-ex="' + esc(ex.id) + '" data-n="' + n + '" title="' +
+            (r ? new Date(r.t).toLocaleDateString('ja-JP') : 'まだ') + '"><small>' + n + '</small>' + (r ? PAPER[r.r][0] : '') + '</button>';
+        }
+        html += '</div></div>';
+      });
+      html += '<form class="addex" data-l="' + esc(L.id) + '"><input name="label" placeholder="問題の名前（Bài tập 1 など）" required>' +
+        '<input name="count" type="number" min="1" max="60" value="5" aria-label="問の数"><button>問題を足す</button></form></section>';
+    });
+  }
+  else if(bview === 'grammar'){
+    const G = grammar();
+    const any = G.out.some(a => a.length) || G.rest.length;
+    if(!any) html += '<p class="pnote" style="text-align:left">この教材には文法メモ（notes.json）がまだありません。</p>';
+    const sec = (name, list) => list.length ? '<section class="bsec"><h3 class="ovh">' + esc(name) + '<small>' + list.length + '</small></h3>' +
+      list.map(p => {
+        const key = p.match;
+        const open = bopen === key;
+        let ex = '';
+        if(open){
+          const ss = sentsWith(p.match, p.li).filter(s => !(p.not && s.m.includes(p.not))).slice(0, 8);
+          ex = '<div class="gex">' + (ss.length ? ss.map((s, i) => '<button class="gs" data-i="' + i + '">' + esc(s.seg.text) + '</button>').join('') : '<span class="pnote">本文に例がありません</span>') + '</div>';
+          gexCache = ss;
+        }
+        return '<div class="gram' + (open ? ' open' : '') + '"><button class="gt" data-g="' + esc(key) + '"><b>' + esc(p.title || p.match) + '</b><span>' + esc(p.body) + '</span></button>' + ex + '</div>';
+      }).join('') + '</section>' : '';
+    ld.forEach((x, li) => { html += sec(x.L.title, G.out[li]); });
+    html += sec('課の分からないもの', G.rest);
+  }
+  else if(bview === 'vocab'){
+    const V = vocab();
+    const vf = load('b:vf', '');
+    html += '<input class="bfilter" id="vfilter" placeholder="語か意味でしぼる" value="' + esc(vf) + '" autocomplete="off">';
+    if(V.out.some(a => a.some(e => e.syl))) html += '<p class="bfoot" style="margin-top:0">この教材には語の台帳（lexicon.json）が無いので、本文に出た音節を最初に出た課に並べています。押すと、その語を含む最初の文が鳴ります。</p>';
+    const q = vf.toLowerCase();
+    const sec = (name, list) => {
+      const l2 = q ? list.filter(e => e.w.includes(q) || (e.ja || '').toLowerCase().includes(q)) : list;
+      if(!l2.length) return '';
+      return '<section class="bsec"><h3 class="ovh">' + esc(name) + '<small>' + l2.length + '</small></h3><div class="vgrid">' + l2.map(e => {
+        const lv = wordLevel(e.w);
+        const han = (e.mo && e.mo !== '—') ? e.mo.split('+').map(m => (lex.morphemes[m] || {}).kanji || '').join('') : '';
+        return '<button class="vw lv' + lv + '" data-w="' + esc(e.w) + '"><b>' + esc(e.w) + '</b>' + (han ? '<i>' + esc(han) + '</i>' : '') +
+          '<span>' + esc(e.ja) + '</span>' + (e.kept ? '<em>貯めた</em>' : '') + '</button>';
+      }).join('') + '</div></section>';
+    };
+    ld.forEach((x, li) => { html += sec(x.L.title, V.out[li]); });
+    html += sec('課の分からないもの', V.rest);
+  }
+
+  html += '<div class="bport"><b>記録を運ぶ</b><span>練習の箱・答えの履歴・紙の問題・貯めた語は、このブラウザの中だけにあります。別のブラウザや端末へは、書き出したファイルを読み込んで運びます。</span>' +
+    '<button id="bexp">記録を書き出す</button><button id="bimp">記録を読み込む</button><input type="file" id="bimpf" accept=".json,application/json" hidden></div>';
+
+  box.innerHTML = html;
+  wireBook(box);
+}
+let gexCache = [];
+const fmtN = n => String(Math.round(n * 10) / 10);
+
+function wireBook(box){
+  box.querySelectorAll('.bcard').forEach(b => b.addEventListener('click', async ()=>{
+    const id = b.dataset.book;
+    if(id === bookId && tracks.length) return;
+    const h = await getDir('book:' + id);
+    try{
+      if(h && h.requestPermission && await h.requestPermission({mode: 'read'}) === 'granted'){ await openDir(h, true); return; }
+    }catch(e){}
+    b.querySelector('small').textContent = 'このフォルダは開き直せません。「フォルダを選ぶ」から選んでください';
+  }));
+  box.querySelectorAll('[data-bv]').forEach(b => b.addEventListener('click', ()=>{ bview = b.dataset.bv; save('b:view', bview); renderBook(); }));
+  box.querySelectorAll('.pc').forEach(b => b.addEventListener('click', ()=>{
+    const k = b.dataset.l + '|' + b.dataset.ex + '|' + b.dataset.n;
+    const cur = paperLatest()[k];
+    const nx = !cur ? 'o' : cur.r === 'o' ? 's' : cur.r === 's' ? 'x' : 'o';
+    const recs = paperRecs();
+    recs.push({l: b.dataset.l, ex: b.dataset.ex, n: Number(b.dataset.n), r: nx, t: Date.now()});
+    save('paper:' + bookId, recs);
+    renderBook();
+  }));
+  box.querySelectorAll('.addex').forEach(f => f.addEventListener('submit', e=>{
+    e.preventDefault();
+    const own = load('paperdef:' + bookId, {});
+    const l = f.dataset.l;
+    const label = f.label.value.trim(), count = Math.max(1, Math.min(60, Number(f.count.value) || 1));
+    if(!label) return;
+    own[l] = own[l] || [];
+    own[l].push({id: 'u' + Date.now().toString(36), label, count});
+    save('paperdef:' + bookId, own);
+    renderBook();
+  }));
+  box.querySelectorAll('.gt').forEach(b => b.addEventListener('click', ()=>{ bopen = bopen === b.dataset.g ? null : b.dataset.g; renderBook(); }));
+  box.querySelectorAll('.gs').forEach(b => b.addEventListener('click', ()=> playSent(gexCache[Number(b.dataset.i)])));
+  box.querySelectorAll('.vw').forEach(b => b.addEventListener('click', ()=>{
+    const s = sentsWith(' ' + b.dataset.w + ' ', -1, 'n')[0];
+    if(s) playSent(s);
+  }));
+  const vfi = box.querySelector('#vfilter');
+  const vrun = ()=>{
+    save('b:vf', vfi.value);
+    const pos = vfi.selectionStart;
+    renderBook();
+    const n = $('#vfilter'); n.focus(); n.setSelectionRange(pos, pos);
+  };
+  if(vfi){
+    vfi.addEventListener('input', e => { if(!e.isComposing) vrun(); });
+    vfi.addEventListener('compositionend', vrun);
+  }
+  const ex = box.querySelector('#bexp');
+  if(ex) ex.addEventListener('click', exportAll);
+  const im = box.querySelector('#bimp');
+  if(im) im.addEventListener('click', ()=> $('#bimpf').click());
+  const imf = box.querySelector('#bimpf');
+  if(imf) imf.addEventListener('change', async ()=>{
+    const f = imf.files[0]; if(!f) return;
+    let d = null; try{ d = JSON.parse(await f.text()); }catch(e){}
+    if(!d || d.app !== 'oto-drill' || !d.keys){ alert('音声ドリルの記録のファイルではありません。'); return; }
+    if(!confirm('いまのブラウザの記録を消して、このファイルの中身で置き換えます（' + Object.keys(d.keys).length + '項目・' + d.at + ' に書き出したもの）。')) return;
+    importing = true;
+    const mine = []; for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k.startsWith('otodrill:')) mine.push(k); }
+    mine.forEach(k => localStorage.removeItem(k));
+    Object.entries(d.keys).forEach(([k, v]) => { if(k.startsWith('otodrill:') && typeof v === 'string'){ try{ localStorage.setItem(k, v); }catch(e){} } });
+    location.reload();
+  });
+}
+
+/* 記録は otodrill: で始まる localStorage を丸ごと1つの JSON にする */
+function exportAll(){
+  const keys = {};
+  for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k.startsWith('otodrill:')) keys[k] = localStorage.getItem(k); }
+  const at = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify({app: 'oto-drill', version: 1, at, keys})], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'oto-drill_記録_' + at + '.json';
+  a.click();
 }
 
 /* 操作卓の高さは画面幅で変わる。引いた語の窓が下に潜らないよう、実測して渡す。 */
