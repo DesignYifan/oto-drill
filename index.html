@@ -855,6 +855,72 @@ select{-webkit-appearance:none; appearance:none; padding:7px 34px 7px 14px; bord
 select::-ms-expand{display:none}
 #pdecks{padding:7px 34px 7px 14px}
 
+/* ---- 課を進める（2026-10-01） ---- */
+.lwrap{display:grid; grid-template-columns:minmax(220px,280px) minmax(0,1fr); gap:24px; align-items:start}
+.lnav{position:sticky; top:0; display:flex; flex-direction:column; gap:4px; background:var(--surface); border-radius:var(--r-card); box-shadow:var(--shadow); padding:8px; max-height:calc(100dvh - 180px); overflow-y:auto}
+.lrow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:var(--r-in); background:transparent; box-shadow:none; text-align:left; min-height:44px}
+.lrow:hover{background:var(--subtle)}
+.lrow.on{background:var(--ink); color:var(--surface)}
+.lrow .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px}
+.lrow.fin .nm::before{content:"✓ "; color:var(--ok)}
+.lrow.on.fin .nm::before{color:inherit}
+.dots{display:inline-flex; gap:4px; flex:none}
+.sdot{width:8px; height:8px; border-radius:50%; background:var(--line)}
+.sdot.doing{background:var(--accent)} .sdot.done{background:var(--teal)} .sdot.none{background:transparent; box-shadow:inset 0 0 0 1px var(--line)}
+.lrow.on .sdot.todo{background:rgba(255,255,255,.3)} .lrow.on .sdot.none{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.lmain{display:flex; flex-direction:column; gap:16px; min-width:0}
+.lhead{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.lhead h3{margin:0; font-size:20px; font-weight:600}
+.pill{display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:4px 12px; font-size:12px; font-weight:500; background:var(--subtle); color:var(--muted)}
+.pill.ok{background:var(--ok-soft); color:var(--ok)}
+.lstep{background:var(--surface); border-radius:var(--r-card); box-shadow:var(--shadow); padding:20px 24px}
+.lsh{display:flex; align-items:center; gap:12px; margin-bottom:16px}
+.lsh .num{width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--ink); color:var(--surface); font-size:13px; font-weight:600; flex:none}
+.lstep.muted .lsh .num{background:var(--press); color:var(--muted)}
+.lstep.done .lsh .num{background:var(--ok-soft); color:var(--ok)}
+.lsh b{font-size:15px}
+.lsh .ct{margin-left:auto; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums}
+.ltracks{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px}
+.lt{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 16px; border-radius:var(--r-in); text-align:left; min-height:44px; background:var(--press); box-shadow:none}
+.lt:hover{background:var(--press-hover)}
+.lt small{color:var(--muted); font-size:12px}
+.lt.heard{background:var(--ok-soft); color:var(--ok)} .lt.heard small{color:var(--ok)}
+.lwords{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px}
+.lw{display:flex; align-items:stretch; border-radius:var(--r-in); background:var(--press); overflow:hidden}
+.lw.known{background:var(--ok-soft)}
+.lwp{flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:10px 12px; border-radius:0; background:transparent; box-shadow:none; text-align:left}
+.lwp b{font-weight:500} .lwp small{color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%}
+.lwk{width:44px; flex:none; border-radius:0; background:transparent; box-shadow:none; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; padding:0}
+.lw.known .lwk{color:var(--ok)}
+.lwp:hover, .lwk:hover{background:rgba(20,24,32,.04)}
+.lprac{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; color:var(--muted)}
+.lnext{display:flex; justify-content:flex-end}
+.lnext button{display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 18px 0 22px}
+.exhead{display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin-bottom:10px}
+.exhead .nm{font-weight:500}
+.exvi{color:var(--muted); font-size:12px; flex:1 1 16em; min-width:0}
+.opentrack{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 12px; background:var(--press); box-shadow:none}
+.opentrack:hover{background:var(--press-hover)}
+.lstep .pex, .bpaper .pex, .ltag .pex{display:block; padding:12px 0}
+.lstep .pex + .pex, .bpaper .pex + .pex{border-top:1px solid var(--line)}
+.excount{display:flex; align-items:center; gap:8px; flex-wrap:wrap; color:var(--muted); font-size:12px}
+.excount input{width:5em; font:inherit; padding:6px 10px; border:0; border-radius:var(--r-in); background:var(--surface); box-shadow:inset 0 0 0 1px var(--line)}
+.excount button{background:var(--press); box-shadow:none; font-size:12px}
+.exnote{margin-top:8px; color:var(--muted); font-size:12px}
+button.linkish{background:none; box-shadow:none; padding:0; color:var(--accent-ink); font-size:inherit; border-radius:4px; display:inline-flex; align-items:center; gap:4px}
+button.linkish:hover{background:none; text-decoration:underline}
+.ltag{background:var(--surface); border-radius:var(--r-card); box-shadow:var(--shadow); padding:16px 20px; margin-top:16px}
+.ltag[hidden]{display:none}
+.lth{display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap}
+.lth .golesson{margin-left:auto}
+.ltag .pex{padding:12px 0 0}
+.ltag .exhead .nm{display:none}
+@media (max-width:820px){
+  .lwrap{grid-template-columns:1fr}
+  .lnav{position:static; max-height:240px}
+  .lstep{padding:16px}
+}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -892,6 +958,7 @@ select::-ms-expand{display:none}
           <div class="oftotal" id="oftotal"></div>
         </div>
         <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
+        <div class="ltag" id="ltag" hidden></div>
       </div>
 
       <div class="setting">
@@ -986,6 +1053,7 @@ select::-ms-expand{display:none}
         <button data-v="type">聞いて書く</button>
         <button data-v="say">見て言う</button>
       </div>
+      <button class="linkish" id="plesson" hidden></button>
       <span class="stat" id="pstat"></span>
     </div>
     <div id="pbody"></div>
@@ -1159,6 +1227,7 @@ function play(i, autoplay, seekTo){
   $('#nowName').textContent = tracks[i].name;
   $('#seek').disabled = false;
   renderScript(tracks[i].name);
+  paintLtag();
   paintList();
   scrollToCurrent();
 
@@ -1456,6 +1525,14 @@ function renderScript(name){
     return;
   }
   box.innerHTML = '';
+  // 問題の音声は、本文に答えが入っている。最初は隠し、押したら出す
+  const hit = book ? lessonOfTrack(name) : null;
+  if(hit && hit.ex && !box.dataset.reveal){
+    box.innerHTML = '<div class="script-empty">この音声は問題（' + esc(hit.ex.label) + '）です。本文には答えが入っているので隠しています。' +
+      ' <button class="linkish" id="reveal">本文を出す</button></div>';
+    $('#reveal').addEventListener('click', ()=>{ box.dataset.reveal = '1'; renderScript(name); delete box.dataset.reveal; });
+    return;
+  }
   data.segments.forEach((seg, si) => {
     const el = document.createElement('div');
     el.className = 'sent';
@@ -1703,6 +1780,10 @@ $('#modes').addEventListener('click', e => { const b = e.target.closest('button'
 
 function decks(){
   if(!pdata) return [];
+  if(pdeck.startsWith('lesson:')){
+    const x = lessonData().find(x => 'lesson:' + x.L.id === pdeck);
+    if(x){ const ids = new Set(x.items.map(i => i.deck.id)); return pdata.decks.filter(d => ids.has(d.id)); }
+  }
   return pdata.decks.filter(d => pdeck === 'all' || d.id === pdeck || pdeck === 'sec:' + (d.section || d.book));
 }
 const srcOf = it => it.src || it.deck.src;   // 1つの組に複数の音声がまたがることがある（文法編は1ユニット4〜6本）
@@ -1717,9 +1798,11 @@ function items(){
 function sections(){ return [...new Set(pdata.decks.map(d => d.section || d.book))]; }
 function paintDecks(){
   const sel = $('#pdecks');
-  const ok = pdeck === 'all' || pdata.decks.some(d => d.id === pdeck) || sections().some(s => 'sec:'+s === pdeck);
+  const lx = pdeck.startsWith('lesson:') ? lessonData().find(x => 'lesson:' + x.L.id === pdeck) : null;
+  const ok = pdeck === 'all' || lx || pdata.decks.some(d => d.id === pdeck) || sections().some(s => 'sec:'+s === pdeck);
   if(!ok) pdeck = 'all';
-  let html = '<option value="all">すべて（' + pdata.decks.reduce((n,d)=> n + d.items.length, 0) + '）</option>';
+  let html = (lx ? '<option value="' + esc(pdeck) + '">この課：' + esc(lx.L.title) + '（' + lx.items.length + '）</option>' : '') +
+    '<option value="all">すべて（' + pdata.decks.reduce((n,d)=> n + d.items.length, 0) + '）</option>';
   sections().forEach(s=>{
     const ds = pdata.decks.filter(d => (d.section || d.book) === s);
     html += '<optgroup label="' + esc(s) + '">';
@@ -1729,6 +1812,9 @@ function paintDecks(){
   });
   sel.innerHTML = html;
   sel.value = pdeck;
+  const pl = $('#plesson');
+  pl.hidden = !lx;
+  if(lx){ pl.innerHTML = esc(lx.L.title) + ' の課の画面へ<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg>'; pl.onclick = ()=> goLesson(lx.L.id); }
 }
 $('#pdecks').addEventListener('change', e=>{
   pdeck = e.target.value; save('p:deck', pdeck); q = null; renderPractice(); e.target.blur();
@@ -2402,7 +2488,7 @@ function heatmap(perDay){
    ⭕ 紙の問題の記録は足していくだけ。上書きしない（やり直した回も残る）。 */
 
 let book = null, bookId = '';
-let bview = load('b:view', 'progress');
+let bview = load('b:view', 'lesson');
 let bopen = null;      // 文法で開いている型
 const PAPER = {o:['○',1], s:['△',.5], x:['×',0]};
 
@@ -2414,8 +2500,9 @@ function setBook(data){
   lib[bookId] = {title: (book && book.title) || folderKey, folder: folderKey, lessons: lessons().length, last: Date.now()};
   save('books', lib);
   if(lastHandle) putDir(lastHandle, 'book:' + bookId);
-  lessonCache = null; shows = null;
+  lessonCache = null; shows = null; blesson = null;
   if(mode === 'book') renderBook();
+  paintLtag();
 }
 
 /* 課の並び。book.json が無いときは、サブフォルダごと（無ければ全体で1つ） */
@@ -2542,9 +2629,10 @@ function paperLatest(){
   paperRecs().forEach(r => { last[r.l + '|' + r.ex + '|' + r.n] = r; });
   return last;
 }
+function exCount(ex){ const o = load('excount:' + bookId, {}); return o[ex.id] || ex.count || 0; }
 function paperScore(lid, defs, last){
   let got = 0, tot = 0, done = 0;
-  (defs[lid] || []).forEach(ex => { for(let n = 1; n <= ex.count; n++){
+  (defs[lid] || []).forEach(ex => { for(let n = 1; n <= exCount(ex); n++){
     tot++; const r = last[lid + '|' + ex.id + '|' + n]; if(r){ done++; got += PAPER[r.r][1]; }
   }});
   return {got, tot, done};
@@ -2571,11 +2659,12 @@ function renderBook(){
 
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
-  html += '<div class="seg wf bviews">' + [['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
+  html += '<div class="seg wf bviews">' + [['lesson','課を進める'], ['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
     .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
 
   const defs = paperDefs(), last = paperLatest();
-  if(bview === 'progress'){
+  if(bview === 'lesson') html += lessonHTML(defs, last);
+  else if(bview === 'progress'){
     const V = vocab();
     html += '<div class="btable"><div class="brow bth"><span>課</span><span>聴いた</span><span>練習の正答率</span><span>紙の問題</span><span>覚えた語</span></div>';
     ld.forEach((x, li) => {
@@ -2597,15 +2686,7 @@ function renderBook(){
       const L = x.L, exs = defs[L.id] || [];
       const ps = paperScore(L.id, defs, last);
       html += '<section class="ovsec bpaper"><div class="ovhead"><b>' + esc(L.title) + '</b><span>' + (ps.tot ? fmtN(ps.got) + ' / ' + ps.tot : '') + '</span></div>';
-      exs.forEach(ex => {
-        html += '<div class="pex"><span class="nm">' + esc(ex.label) + '</span><div class="pcells">';
-        for(let n = 1; n <= ex.count; n++){
-          const r = last[L.id + '|' + ex.id + '|' + n];
-          html += '<button class="pc' + (r ? ' r' + r.r : '') + '" data-l="' + esc(L.id) + '" data-ex="' + esc(ex.id) + '" data-n="' + n + '" title="' +
-            (r ? new Date(r.t).toLocaleDateString('ja-JP') : 'まだ') + '"><small>' + n + '</small>' + (r ? PAPER[r.r][0] : '') + '</button>';
-        }
-        html += '</div></div>';
-      });
+      exs.forEach(ex => { html += exHTML(L.id, ex, last); });
       html += '<form class="addex" data-l="' + esc(L.id) + '"><input name="label" placeholder="問題の名前（Bài tập 1 など）" required>' +
         '<input name="count" type="number" min="1" max="60" value="5" aria-label="問の数"><button>問題を足す</button></form></section>';
     });
@@ -2655,6 +2736,176 @@ function renderBook(){
   box.innerHTML = html;
   wireBook(box);
 }
+/* ---- 課を進める（2026-10-01） ----
+   本人「どの音声がどの練習問題なのかが分かんなくて、どう進めていけばいいのかが分かりにくい」
+   「その章で達成しないといけない練習問題とか、覚えなきゃいけない単語とかは、連続性としてシームレスに」。
+   1つの課を ①聴く ②単語 ③練習 ④紙の問題 の順にくぐる。各段に「済んだ」の条件があり、全部済むと次の課へ。
+   ⭕ 紙の問題は、その問題の音声（book.json の exercises[].tracks）と並べて出す。聴く画面からも印を付けられる。 */
+const STEP = [['listen', '聴く'], ['words', '単語'], ['practice', '練習'], ['paper', '紙の問題']];
+const wknown = () => new Set(load('wknown:' + bookId, []));
+let blesson = null;     // いま開いている課の id
+
+function exHTML(lid, ex, last){
+  const cnt = exCount(ex);
+  let h = '<div class="pex"><div class="exhead"><span class="nm">' + esc(ex.label) + '</span>' +
+    (ex.vi ? '<span class="exvi">' + esc(ex.vi) + '</span>' : '') +
+    (ex.tracks && ex.tracks.length ? ex.tracks.map(t => '<button class="opentrack" data-t="' + esc(t) + '"><svg class="ic fill" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.6 8z"/></svg>この問題の音声</button>').join('') : '') +
+    '</div>';
+  if(!cnt){
+    h += '<div class="excount"><span>問の数を入れると、印を付けられます</span><input type="number" min="1" max="60" data-ex="' + esc(ex.id) + '" aria-label="問の数" placeholder="数"><button class="setcount" data-ex="' + esc(ex.id) + '">決める</button></div></div>';
+    return h;
+  }
+  h += '<div class="pcells">';
+  for(let n = 1; n <= cnt; n++){
+    const r = last[lid + '|' + ex.id + '|' + n];
+    h += '<button class="pc' + (r ? ' r' + r.r : '') + '" data-l="' + esc(lid) + '" data-ex="' + esc(ex.id) + '" data-n="' + n + '" aria-label="' + n + '問目　' + (r ? PAPER[r.r][0] : 'まだ') + '" title="' +
+      (r ? new Date(r.t).toLocaleDateString('ja-JP') : 'まだ') + '"><small>' + n + '</small>' + (r ? PAPER[r.r][0] : '') + '</button>';
+  }
+  return h + '</div>' + (ex.count && !load('excount:' + bookId, {})[ex.id] ? '<div class="exnote">問の数は音声の番号からの見積もり。違ったら <button class="linkish recount" data-ex="' + esc(ex.id) + '">直す</button></div>' : '') + '</div>';
+}
+
+/* 課の4段。null はその段が無い（中身が無い） */
+function lessonSteps(li, defs, last, V){
+  const x = lessonData()[li], L = x.L;
+  const exs = defs[L.id] || [];
+  const exTracks = new Set(exs.flatMap(e => e.tracks || []));
+  const listen = x.tracks.filter(t => !exTracks.has(t.name));
+  const known = wknown();
+  // ⛔ 語の台帳が無い教材の「本文の音節」は数えない（指示文や数字まで入り、覚える語の一覧にならない）
+  const words = V.out[li].filter(e => !e.syl);
+  const isKnown = w => known.has(w) || wordLevel(w) === 2;
+  const ps = paperScore(L.id, defs, last);
+  const st = {
+    listen: listen.length ? {n: listen.filter(t => done.has(t.name)).length, of: listen.length, list: listen} : null,
+    words: words.length ? {n: words.filter(e => isKnown(e.w)).length, of: words.length, list: words, isKnown} : null,
+    practice: x.items.length ? {n: x.items.filter(i => rec(i.id).box >= 1).length, of: x.items.length} : null,
+    paper: exs.length ? {n: ps.done, of: ps.tot + exs.filter(e => !exCount(e)).length, exs, ps} : null,
+  };
+  STEP.forEach(([k]) => { if(st[k]) st[k].done = st[k].n >= st[k].of; });
+  st.all = STEP.every(([k]) => !st[k] || st[k].done);
+  return st;
+}
+function dot(s){ return '<i class="sdot ' + (!s ? 'none' : s.done ? 'done' : s.n ? 'doing' : 'todo') + '"></i>'; }
+
+function lessonHTML(defs, last){
+  const ld = lessonData(), V = vocab();
+  const steps = ld.map((_, li) => lessonSteps(li, defs, last, V));
+  if(!blesson || !ld.some(x => x.L.id === blesson)){
+    blesson = load('b:lesson:' + bookId, null);
+    if(!ld.some(x => x.L.id === blesson)){ const i = steps.findIndex(s => !s.all); blesson = ld[Math.max(0, i)].L.id; }
+  }
+  const li = ld.findIndex(x => x.L.id === blesson), x = ld[li], st = steps[li];
+  let h = '<div class="lwrap"><nav class="lnav" aria-label="課">' + ld.map((y, i) =>
+    '<button class="lrow' + (i === li ? ' on' : '') + (steps[i].all ? ' fin' : '') + '" data-lesson="' + esc(y.L.id) + '"><span class="nm">' + esc(y.L.title) + '</span>' +
+    '<span class="dots" aria-label="' + STEP.map(([k, n]) => n + (steps[i][k] ? (steps[i][k].done ? '済' : steps[i][k].n + '/' + steps[i][k].of) : 'なし')).join('・') + '">' +
+    STEP.map(([k]) => dot(steps[i][k])).join('') + '</span></button>').join('') + '</nav><div class="lmain">';
+  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3>' + (st.all ? '<span class="pill ok">この課は済んだ</span>' : '') + '</div>';
+  let n = 0;
+  const card = (k, name, body, sum) => {
+    const s = st[k]; if(!s) return '';
+    n++;
+    return '<section class="lstep' + (s.done ? ' done' : '') + '"><div class="lsh"><span class="num">' + (s.done ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>' : n) + '</span><b>' + name + '</b><span class="ct">' + sum + '</span></div>' + body + '</section>';
+  };
+  if(st.listen) h += card('listen', '聴く', '<div class="ltracks">' + st.listen.list.map(t =>
+    '<button class="lt' + (done.has(t.name) ? ' heard' : '') + '" data-t="' + esc(t.name) + '"><span>' + esc(trackLabel(t.name)) + '</span><small>' + (done.has(t.name) ? '聴いた' : '聴く') + '</small></button>').join('') + '</div>',
+    st.listen.n + ' / ' + st.listen.of + ' 本');
+  if(st.words) h += card('words', '単語', '<div class="lwords">' + st.words.list.map(e =>
+    '<span class="lw' + (st.words.isKnown(e.w) ? ' known' : '') + '"><button class="lwp" data-w="' + esc(e.w) + '"><b>' + esc(e.w) + '</b>' + (e.ja ? '<small>' + esc(e.ja) + '</small>' : '') + '</button>' +
+    '<button class="lwk" data-w="' + esc(e.w) + '" aria-label="' + esc(e.w) + ' を覚えた" aria-pressed="' + st.words.isKnown(e.w) + '"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></button></span>').join('') + '</div>' +
+    '<p class="bfoot">語を押すと、その語を含む文が鳴る。右の印で「覚えた」。練習で覚えた語（箱3以上）にも自動で付く。</p>',
+    st.words.n + ' / ' + st.words.of + ' 語');
+  if(!st.words && V.out[li].some(e => e.syl)) h += '<section class="lstep muted"><div class="lsh"><span class="num">–</span><b>単語</b><span class="ct">まだ無い</span></div>' +
+    '<p class="bfoot" style="margin:0">この教材には語の一覧（lexicon.json）がまだありません。巻末の語彙表か各課の「新しい語」の頁の写真があれば、課ごとの単語をここに並べられます。</p></section>';
+  if(st.practice) h += card('practice', '練習', '<div class="lprac"><span>この課の項目を、一度ずつ正解するまで。</span><button class="primary" id="lpractice">この課の練習を始める</button></div>',
+    st.practice.n + ' / ' + st.practice.of + ' 項目');
+  if(st.paper) h += card('paper', '紙の問題', st.paper.exs.map(ex => exHTML(x.L.id, ex, last)).join('') +
+    '<p class="bfoot">本で解いて、1問ずつ ○ → △ → × で付ける。「この問題の音声」で聴く画面に移り、そこでも印を付けられる。</p>',
+    st.paper.n + ' / ' + st.paper.of + ' 問' + (st.paper.ps.done ? '　' + fmtN(st.paper.ps.got) + ' 点' : ''));
+  const next = ld[li + 1];
+  h += '<div class="lnext">' + (next ? '<button class="' + (st.all ? 'primary' : '') + '" data-lesson="' + esc(next.L.id) + '">次の課へ：' + esc(next.L.title) + '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' : '') + '</div>';
+  return h + '</div></div>';
+}
+
+/* 音声の名前を、何の音声かが分かる言葉に（cơ sở のファイル名の型だけ。ほかは名前のまま） */
+function trackLabel(name){
+  const m = name.match(/(Phat am|Hoi ?thoai|Nghe|Doc)\s*(\d*)/i);
+  if(!m) return name.replace(/\.[^.]+$/, '');
+  const k = {'phat am': '発音', 'hoithoai': '会話', 'hoi thoai': '会話', 'nghe': '聞き取り', 'doc': '読み物'}[m[1].toLowerCase()] || m[1];
+  return k + (m[2] ? ' ' + m[2] : '');
+}
+
+/* 聴く画面：いまの音声がどの課の何か。問題の音声なら、その場で印を付けられる */
+function lessonOfTrack(name){
+  const ld = lessonData();
+  const li = ld.findIndex(x => x.tracks.some(t => t.name === name));
+  if(li < 0) return null;
+  const ex = (paperDefs()[ld[li].L.id] || []).find(e => (e.tracks || []).includes(name));
+  return {li, L: ld[li].L, ex};
+}
+function paintLtag(){
+  const box = $('#ltag');
+  if(!box) return;
+  const hit = idx >= 0 && tracks[idx] && (book || pdata) ? lessonOfTrack(tracks[idx].name) : null;
+  if(!hit || hit.L.id === 'all'){ box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = '<div class="lth"><span class="pill">' + esc(hit.L.title) + '</span><span>' + esc(hit.ex ? hit.ex.label : trackLabel(tracks[idx].name)) + '</span>' +
+    '<button class="linkish golesson" data-lesson="' + esc(hit.L.id) + '">課の画面へ<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>' +
+    (hit.ex ? exHTML(hit.L.id, hit.ex, paperLatest()).replace(/<button class="opentrack"[^]*?<\/button>/g, '') : '');
+}
+
+function openTrack(name){
+  const i = tracks.findIndex(t => t.name === name);
+  if(i < 0) return;
+  setMode('listen');
+  play(i, true);
+}
+function goLesson(id){
+  blesson = id; save('b:lesson:' + bookId, id);
+  bview = 'lesson'; save('b:view', 'lesson');
+  if(mode !== 'book') setMode('book'); else renderBook();
+  const m = $('#book .lmain'); if(m) m.scrollIntoView({block: 'start'});
+}
+function rerender(){ if(mode === 'book') renderBook(); paintLtag(); }
+
+/* 押したときの処理は、どの画面に出ていても同じにする（教材・聴く） */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if(!b) return;
+  if(b.classList.contains('pc')){
+    const k = b.dataset.l + '|' + b.dataset.ex + '|' + b.dataset.n;
+    const cur = paperLatest()[k];
+    const nx = !cur ? 'o' : cur.r === 'o' ? 's' : cur.r === 's' ? 'x' : 'o';
+    const recs = paperRecs();
+    recs.push({l: b.dataset.l, ex: b.dataset.ex, n: Number(b.dataset.n), r: nx, t: Date.now()});
+    save('paper:' + bookId, recs);
+    rerender();
+  }
+  else if(b.classList.contains('setcount') || b.classList.contains('recount')){
+    const id = b.dataset.ex;
+    let v;
+    if(b.classList.contains('recount')){ v = Number(prompt('問の数', '')); }
+    else { const inp = b.parentElement.querySelector('input'); v = Number(inp.value); }
+    if(!(v >= 1 && v <= 60)) return;
+    const o = load('excount:' + bookId, {}); o[id] = Math.round(v); save('excount:' + bookId, o);
+    rerender();
+  }
+  else if(b.classList.contains('opentrack') || b.classList.contains('lt')) openTrack(b.dataset.t);
+  else if(b.classList.contains('golesson') || (b.dataset.lesson && b.closest('#book'))) goLesson(b.dataset.lesson);
+  else if(b.classList.contains('lwk')){
+    const k = wknown(); const w = b.dataset.w;
+    k.has(w) ? k.delete(w) : k.add(w);
+    save('wknown:' + bookId, [...k]);
+    rerender();
+  }
+  else if(b.classList.contains('lwp')){
+    const s = sentsWith(' ' + b.dataset.w + ' ', lessonData().findIndex(x => x.L.id === blesson), 'n')[0];
+    if(s) playSent(s);
+  }
+  else if(b.id === 'lpractice'){
+    pdeck = 'lesson:' + blesson; save('p:deck', pdeck); q = null; paintDecks(); setMode('practice');
+  }
+});
+
 let gexCache = [];
 const fmtN = n => String(Math.round(n * 10) / 10);
 
@@ -2669,15 +2920,6 @@ function wireBook(box){
     b.querySelector('small').textContent = 'このフォルダは開き直せません。「フォルダを選ぶ」から選んでください';
   }));
   box.querySelectorAll('[data-bv]').forEach(b => b.addEventListener('click', ()=>{ bview = b.dataset.bv; save('b:view', bview); renderBook(); }));
-  box.querySelectorAll('.pc').forEach(b => b.addEventListener('click', ()=>{
-    const k = b.dataset.l + '|' + b.dataset.ex + '|' + b.dataset.n;
-    const cur = paperLatest()[k];
-    const nx = !cur ? 'o' : cur.r === 'o' ? 's' : cur.r === 's' ? 'x' : 'o';
-    const recs = paperRecs();
-    recs.push({l: b.dataset.l, ex: b.dataset.ex, n: Number(b.dataset.n), r: nx, t: Date.now()});
-    save('paper:' + bookId, recs);
-    renderBook();
-  }));
   box.querySelectorAll('.addex').forEach(f => f.addEventListener('submit', e=>{
     e.preventDefault();
     const own = load('paperdef:' + bookId, {});
