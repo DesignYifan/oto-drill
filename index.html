@@ -62,7 +62,7 @@ body{
   margin:0;
   background:var(--ui-page-bgColor);
   color:var(--ui-text-fgColor);
-  font-family:'Be Vietnam Pro','LINE Seed JP','Hiragino Sans',system-ui,sans-serif;
+  font-family:var(--_lang-fontFamily,'Be Vietnam Pro'),'LINE Seed JP','Hiragino Sans',system-ui,sans-serif;
   font-size:14px;
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
@@ -1569,6 +1569,46 @@ window.addEventListener('drop', async e=>{
   if(dirH){ await putDir(dirH); $('#reopen').hidden = true; }
 });
 
+
+/* ================= 言語パック（2026-10-01） =================
+   本人「今後いろんな国のやつを作ろうと思ってるから、他の言語でやるときも応用できるような下準備を」。
+   ⭕ 言語ごとに違うものは、ここの1か所だけに置く。土台（画面・記録・練習の仕組み）には言語の事情を書かない。
+   ⭕ 教材は book.json の "lang" で言語を名乗る。教材のフォルダに lang.json を置けば、ここに無い言語を足せる／上書きできる
+      （HTML 1枚をダブルクリックで開いても動くよう、備え付けは別ファイルにしない）。
+   実現方式：vault 008_project/AppBuilding/specs/20261001_oto-drill-app_実現方式.md */
+const LANGS = {
+  vi: {
+    code: 'vi', name: 'ベトナム語',
+    font: {family: 'Be Vietnam Pro', google: 'Be+Vietnam+Pro:wght@400;500;600;700'},
+    segment: 'syllable+lexicon',      // 1音節ずつ空白で書く。台帳の語（bác sĩ など）で長いほうからまとめる
+    inputMethod: 'telex',             // 画面の Telex（aa→â dd→đ s f r x j で声調）
+    nearMiss: {marks: '̣̀́̃̉', label: '声調・記号だけ違う'},   // この記号だけの違いは「惜しい」
+    functionWords: ['không','có','là','đã','rồi','chưa','sẽ','đang','vừa','mới','của','ở','được','cho','với','bằng','hơn','nhất',
+      'lắm','quá','rất','hơi','mấy','gì','ai','đâu','nào','bao','nhiêu','phải','muốn','cần','nên','thích','cũng','và','nhưng',
+      'hãy','đi','nhé','nhỉ','ạ','này','đó','kia','ấy','các','những','một','từ','đến','để','thì','nếu','vì','khi','hay','biết','thể'],
+    ai: {instructions: 'あなたはベトナム語（北部）の先生です。学習者は日本語話者です。日本語で、短く、例文を1つ添えて答えます。分からないことは分からないと言います。'},
+  },
+  // ⚠️ 骨組み（2026-10-01・未検証）。韓国語の教材を作るときに、文法の語・惜しいの判定を埋める
+  ko: {
+    code: 'ko', name: '韓国語',
+    font: {family: 'Noto Sans KR', google: 'Noto+Sans+KR:wght@400;500;700'},
+    segment: 'space', inputMethod: 'none', nearMiss: null, functionWords: [],
+    ai: {instructions: 'あなたは韓国語の先生です。学習者は日本語話者です。日本語で、短く、例文を1つ添えて答えます。'},
+  },
+};
+let LP = LANGS.vi;     // いまの教材の言語パック
+function setLang(code, extra){
+  const base = LANGS[code] || {code: code || 'xx', name: code || '不明', font: null, segment: 'space', inputMethod: 'none', nearMiss: null, functionWords: [], ai: {}};
+  LP = Object.assign({}, base, extra || {});
+  // 書体：その言語の文字を持つ書体を足す（日本語の書体は後ろに残す）
+  if(LP.font && LP.font.google && !document.querySelector('link[data-lang-font="' + LP.code + '"]')){
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.dataset.langFont = LP.code;
+    l.href = 'https://fonts.googleapis.com/css2?family=' + LP.font.google + '&display=swap';
+    document.head.appendChild(l);
+  }
+  document.documentElement.style.setProperty('--_lang-fontFamily', LP.font ? "'" + LP.font.family + "'" : 'system-ui');
+}
+
 /* ================= 読む ================= */
 /* 音声と同じフォルダに置いた transcript.json / lexicon.json / notes.json を読む。
    ⛔ どれもこの端末の中だけ。公開しているのはこのプログラムだけで、教材の文は上がらない。 */
@@ -1595,9 +1635,12 @@ async function loadSidecars(files){
   if(g){ const d = await read(g); gloss = (d && d.sentences) || {}; }
   const p = pick('practice.json');
   const bk = pick('book.json');
+  const lj = pick('lang.json');
+  const bkd = bk ? await read(bk) : null;
+  setLang((bkd && bkd.lang) || 'vi', lj ? await read(lj) : null);
   setPractice(p ? await read(p) : null, files);
   kept = load('kept:'+folderKey, []);
-  setBook(bk ? await read(bk) : null);
+  setBook(bkd);
   paintExport();
   if(idx >= 0 && tracks[idx]) renderScript(tracks[idx].name);
 }
@@ -1824,7 +1867,7 @@ async function lookup(token, at, seg, file){
       const r = await fetch('https://en.wiktionary.org/api/rest_v1/page/definition/' + encodeURIComponent(f));
       if(!r.ok) continue;
       const d = await r.json();
-      if(d.vi && d.vi.length){ defs = d.vi; break; }
+      if(d[LP.code] && d[LP.code].length){ defs = d[LP.code]; break; }
     }
     wkBody.textContent = defs
       ? defs.slice(0,3).map(e => (e.partOfSpeech ? e.partOfSpeech + '：' : '') +
@@ -2169,9 +2212,7 @@ function renderQuiz(){
   body.appendChild(box);
 }
 /* ---- 穴埋め：1語だけ抜く。文法の語を優先して抜く ---- */
-const FUNC = ['không','có','là','đã','rồi','chưa','sẽ','đang','vừa','mới','của','ở','được','cho','với','bằng','hơn','nhất',
-  'lắm','quá','rất','hơi','mấy','gì','ai','đâu','nào','bao','nhiêu','phải','muốn','cần','nên','thích','cũng','và','nhưng',
-  'hãy','đi','nhé','nhỉ','ạ','này','đó','kia','ấy','các','những','một','từ','đến','để','thì','nếu','vì','khi','hay','biết','thể'];
+const FUNC = { includes: w => LP.functionWords.includes(w), get list(){ return LP.functionWords; } };   // 文法の語は言語パックから
 function clozeQ(it){
   if(!it) return null;
   const w = words(it.show);
@@ -2182,7 +2223,7 @@ function clozeQ(it){
   const at = cand[Math.floor(Math.random() * cand.length)];
   const ans = lw[at];
   // 選択肢：文法の語なら文法の語から。そうでなければ同じ組の語から、長さの近いもの
-  const pool = FUNC.includes(ans) ? FUNC
+  const pool = FUNC.includes(ans) ? FUNC.list
     : [...new Set(it.deck.items.flatMap(x => words(x.show).map(y => y.toLowerCase())))];
   const others = pool.filter(x => x !== ans && !lw.includes(x))
     .map(x => [x, Math.abs(x.length - ans.length) + Math.random() * 3]).sort((a,b)=> a[1] - b[1]).slice(0, 8)
@@ -2232,11 +2273,11 @@ function renderCloze(){
 }
 
 /* ---- 聞いて書く：語ごとに「合っている／声調・記号だけ違う／違う／抜けた」を返す ---- */
-const TONE_RE = /[̣̀́̃̉]/g;
+const toneRe = () => LP.nearMiss ? new RegExp('[' + LP.nearMiss.marks + ']', 'g') : /(?!)/g;   // 「惜しい」にする記号は言語パックから
 function wparts(w){
   const d = w.normalize('NFD').toLowerCase().replace(/[.,!?;:“”"]/g, '');
-  const tone = (d.match(TONE_RE) || [''])[0];
-  const shape = d.replace(TONE_RE, '').normalize('NFC');
+  const tone = (d.match(toneRe()) || [''])[0];
+  const shape = d.replace(toneRe(), '').normalize('NFC');
   const base = shape.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
   return {tone, shape, base};
 }
@@ -2272,7 +2313,7 @@ function checkTyped(target, typed){
 const TMARK = {s:'́', f:'̀', r:'̉', x:'̃', j:'̣'};
 function placeTone(w, t){
   const d = w.normalize('NFC');
-  const plain = d.normalize('NFD').replace(TONE_RE, '').normalize('NFC');
+  const plain = d.normalize('NFD').replace(toneRe(), '').normalize('NFC');
   const chars = [...plain], low = chars.map(c => c.toLowerCase());
   const V = 'aăâeêioôơuưy';
   let idx = low.map((c,i)=> V.includes(c) ? i : -1).filter(i => i >= 0);
@@ -2319,7 +2360,7 @@ function renderType(){
     inp.placeholder = '聞こえたとおりに書く（enter で答え合わせ）';
     inp.value = q.draft || '';
     inp.addEventListener('input', e=>{
-      if(!e.isComposing && load('telex', true)){   // Mac のベトナム語入力で打っているあいだは触らない
+      if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){   // Mac のベトナム語入力で打っているあいだは触らない
         const v = telexLine(inp.value);
         if(v !== inp.value){ inp.value = v; }
       }
@@ -2333,7 +2374,7 @@ function renderType(){
     const opt = document.createElement('label'); opt.className = 'opt';
     opt.innerHTML = '<input type="checkbox"' + (load('telex', true) ? ' checked' : '') + '> 画面の Telex で打つ（aa→â　dd→đ　s f r x j で声調）';
     opt.querySelector('input').addEventListener('change', e => { save('telex', e.target.checked); inp.focus(); });
-    box.appendChild(opt);
+    if(LP.inputMethod === 'telex') box.appendChild(opt);
     const row = document.createElement('div'); row.className = 'row';
     const give = document.createElement('button'); give.textContent = '分からない'; give.className = 'miss';
     give.addEventListener('click', ()=> gradeType(''));
@@ -2352,9 +2393,9 @@ function renderType(){
       return '<span class="w extra"><s>' + esc(r.y) + '</s><small>余り</small></span>';
     }).join(' ');
     box.appendChild(diff);
-    const legend = '<span class="lg"><i class="ok"></i>合っている</span><span class="lg"><i class="near"></i>声調・記号だけ違う</span><span class="lg"><i class="bad"></i>違う・抜け</span>';
+    const legend = '<span class="lg"><i class="ok"></i>合っている</span>' + (LP.nearMiss ? '<span class="lg"><i class="near"></i>' + esc(LP.nearMiss.label) + '</span>' : '') + '<span class="lg"><i class="bad"></i>違う・抜け</span>';
     const note = document.createElement('div'); note.className = 'pnote';
-    note.innerHTML = (q.ok ? '正解。' : q.close ? '文字は合っています。声調と記号を直せば正解です。' : '正しい文は上のとおりです。') + '<div class="legend">' + legend + '</div>';
+    note.innerHTML = (q.ok ? '正解。' : q.close ? '文字は合っています。' + (LP.nearMiss ? LP.nearMiss.label.replace('だけ違う', '') : '記号') + 'を直せば正解です。' : '正しい文は上のとおりです。') + '<div class="legend">' + legend + '</div>';
     box.appendChild(note);
     box.appendChild(explainEl(it, {ok: q.ok, close: q.close, wrong: q.res.filter(r => r.k === 'wrong').map(r => ({you: r.y, right: r.t}))}));
     box.appendChild(nextRow());
@@ -2449,6 +2490,7 @@ function wordMeaning(w, text){
 /* 訳の無い文：台帳の語（bác sĩ・Việt Nam など2〜3音節）に合わせ、長い語から先にまとめる */
 function segmentByLex(text){
   const ws = words(text), out = [];
+  if(LP.segment !== 'syllable+lexicon') return ws;
   for(let i = 0; i < ws.length;){
     let n = 1;
     for(let k = Math.min(3, ws.length - i); k > 1; k--){ if(lex.words[norm(ws.slice(i, i + k).join(' '))]){ n = k; break; } }
@@ -2469,9 +2511,9 @@ function explainEl(it, res){
   let h = '<div class="exr"><span class="pill ' + (res.ok ? 'ok' : 'ng') + '">' + (res.ok ? '正解' : res.close ? 'おしい' : '不正解') + '</span>' +
     (res.msg ? '<span class="exmsg">' + esc(res.msg) + '</span>' : '') + '</div>';
   if(g && g.words.length){
-    h += '<div class="gl" lang="vi">' + g.words.map(([w, ja]) => '<span class="glw"><b>' + esc(w) + '</b><small lang="ja">' + esc(ja) + '</small></span>').join('') + '</div>';
+    h += '<div class="gl" lang="' + LP.code + '">' + g.words.map(([w, ja]) => '<span class="glw"><b>' + esc(w) + '</b><small lang="ja">' + esc(ja) + '</small></span>').join('') + '</div>';
   }else if(it.deck && it.deck.kind === 'text'){
-    h += '<div class="gl" lang="vi">' + segmentByLex(it.show).map(w => { const m = wordMeaning(w, it.show);
+    h += '<div class="gl" lang="' + LP.code + '">' + segmentByLex(it.show).map(w => { const m = wordMeaning(w, it.show);
       return '<span class="glw"><b>' + esc(w) + '</b><small lang="ja">' + (m ? esc(m.ja) : '—') + '</small></span>'; }).join('') + '</div>';
   }
   if(g && g.ja) h += '<div class="exja"><span class="exk">意味</span><div>' + esc(g.ja) + (g.check ? '<div class="excheck">要確認：' + esc(g.check) + '（別のモデルの判定）</div>' : '') + '</div></div>';
@@ -2568,7 +2610,7 @@ function renderOverview(){
     e.n++; e.lv = Math.max(e.lv, level(it.id)); e.items.push(it);
     wmap.set(w, e);
   }));
-  const wl = [...wmap.values()].sort((a,b)=> b.n - a.n || a.w.localeCompare(b.w, 'vi'));
+  const wl = [...wmap.values()].sort((a,b)=> b.n - a.n || a.w.localeCompare(b.w, LP.code));
   const wSeen = wl.filter(e => e.lv > 0).length;
 
   const today = dayKey(Date.now());
@@ -2639,7 +2681,7 @@ function renderOverview(){
     const it = e.items.slice().sort((x,y)=> x.show.length - y.show.length)[0];   // 一番短い項目（多くはその語だけ）を鳴らす
     say(it);
     const m = wordMeaning(e.w, it.show);
-    toast('<b lang="vi">' + esc(m ? m.w : e.w) + '</b>' + (m ? esc(m.ja) + '<small>' + (m.src === '機械' ? '機械の訳（未確認）' : '台帳') + '</small>' : '<small>意味はまだありません</small>'));
+    toast('<b lang="' + LP.code + '">' + esc(m ? m.w : e.w) + '</b>' + (m ? esc(m.ja) + '<small>' + (m.src === '機械' ? '機械の訳（未確認）' : '台帳') + '</small>' : '<small>意味はまだありません</small>'));
   }));
   box.querySelectorAll('.wk').forEach(b => b.addEventListener('click', ()=> say(all.get(b.dataset.id))));
 }
