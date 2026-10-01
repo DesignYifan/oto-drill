@@ -773,6 +773,76 @@ li{padding:10px 14px; margin:1px 8px}
   .brow{padding:10px 8px; gap:8px}
 }
 
+/* ---- 操作卓と、白い面の上のボタン（2026-10-01） ----
+   本人「肝心なこの辺のデザインが雑。右端のパディングが無い・矢印が下にずれる」「白の上に白いボタンは見にくい」。
+   ⭕ 矢印は文字ではなく図形（SVG）にする。⛔ ⟵ ⟶ は書体ごとに高さが違い、日本語の行の中で下にずれる。
+   ⭕ 白い面（操作卓・カード・引いた語の窓）の上のボタンは、影ではなく薄いグレーの面で出す。
+      影で浮かせるのは、地（グレー）の上に置くときだけ。 */
+:root{ --press:#eef0f4; --press-hover:#e5e8ee }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --press:#262a32; --press-hover:#2e333c } }
+:root[data-theme="dark"]{ --press:#262a32; --press-hover:#2e333c }
+
+.dock button, .lookup button, .bport button, .addex button, aside button{background:var(--press); box-shadow:none}
+.dock button:hover, .lookup button:hover, .bport button:hover, .addex button:hover, aside button:hover{background:var(--press-hover)}
+.dock button.primary{background:var(--accent); color:var(--on-accent)}
+.dock button.primary:hover{background:var(--accent); filter:brightness(1.06)}
+
+.ic{width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.ic.fill{fill:currentColor; stroke:none}
+#play .i-pause{display:none}
+#play.playing .i-play{display:none}
+#play.playing .i-pause{display:inline}
+
+.dock{padding:14px 28px calc(16px + env(safe-area-inset-bottom, 0px)); gap:10px}
+.dock .track{gap:14px; align-items:center}
+.dock .clock{min-width:40px; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums}
+/* 線：進んだぶんを青で塗る（--p は再生位置から入れる）。つまみは丸 */
+#seek{height:24px; --p:0%}
+#seek::-webkit-slider-runnable-track{height:4px; border-radius:999px; background:linear-gradient(to right, var(--accent) var(--p), var(--line) var(--p))}
+#seek::-moz-range-track{height:4px; border-radius:999px; background:var(--line)}
+#seek::-moz-range-progress{height:4px; border-radius:999px; background:var(--accent)}
+#seek::-webkit-slider-thumb{width:14px; height:14px; margin-top:-5px; border-radius:50%; background:var(--surface); box-shadow:0 0 0 2px var(--accent), 0 1px 3px rgba(20,24,32,.15)}
+#seek::-moz-range-thumb{width:14px; height:14px; border-radius:50%; background:var(--surface); border:2px solid var(--accent)}
+#seek:disabled::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--line)}
+
+/* 速度の上げ下げ：1つの台にまとめる */
+.rate-nudge{gap:2px; padding:3px; border-radius:999px; background:var(--press)}
+.rate-nudge button{width:28px; height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:transparent; border-radius:50%}
+.rate-nudge button:hover{background:var(--surface)}
+.rate-nudge .ic{width:14px; height:14px}
+.rate-dock{min-width:44px; font-size:12px; color:var(--ink); font-weight:500}
+
+/* 送り：左の題・中央の操作・右の空きを 1fr auto 1fr にして、操作を真ん中に据える */
+.dock-row{display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:16px; align-items:center}
+.dock-row .spacer{display:block}
+.now{gap:10px}
+.transport{gap:8px}
+.transport button{height:44px; min-height:0; padding:0 18px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:13px; font-weight:500; line-height:1}
+#prev{padding-left:13px} #next{padding-right:13px}
+#play{min-width:132px; height:48px; padding:0 24px; gap:8px; font-size:14px}
+#play .ic{width:15px; height:15px}
+
+/* 速度の列：折り返さない。狭いときは横に送る */
+.speeds{flex-wrap:nowrap; max-width:100%; overflow-x:auto; scrollbar-width:none}
+.speeds::-webkit-scrollbar{display:none}
+.speeds{width:100%; max-width:440px}
+.speeds button{flex:1 1 0; min-width:max-content; padding:5px 6px; text-align:center}
+
+@media (max-width:820px){
+  .dock{padding:10px 14px calc(12px + env(safe-area-inset-bottom, 0px))}
+  .dock-row{display:flex}
+  .transport{flex:1; gap:6px}
+  .transport button{flex:1 1 0; min-width:0; padding:0 4px; height:44px}
+  #prev, #next{padding:0 4px}
+  #play{flex:1.6 1 0; min-width:0; padding:0 6px}
+  .transport button{white-space:nowrap; font-size:12px}
+  .dock-row .spacer, .now{display:none}
+  #prev span, #next span{display:none}          /* 狭いときは矢印だけ（文字が折れて2行になるため） */
+  #prev, #next{flex:.8 1 0}
+  .speeds{display:grid; grid-template-columns:repeat(9,minmax(0,1fr)); max-width:none; overflow:visible}
+  .speeds button{min-width:0; padding:5px 0; font-size:11px}
+}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -874,20 +944,20 @@ li{padding:10px 14px; margin:1px 8px}
       <input type="range" id="seek" value="0" min="0" max="1000" step="1" disabled aria-label="再生位置">
       <span class="clock right" id="dur">0:00</span>
       <div class="rate-nudge">
-        <button id="rateDown" aria-label="速度を下げる">−</button>
+        <button id="rateDown" aria-label="速度を下げる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8"/></svg></button>
         <span class="rate-dock" id="rateDock" aria-live="off">1×</span>
-        <button id="rateUp" aria-label="速度を上げる">＋</button>
+        <button id="rateUp" aria-label="速度を上げる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8M8 4v8"/></svg></button>
       </div>
     </div>
 
     <div class="dock-row">
       <div class="now"><span class="n" id="nowN"></span><span class="nm" id="nowName"></span></div>
       <div class="transport">
-        <button id="prev">⟵ 前</button>
-        <button id="back" class="mono">− 5秒</button>
-        <button class="primary" id="play">再生</button>
-        <button id="fwd" class="mono">＋ 5秒</button>
-        <button id="next">次 ⟶</button>
+        <button id="prev"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg><span>前</span></button>
+        <button id="back" class="mono">−5秒</button>
+        <button class="primary" id="play"><svg class="ic fill" viewBox="0 0 16 16" aria-hidden="true"><path class="i-play" d="M5 3.2v9.6L12.6 8z"/><path class="i-pause" d="M4.5 3.5h2.4v9H4.5zM9.1 3.5h2.4v9H9.1z"/></svg><span class="lbl">再生</span></button>
+        <button id="fwd" class="mono">+5秒</button>
+        <button id="next"><span>次</span><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
       </div>
       <div class="spacer"></div>
     </div>
@@ -1109,7 +1179,7 @@ function goNext(byHand){
   clearTimeout(gapTimer);
   if(idx + 1 < tracks.length) play(idx+1, true);
   else if($('#loopAll').checked && !byHand) play(0, true);
-  else $('#play').textContent = '再生';
+  else setPlayLabel(false);
 }
 
 let importing = false;   // 記録を読み込んで読み直すあいだは、聴いた位置を書かない（読み込んだ値を上書きするため）
@@ -1119,14 +1189,18 @@ function saveLast(){
 }
 
 /* ---------- イベント ---------- */
-audio.addEventListener('play',  ()=> $('#play').textContent = '一時停止');
-audio.addEventListener('pause', ()=> $('#play').textContent = '再生');
-audio.addEventListener('loadedmetadata', ()=> $('#dur').textContent = fmt(audio.duration));
+function setPlayLabel(on){
+  $('#play').classList.toggle('playing', on);
+  $('#play .lbl').textContent = on ? '一時停止' : '再生';
+}
+audio.addEventListener('play',  ()=> setPlayLabel(true));
+audio.addEventListener('pause', ()=> setPlayLabel(false));
+audio.addEventListener('loadedmetadata', ()=>{ $('#dur').textContent = fmt(audio.duration); paintSeek(); });
 
 audio.addEventListener('timeupdate', ()=>{
   $('#cur').textContent = fmt(audio.currentTime);
   syncScript(audio.currentTime);
-  if(audio.duration) $('#seek').value = Math.round(audio.currentTime / audio.duration * 1000);
+  if(audio.duration){ $('#seek').value = Math.round(audio.currentTime / audio.duration * 1000); paintSeek(); }
   const now = Date.now();
   if(now - lastSave > 3000){ lastSave = now; saveLast(); }
 });
@@ -1245,7 +1319,9 @@ $('#fwd').addEventListener('click',  e => { step(5);  e.currentTarget.blur(); })
 $('#rateDown').addEventListener('click', e => { setRate(rate - 0.1); e.currentTarget.blur(); });
 $('#rateUp').addEventListener('click',   e => { setRate(rate + 0.1); e.currentTarget.blur(); });
 
+function paintSeek(){ const el = $('#seek'); el.style.setProperty('--p', (el.value / 10) + '%'); }
 $('#seek').addEventListener('input', e => {
+  paintSeek();
   if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration;
 });
 
