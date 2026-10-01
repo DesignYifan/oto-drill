@@ -921,6 +921,34 @@ button.linkish:hover{background:none; text-decoration:underline}
   .lstep{padding:16px}
 }
 
+/* ---- 聴く画面：本文に縦の幅を渡す（2026-10-01） ---- */
+.panel{gap:16px; padding-top:20px}
+.nowhead{display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap}
+.nowhead .readout{gap:6px; align-items:baseline; flex-wrap:nowrap}
+.nowhead .bignum{font-size:24px; line-height:1; letter-spacing:-.01em}
+.nowhead .oftotal{font-size:12px; padding:0}
+.nowhead .fname{margin:0; font-size:14px; flex:1 1 12em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; word-break:normal}
+.setwrap{position:relative; display:flex; align-items:center; gap:10px; margin-left:auto}
+.setsum{font-size:12px; color:var(--muted); white-space:nowrap}
+#settingsBtn{display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px}
+.settings{position:absolute; right:0; top:calc(100% + 8px); z-index:30; width:min(520px, calc(100vw - 32px));
+  background:var(--surface); border-radius:var(--r-card); box-shadow:var(--sh-lift); padding:20px 24px; display:flex; flex-direction:column; gap:16px}
+.settings[hidden]{display:none}
+.settings .setting{flex-wrap:wrap}
+.settings .speeds{background:var(--press); box-shadow:none}
+.settings .rate-now{display:none}
+.settings .speeds button:hover{background:var(--surface)}
+.settings .keys{margin-top:4px; padding-top:16px; border-top:1px solid var(--line)}
+.ltag{margin-top:0}
+.ltag.slim{background:transparent; box-shadow:none; padding:0 4px}
+.ltag.slim .pill{padding:2px 10px}
+.script{padding-top:4px}
+.notechips{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px 12px}
+.notechip{font-size:12px; padding:4px 12px; background:var(--press); box-shadow:none; color:var(--muted)}
+.notechip:hover{background:var(--press-hover); color:var(--ink)}
+.notechip[aria-expanded="true"]{background:var(--ink); color:var(--surface)}
+@media (max-width:820px){ .setsum{display:none} .nowhead .fname{flex-basis:100%; order:3} }
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -952,22 +980,25 @@ button.linkish:hover{background:none; text-decoration:underline}
 
   <main>
     <section class="panel">
-      <div>
+      <!-- 本文と説明に縦の幅を渡す（本人 2026-10-01「左はできるだけ本文の内容を出したい」「速度やドリルはずっと出してなくてよい」）。
+           番号と名前は1行に。速度・ドリル・キーは「設定」から開く小窓に入れ、いまの設定は短い一言だけ出す。 -->
+      <div class="nowhead">
         <div class="readout">
           <div class="bignum" id="bignum">—</div>
           <div class="oftotal" id="oftotal"></div>
         </div>
         <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
-        <div class="ltag" id="ltag" hidden></div>
-      </div>
-
-      <div class="setting">
+        <div class="setwrap">
+          <span class="setsum" id="setSum"></span>
+          <button id="settingsBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.6"/><circle cx="5" cy="11.5" r="1.6"/></svg><span>設定</span></button>
+          <div class="settings" id="settings" role="dialog" aria-label="再生の設定" hidden>
+            <div class="setting">
         <span class="eyebrow">速度</span>
-        <div class="speeds" id="speeds"></div>
+              <div class="speeds" id="speeds"></div>
         <span class="rate-now" id="rateNow"></span>
-      </div>
+            </div>
 
-      <div class="setting">
+            <div class="setting">
         <span class="eyebrow">ドリル</span>
         <label class="opt">1本を
           <select id="repeatN" aria-label="1本あたりの再生回数">
@@ -988,11 +1019,9 @@ button.linkish:hover{background:none; text-decoration:underline}
           </select>
         </label>
         <label class="opt"><input type="checkbox" id="loopAll"> 最後まで行ったら最初へ</label>
-      </div>
+            </div>
 
-      <div class="script" id="script" hidden></div>
-
-      <div class="keys">
+            <div class="keys">
         <span><kbd>space</kbd>再生／停止</span>
         <span><kbd>←</kbd><kbd>→</kbd>5秒</span>
         <span><kbd>⇧←</kbd><kbd>⇧→</kbd>前後の本</span>
@@ -1000,6 +1029,12 @@ button.linkish:hover{background:none; text-decoration:underline}
         <span><kbd>0</kbd>速度を1.0に</span>
         <span><kbd>R</kbd>頭から</span>
       </div>
+          </div>
+        </div>
+      </div>
+      <div class="ltag" id="ltag" hidden></div>
+
+      <div class="script" id="script" hidden></div>
     </section>
 
     <aside>
@@ -1245,7 +1280,28 @@ function setRate(r){
   $('#rateNow').textContent = 'いま ' + label(rate);
   $('#rateDock').textContent = label(rate);
   [...$('#speeds').children].forEach(b => b.classList.toggle('on', Number(b.dataset.r) === rate));
+  paintSetSum();
 }
+
+/* いまの設定の一言（設定の小窓を閉じていても分かるように） */
+function paintSetSum(){
+  const el = $('#setSum'); if(!el) return;
+  const rn = $('#repeatN'), gp = $('#gap');
+  const parts = [label(rate)];
+  if(rn.value !== '1') parts.push(rn.options[rn.selectedIndex].text + '繰り返す');
+  if(gp.value !== '0') parts.push(gp.options[gp.selectedIndex].text);
+  if($('#loopAll').checked) parts.push('最後まで行ったら最初へ');
+  el.textContent = parts.join('・');
+}
+/* 設定の小窓：外を押すか Esc で閉じる */
+function openSettings(on){
+  $('#settings').hidden = !on;
+  $('#settingsBtn').setAttribute('aria-expanded', String(on));
+  $('#settingsBtn').classList.toggle('on', on);
+}
+$('#settingsBtn').addEventListener('click', e => { e.stopPropagation(); openSettings($('#settings').hidden); });
+document.addEventListener('click', e => { if(!$('#settings').hidden && !e.target.closest('#settings')) openSettings(false); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('#settings').hidden){ openSettings(false); $('#settingsBtn').focus(); } });
 
 function toggle(){
   if(idx < 0) return;
@@ -1440,6 +1496,7 @@ $('#filter').addEventListener('input', applyFilter);
   el.addEventListener('change', ()=>{
     save(key, el.type === 'checkbox' ? el.checked : el.value);
     if(id === 'repeatN') playsLeft = Number(el.value) || 0;
+    paintSetSum();
   });
 });
 
@@ -1451,6 +1508,7 @@ RATES.forEach(r=>{
   $('#speeds').appendChild(b);
 });
 setRate(load('rate', 1));
+paintSetSum();
 
 document.addEventListener('keydown', e=>{
   if(e.target === $('#filter')) return;
@@ -1533,6 +1591,7 @@ function renderScript(name){
     $('#reveal').addEventListener('click', ()=>{ box.dataset.reveal = '1'; renderScript(name); delete box.dataset.reveal; });
     return;
   }
+  const seenNotes = new Set();
   data.segments.forEach((seg, si) => {
     const el = document.createElement('div');
     el.className = 'sent';
@@ -1554,7 +1613,31 @@ function renderScript(name){
     el.addEventListener('click', ()=>{ audio.currentTime = seg.start; audio.play().catch(()=>{}); });
     box.appendChild(el);
     sentEls.push({el, start:seg.start, end:seg.end});
-    notesFor(seg.text).forEach(n => {
+    // ⭕ 同じ説明は、この音声の中で最初の1回だけ全文。2回目からは見出しだけの札にし、押すと開く
+    //   （練習の文は同じ型が何度も出て、説明が本文より場所を取っていた。本人 2026-10-01）
+    const ns = notesFor(seg.text);
+    const chips = document.createElement('div'); chips.className = 'notechips';
+    ns.forEach(n => {
+      const key = n.title || n.body;
+      if(seenNotes.has(key)){
+        const c = document.createElement('button');
+        c.className = 'notechip'; c.textContent = n.title || '説明';
+        c.setAttribute('aria-expanded', 'false');
+        c.addEventListener('click', ev => {
+          ev.stopPropagation();
+          const open = c.getAttribute('aria-expanded') === 'true';
+          c.setAttribute('aria-expanded', String(!open));
+          if(open){ if(c._body) c._body.remove(); c._body = null; return; }
+          const body = document.createElement('div'); body.className = 'note notebody';
+          body.textContent = n.body;
+          let at = chips; while(at.nextElementSibling && at.nextElementSibling.classList.contains('notebody')) at = at.nextElementSibling;
+          at.after(body);
+          c._body = body;
+        });
+        chips.appendChild(c);
+        return;
+      }
+      seenNotes.add(key);
       const nd = document.createElement('div');
       nd.className = 'note';
       if(n.title){
@@ -1565,6 +1648,7 @@ function renderScript(name){
       nd.appendChild(document.createTextNode(n.body));
       box.appendChild(nd);
     });
+    if(chips.children.length) box.appendChild(chips);
   });
 }
 
@@ -2848,6 +2932,7 @@ function paintLtag(){
   const hit = idx >= 0 && tracks[idx] && (book || pdata) ? lessonOfTrack(tracks[idx].name) : null;
   if(!hit || hit.L.id === 'all'){ box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
+  box.classList.toggle('slim', !hit.ex);   // 問題でない音声は、カードにせず細い1行（本文に縦の幅を渡す）
   box.innerHTML = '<div class="lth"><span class="pill">' + esc(hit.L.title) + '</span><span>' + esc(hit.ex ? hit.ex.label : trackLabel(tracks[idx].name)) + '</span>' +
     '<button class="linkish golesson" data-lesson="' + esc(hit.L.id) + '">課の画面へ<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>' +
     (hit.ex ? exHTML(hit.L.id, hit.ex, paperLatest()).replace(/<button class="opentrack"[^]*?<\/button>/g, '') : '');
