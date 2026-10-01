@@ -699,6 +699,80 @@ li .done{color:var(--teal)}
 .unchecked{color:var(--near)}
 .lg i.ok{background:var(--teal)}
 
+/* ---- 余白（2026-10-01） ----
+   本人「余白感がすごいギュウギュウに見える。もうちょっと余裕がある見せ方で」。
+   ⭕ 間隔は 8 の段で揃える：カードの中 20〜24／カード同士 16／節と節 40。
+   ⭕ 中身は幅 1120px で頭打ちにして、左右に余りを均す（広い窓で横に伸びきらないように）。 */
+header{padding:20px 32px 16px; gap:20px}
+main{gap:20px; padding:4px 24px 20px}
+.panel{padding:28px 20px 24px 12px}
+aside{margin:0}
+.ledger-head{padding:16px 18px 10px}
+ol{padding:4px 0 10px}
+li{padding:10px 14px; margin:1px 8px}
+.setting{gap:14px}
+.script{gap:4px}
+.sent{padding:9px 12px}
+.dock{padding:14px 32px calc(14px + env(safe-area-inset-bottom, 0px)); gap:12px}
+
+.practice{padding:28px 32px 64px}
+.pbar, #pbody, .overview{max-width:1120px; margin-left:auto; margin-right:auto}
+.panel{gap:28px}
+.pbar{gap:12px 16px; margin-bottom:32px}
+.gridwrap{gap:36px}
+.grid{gap:12px}
+.pcell{padding:18px 8px 14px}
+.grid.text .pcell{padding:14px 18px}
+.quiz{gap:28px; padding-top:24px}
+.choices{gap:14px}
+.choices button{padding:20px 12px}
+
+.tiles4{gap:16px; margin-bottom:20px}
+.tile{padding:20px 22px}
+.tile .big{margin-top:6px}
+.ovgrid{gap:16px}
+.ovsec{padding:20px 22px}
+.ovhead{margin-bottom:12px}
+.ovrow{padding:7px 4px}
+.ovh{margin:44px 0 16px; font-size:15px}
+.skills{gap:12px}
+.wmap{gap:7px}
+.weak{gap:12px}
+.wk{padding:12px 16px}
+
+.blib{gap:12px; margin-bottom:40px}
+.bcard{padding:14px 18px}
+.bhead{margin-bottom:16px}
+.bhead h2{font-size:22px}
+.bviews{margin-bottom:24px}
+.btable{padding:8px}
+.brow{padding:12px 16px; border-radius:var(--r-in); gap:14px}
+.bpaper{margin-bottom:16px}
+.pex{padding:8px 0}
+.pcells{gap:6px}
+.addex{margin-top:14px}
+.bsec .ovh{margin-top:36px}
+.gram{margin-bottom:10px}
+.gt{padding:16px 20px; gap:4px}
+.gex{padding:0 20px 18px; gap:6px}
+.vgrid{gap:12px}
+.vw{padding:14px 30px 14px 16px; gap:3px}
+.vw::after{top:16px; right:16px}
+.bfilter{margin-bottom:12px}
+.bport{margin-top:56px; padding:20px 22px}
+
+@media (max-width:820px){
+  header{padding:14px 16px 12px; gap:12px}
+  main{gap:12px; padding:0 12px 12px}
+  .panel{padding:20px 6px 16px; gap:24px}
+  .practice{padding:20px 16px 48px}
+  .dock{padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); gap:8px}
+  .tiles4{gap:10px}
+  .tile, .ovsec{padding:16px}
+  .vgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
+  .brow{padding:10px 8px; gap:8px}
+}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
