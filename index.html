@@ -136,7 +136,8 @@ main{flex:1; display:grid; grid-template-columns:minmax(0,1fr) 352px; min-height
   .app.list-off aside{border-top:1px solid var(--line)}
 }
 
-.caret{font-size:10px; margin-right:5px; display:inline-block; transition:transform .12s}
+.caret{margin-right:6px; display:inline-flex; align-items:center; vertical-align:-2px; transition:transform .12s}
+.caret .ic{width:14px; height:14px}
 .app.list-off .caret{transform:rotate(-90deg)}
 
 /* 一覧の頭に置く開け閉め。閉じているときは、この帯ごと押せるようにする。 */
@@ -843,6 +844,16 @@ li{padding:10px 14px; margin:1px 8px}
   .speeds button{min-width:0; padding:5px 0; font-size:11px}
 }
 
+/* ---- プルダウン（2026-10-01） ----
+   本人「このシェブロンから右のパディングがいつもない。何度も言いたくないから二度とやらないで」。
+   ⛔ ブラウザ標準の矢印は右端に貼りつき、余白を指定できない。⭕ 標準の矢印を消し、自前の矢印を右から 12px に置く。
+   ⭕ 文字が矢印に重ならないよう、右の内側の余白は 34px（矢印 12px＋左右の余白）。 */
+select{-webkit-appearance:none; appearance:none; padding:7px 34px 7px 14px; border-radius:999px; line-height:1.3;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23656a75' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; background-size:12px 12px; cursor:pointer}
+select::-ms-expand{display:none}
+#pdecks{padding:7px 34px 7px 14px}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -866,7 +877,7 @@ li{padding:10px 14px; margin:1px 8px}
     <button id="reopen" hidden></button>
     <input type="file" id="picker" webkitdirectory directory multiple hidden>
     <div class="folder">
-      <button id="toggleList" aria-controls="list" aria-expanded="true"><span class="caret">▼</span><span class="lbl">一覧を隠す</span></button>
+      <button id="toggleList" aria-controls="list" aria-expanded="true"><span class="caret"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span><span class="lbl">一覧を隠す</span></button>
       <button id="export" hidden>貯めた語を書き出す</button>
       <span class="name" id="folder">未読み込み</span>
     </div>
@@ -925,7 +936,7 @@ li{padding:10px 14px; margin:1px 8px}
 
     <aside>
       <div class="ledger-head">
-        <button class="fold" id="foldList" aria-controls="list" aria-expanded="true"><span class="caret">▼</span><span class="lbl">一覧を隠す</span></button>
+        <button class="fold" id="foldList" aria-controls="list" aria-expanded="true"><span class="caret"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span><span class="lbl">一覧を隠す</span></button>
         <input id="filter" placeholder="番号や名前でしぼる" autocomplete="off" aria-label="一覧をしぼる">
         <span class="tally" id="tally"></span>
       </div>
