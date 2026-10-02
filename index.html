@@ -928,16 +928,22 @@ button.linkish:hover{background:none; text-decoration:underline}
 .nowhead .bignum{font-size:24px; line-height:1; letter-spacing:-.01em}
 .nowhead .oftotal{font-size:12px; padding:0}
 .nowhead .fname{margin:0; font-size:14px; flex:1 1 12em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; word-break:normal}
-.setwrap{position:relative; display:flex; align-items:center; gap:12px; margin-left:auto}
+.nowhead{position:relative}
+.setwrap{display:flex; align-items:center; gap:12px; margin-left:auto}
 .setsum{font-size:12px; color:var(--ui-text-muted-fgColor); white-space:nowrap}
 #settingsBtn{display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px}
-.settings{position:absolute; right:0; top:calc(100% + 8px); z-index:30; width:min(520px, calc(100vw - 32px));
+/* 小窓は左の欄の内側に収める（一覧を出していると欄が狭く、はみ出して左が切れていた） */
+.settings{position:absolute; left:0; right:0; margin-left:auto; top:calc(100% + 8px); z-index:30; width:auto; max-width:520px;
   background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-raised-shadow); padding:20px 24px; display:flex; flex-direction:column; gap:16px}
 .settings[hidden]{display:none}
 .settings .setting{flex-wrap:wrap}
 .settings .speeds{background:var(--ui-control-bgColor); box-shadow:none}
 .settings .rate-now{display:none}
 .settings .speeds button:hover{background:var(--ui-surface-bgColor)}
+.recsync{display:flex; flex-direction:column; gap:8px; padding-top:16px; border-top:1px solid var(--ui-outline-borderColor)}
+.recinfo{margin:0; font-size:12px; color:var(--ui-text-muted-fgColor); line-height:1.6}
+.recbtns{display:flex; gap:8px; flex-wrap:wrap}
+.recbtns button{background:var(--ui-control-bgColor); box-shadow:none; font-size:12px}
 .settings .keys{margin-top:4px; padding-top:16px; border-top:1px solid var(--ui-outline-borderColor)}
 .ltag{margin-top:0}
 .ltag.slim{background:transparent; box-shadow:none; padding:0 4px}
@@ -1047,6 +1053,11 @@ button.linkish:hover{background:none; text-decoration:underline}
         <label class="opt"><input type="checkbox" id="loopAll"> 最後まで行ったら最初へ</label>
             </div>
 
+            <div class="recsync">
+              <span class="eyebrow">記録の連動</span>
+              <p id="recInfo" class="recinfo"></p>
+              <div class="recbtns"><button id="recPick">iCloud のフォルダを選ぶ</button><button id="recSync">今すぐ読み直す</button></div>
+            </div>
             <div class="keys">
         <span><kbd>space</kbd>再生／停止</span>
         <span><kbd>←</kbd><kbd>→</kbd>5秒</span>
@@ -1373,6 +1384,7 @@ audio.addEventListener('ended', ()=>{
   if(idx >= 0 && !done.has(tracks[idx].name)){
     done.add(tracks[idx].name);
     save('done:'+folderKey, [...done]);
+    emit('done', {f: folderKey, n: tracks[idx].name});
     paintList();
   }
   const n = Number($('#repeatN').value);
@@ -1854,6 +1866,7 @@ async function lookup(token, at, seg, file){
     kept.push({form, ja: (hit && hit.ja) || '', kanji: han.map(x => x.m.kanji).join(''),
                sentence: seg.text, file, start: seg.start, at: new Date().toISOString().slice(0,10)});
     save('kept:'+folderKey, kept);
+    emit('keep', {f: folderKey, v: kept[kept.length - 1]});
     keep.textContent = '貯めてある'; keep.disabled = true;
     paintExport();
   });
@@ -2033,6 +2046,7 @@ function mark(it, ok, skill, gain){
   r.last = Date.now();
   srs[it.id] = r;
   save('srs', srs);
+  emit('ans', {i: it.id, s: skill || pview, o: ok ? 1 : 0, g: gain || 1});
   paintStat();
 }
 function paintStat(){
@@ -2415,7 +2429,7 @@ function gradeType(v){
   renderType();
 }
 let typed = new Set(load('typed', []));   // 書いて正解した語
-function typedOk(it){ words(it.show).forEach(w => typed.add(w.toLowerCase())); save('typed', [...typed]); }
+function typedOk(it){ const ws = words(it.show).map(w => w.toLowerCase()); ws.forEach(w => typed.add(w)); save('typed', [...typed]); emit('typed', {w: ws}); }
 
 /* ---- 並べる：文をばらした語を、聞いた順に押して組み立てる ---- */
 function orderQ(it){
@@ -3110,6 +3124,7 @@ document.addEventListener('click', e => {
     const recs = paperRecs();
     recs.push({l: b.dataset.l, ex: b.dataset.ex, n: Number(b.dataset.n), r: nx, t: Date.now()});
     save('paper:' + bookId, recs);
+    emit('paper', {b: bookId, l: b.dataset.l, ex: b.dataset.ex, n: Number(b.dataset.n), r: nx});
     rerender();
   }
   else if(b.classList.contains('setcount') || b.classList.contains('recount')){
@@ -3119,6 +3134,7 @@ document.addEventListener('click', e => {
     else { const inp = b.parentElement.querySelector('input'); v = Number(inp.value); }
     if(!(v >= 1 && v <= 60)) return;
     const o = load('excount:' + bookId, {}); o[id] = Math.round(v); save('excount:' + bookId, o);
+    emit('excnt', {b: bookId, ex: id, v: Math.round(v)});
     rerender();
   }
   else if(b.classList.contains('opentrack') || b.classList.contains('lt')) openTrack(b.dataset.t);
@@ -3127,6 +3143,7 @@ document.addEventListener('click', e => {
     const k = wknown(); const w = b.dataset.w;
     k.has(w) ? k.delete(w) : k.add(w);
     save('wknown:' + bookId, [...k]);
+    emit('wk', {b: bookId, w, on: k.has(w)});
     rerender();
   }
   else if(b.classList.contains('lwp')){
@@ -3161,6 +3178,7 @@ function wireBook(box){
     own[l] = own[l] || [];
     own[l].push({id: 'u' + Date.now().toString(36), label, count});
     save('paperdef:' + bookId, own);
+    emit('exdef', {b: bookId, l, d: own[l][own[l].length - 1]});
     renderBook();
   }));
   box.querySelectorAll('.gt').forEach(b => b.addEventListener('click', ()=>{ bopen = bopen === b.dataset.g ? null : b.dataset.g; renderBook(); }));
@@ -3209,6 +3227,161 @@ function exportAll(){
   a.download = 'oto-drill_記録_' + at + '.json';
   a.click();
 }
+
+
+/* ================= 記録の連動（2026-10-02） =================
+   本人「これってデータって連動できたりするの？」→「それで行こうか」。
+   ⭕ 記録は「出来事を足していくだけ」。端末ごとに別のファイル（記録/<端末>.jsonl）へ書き、開くときに全部を読んで合わせる。
+      同じファイルを2つの端末から書き換えないので、iCloud の同期のぶつかり合いで消えない。
+   ⭕ 箱（覚えた具合）は保存せず、答えた出来事を時刻順に並べ直して数え直す。端末が2つでも同じ答えになる。
+   ⭕ 設定（速度・画面の選択）は端末ごと。連動しない。
+   ⭕ フォルダを選んでいないときは今と同じ（ブラウザの中だけ）。選んだときに、それまでの分をまとめて書く。
+   実現方式：vault 008_project/AppBuilding/specs/20261001_oto-drill-app_実現方式.md 「★ 決まったこと」 */
+const DEV = (()=>{ let d = load('dev', null); if(!d){ d = 'web-' + Math.random().toString(36).slice(2, 7); save('dev', d); } return d; })();
+let evOwn = load('ev:own', []);      // この端末の出来事（全部）
+let evOthers = [];                    // ほかの端末の出来事（フォルダから読んだもの）
+let evPend = load('ev:pend', [])  ;   // まだフォルダに書いていない出来事の id
+let recDir = null;                    // 記録のフォルダ（音声ドリル/）
+let flushT = 0, evSeq = 0;
+let recInfo = {devices: [], read: 0, wrote: null, err: ''};
+
+function emit(k, data){
+  const e = Object.assign({id: DEV + '.' + Date.now().toString(36) + '.' + (evSeq++), t: Date.now(), dev: DEV, k}, data);
+  evOwn.push(e); evPend.push(e.id);
+  save('ev:own', evOwn); save('ev:pend', evPend);
+  clearTimeout(flushT); flushT = setTimeout(flushEvents, 800);
+}
+
+/* 前からある記録を、一度だけ出来事に直す */
+(function migrate(){
+  if(load('ev:migrated', false)) return;
+  // 移す前の記録を丸ごと控える（組み直しで何かを落としても戻せるように）
+  const snap = {}; for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k.startsWith('otodrill:')) snap[k] = localStorage.getItem(k); }
+  try{ localStorage.setItem('otodrill-backup:before-sync', JSON.stringify({at: new Date().toISOString(), keys: snap})); }catch(e){}
+  const out = [];
+  const add = (t, k, d) => out.push(Object.assign({id: DEV + '.m' + out.length, t: t || 0, dev: DEV, k}, d));
+  (load('hist', []) || []).forEach(h => add(h[0], 'ans', {i: h[1], s: h[2], o: h[3], g: h[2] === 'type' ? 2 : 1}));
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i); if(!key.startsWith('otodrill:')) continue;
+    const k = key.slice(9), v = load(k, null), m = k.match(/^(paper|paperdef|excount|wknown|kept|done):(.+)$/);
+    if(!m || !v) continue;
+    const id = m[2];
+    if(m[1] === 'paper') v.forEach(r => add(r.t, 'paper', {b: id, l: r.l, ex: r.ex, n: r.n, r: r.r}));
+    if(m[1] === 'paperdef') Object.entries(v).forEach(([l, ds]) => ds.forEach(d => add(0, 'exdef', {b: id, l, d})));
+    if(m[1] === 'excount') Object.entries(v).forEach(([ex, n]) => add(0, 'excnt', {b: id, ex, v: n}));
+    if(m[1] === 'wknown') v.forEach(w => add(0, 'wk', {b: id, w, on: true}));
+    if(m[1] === 'kept') v.forEach(x => add(0, 'keep', {f: id, v: x}));
+    if(m[1] === 'done') v.forEach(n => add(0, 'done', {f: id, n}));
+  }
+  const ty = load('typed', []); if(ty.length) add(0, 'typed', {w: ty});
+  evOwn = out.concat(evOwn); evPend = evOwn.map(e => e.id);
+  save('ev:own', evOwn); save('ev:pend', evPend); save('ev:migrated', true);
+})();
+
+/* 出来事から記録を組み直す（全部の端末ぶん） */
+function rebuild(){
+  const seen = new Set(), all = [];
+  evOwn.concat(evOthers).forEach(e => { if(e && e.id && !seen.has(e.id)){ seen.add(e.id); all.push(e); } });
+  all.sort((a, b) => a.t - b.t || (a.id < b.id ? -1 : 1));
+  const S = {}, H = [], TY = new Set(), P = {}, PD = {}, EC = {}, WK = {}, KP = {}, DN = {};
+  for(const e of all){
+    if(e.k === 'ans'){
+      const r = S[e.i] || {box: 0, due: 0, seen: 0, miss: 0};
+      r.seen++;
+      if(e.o){ r.box = Math.min(MAXBOX, r.box + (e.g || 1)); } else { r.box = 0; r.miss++; }
+      r.due = e.t + WAIT[r.box]; r.last = e.t; S[e.i] = r;
+      H.push([e.t, e.i, e.s, e.o]);
+    }
+    else if(e.k === 'typed') e.w.forEach(w => TY.add(w));
+    else if(e.k === 'paper') (P[e.b] = P[e.b] || []).push({l: e.l, ex: e.ex, n: e.n, r: e.r, t: e.t});
+    else if(e.k === 'exdef'){ const o = PD[e.b] = PD[e.b] || {}; (o[e.l] = o[e.l] || []).some(d => d.id === e.d.id) || o[e.l].push(e.d); }
+    else if(e.k === 'excnt') (EC[e.b] = EC[e.b] || {})[e.ex] = e.v;
+    else if(e.k === 'wk'){ const z = WK[e.b] = WK[e.b] || new Set(); e.on ? z.add(e.w) : z.delete(e.w); }
+    else if(e.k === 'keep'){ const z = KP[e.f] = KP[e.f] || []; z.some(x => x.form === e.v.form && x.sentence === e.v.sentence) || z.push(e.v); }
+    else if(e.k === 'done') (DN[e.f] = DN[e.f] || new Set()).add(e.n);
+  }
+  srs = S; hist = H.slice(-20000); typed = TY;
+  save('srs', srs); save('hist', hist); save('typed', [...typed]);
+  Object.entries(P).forEach(([b, v]) => save('paper:' + b, v));
+  Object.entries(PD).forEach(([b, v]) => save('paperdef:' + b, v));
+  Object.entries(EC).forEach(([b, v]) => save('excount:' + b, v));
+  Object.entries(WK).forEach(([b, v]) => save('wknown:' + b, [...v]));
+  Object.entries(KP).forEach(([f, v]) => save('kept:' + f, v));
+  Object.entries(DN).forEach(([f, v]) => save('done:' + f, [...v]));
+  if(folderKey){ kept = load('kept:' + folderKey, []); done = new Set(load('done:' + folderKey, [])); }
+  recInfo.read = all.length;
+}
+
+/* ---- フォルダとやり取りする ---- */
+async function recFolder(create){
+  if(!recDir) return null;
+  return await recDir.getDirectoryHandle('記録', {create: !!create});
+}
+async function flushEvents(){
+  if(!recDir || !evPend.length) return;
+  try{
+    const dir = await recFolder(true);
+    const fh = await dir.getFileHandle(DEV + '.jsonl', {create: true});
+    const file = await fh.getFile();
+    const w = await fh.createWritable({keepExistingData: true});
+    await w.seek(file.size);
+    const pend = new Set(evPend);
+    await w.write(evOwn.filter(e => pend.has(e.id)).map(e => JSON.stringify(e)).join('\n') + '\n');
+    await w.close();
+    evPend = []; save('ev:pend', evPend);
+    recInfo.wrote = Date.now(); recInfo.err = '';
+  }catch(e){ recInfo.err = '書けませんでした（' + e.name + '）'; }
+  paintRecInfo();
+}
+async function readOthers(){
+  if(!recDir) return;
+  try{
+    const dir = await recFolder(true);
+    const evs = [], devs = [];
+    for await (const [name, h] of dir.entries()){
+      if(h.kind !== 'file' || !name.endsWith('.jsonl')) continue;
+      devs.push(name.replace(/\.jsonl$/, ''));
+      if(name === DEV + '.jsonl') continue;
+      const text = await (await h.getFile()).text();
+      text.split('\n').forEach(line => { if(line.trim()){ try{ evs.push(JSON.parse(line)); }catch(e){} } });
+    }
+    evOthers = evs; recInfo.devices = devs; recInfo.err = '';
+  }catch(e){ recInfo.err = '読めませんでした（' + e.name + '）'; }
+}
+async function syncRecords(){
+  await flushEvents();
+  await readOthers();
+  rebuild();
+  paintRecInfo();
+  if(mode === 'book') renderBook(); else if(mode === 'overview') renderOverview(); else if(mode === 'practice') paintStat();
+  paintLtag();
+}
+function paintRecInfo(){
+  const el = $('#recInfo'); if(!el) return;
+  if(!window.showDirectoryPicker){ el.textContent = 'この閲覧ソフトではフォルダに書けません（Chrome か Edge で開いてください）。記録はこの閲覧ソフトの中だけにあります。'; $('#recPick').hidden = true; return; }
+  if(!recDir){ el.textContent = 'まだ連動していません。記録はこの閲覧ソフトの中だけにあります（端末名 ' + DEV + '）。'; return; }
+  el.textContent = '連動中：' + recDir.name + '／この端末 ' + DEV + '／端末 ' + (recInfo.devices.length || 1) + ' 台ぶん・出来事 ' + recInfo.read + ' 件' +
+    (recInfo.wrote ? '／最後に書いた ' + new Date(recInfo.wrote).toLocaleTimeString('ja-JP') : '') + (evPend.length ? '／未送信 ' + evPend.length : '') + (recInfo.err ? '／⚠ ' + recInfo.err : '');
+}
+$('#recPick').addEventListener('click', async ()=>{
+  try{ recDir = await showDirectoryPicker({id: 'otodrill-rec', mode: 'readwrite'}); }catch(e){ return; }
+  await putDir(recDir, 'records');
+  evPend = evOwn.map(e => e.id); save('ev:pend', evPend);   // 選んだときに、それまでの分をまとめて書く
+  try{ const dir = await recFolder(true); await dir.removeEntry(DEV + '.jsonl').catch(()=>{}); }catch(e){}
+  await syncRecords();
+});
+$('#recSync').addEventListener('click', syncRecords);
+(async function(){
+  const h = await getDir('records');
+  if(h && h.queryPermission){
+    try{ if(await h.queryPermission({mode: 'readwrite'}) === 'granted'){ recDir = h; await syncRecords(); } else { recDir = null; $('#recInfo').textContent = '前に選んだ ' + h.name + ' に、もう一度書き込みの許可が要ります。「フォルダを選ぶ」から選び直してください。'; } }catch(e){}
+  }
+  paintRecInfo();
+})();
+// 試験の口：?test のときだけ、フォルダの代わりにブラウザの内部の保存領域（OPFS）を渡せる。⛔ ふだんは出ない
+if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}) };
+// ほかの端末で進めた分を、画面に戻ってきたときに読み直す
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
 
 /* 操作卓の高さは画面幅で変わる。引いた語の窓が下に潜らないよう、実測して渡す。 */
 (function(){
