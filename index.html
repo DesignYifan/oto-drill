@@ -981,6 +981,21 @@ button.linkish:hover{background:none; text-decoration:underline}
 .toast small{font-size:12px; opacity:.75}
 .app.practicing ~ .toast{bottom:24px}
 
+/* ---- これどういうこと？（2026-10-02） ---- */
+.ask{display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--ui-outline-borderColor); padding-top:16px; margin-top:4px; text-align:left}
+.qaitem .pill{background:var(--ui-surface-bgColor)}
+.askform{display:flex; gap:8px}
+.askform input{flex:1; min-width:0; font:inherit; font-size:14px; padding:8px 16px; border:0; border-radius:999px; background:var(--ui-surface-muted-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); color:var(--ui-text-fgColor)}
+.askform input:focus-visible{outline:2px solid var(--ui-primary-color); outline-offset:1px}
+.askform button{flex:none}
+.asknote{font-size:12px; color:var(--ui-text-muted-fgColor)}
+.qalist{display:flex; flex-direction:column; gap:12px}
+.qaitem{display:flex; flex-direction:column; gap:8px; background:var(--ui-surface-muted-bgColor); border-radius:var(--ui-control-radius); padding:12px 16px}
+.qaq{font-size:14px; display:flex; gap:8px} .qaq b{color:var(--ui-text-muted-fgColor); font-weight:500; flex:none}
+.qaa{display:flex; flex-direction:column; gap:4px; align-items:flex-start}
+.qatext{font-size:14px; line-height:1.7; white-space:pre-wrap}
+.lookup .ask{border-top:0; padding-top:0}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -1871,6 +1886,7 @@ async function lookup(token, at, seg, file){
     paintExport();
   });
   box.appendChild(keep);
+  box.appendChild(askEl(ctxOf(seg.text, null)));
 
   // Wiktionary（無料・鍵なし。引けなくても他の表示は残る）
   try{
@@ -2541,6 +2557,7 @@ function explainEl(it, res){
   if(g) h += '<div class="exsrc">意味と要点は機械の訳（未確認）。文法は手で書いたメモ。</div>';
   else if(it.deck && it.deck.kind === 'text') h += '<div class="exsrc">この文の訳はまだありません。語の意味は台帳から。</div>';
   box.innerHTML = h;
+  if(it.deck && it.deck.kind === 'text') box.appendChild(askEl(ctxOf(it.show, it.id)));
   return box;
 }
 
@@ -3351,6 +3368,7 @@ async function readOthers(){
 async function syncRecords(){
   await flushEvents();
   await readOthers();
+  await flushQA(); await readQA();
   rebuild();
   paintRecInfo();
   if(mode === 'book') renderBook(); else if(mode === 'overview') renderOverview(); else if(mode === 'practice') paintStat();
@@ -3383,6 +3401,132 @@ if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
 
+
+/* ================= これどういうこと？と質問帳（2026-10-02） =================
+   本人「その都度わからないところはあなたに聞いていって、データベースに貯めていくと、何がわからなかったところかが蓄積されていい」。
+   ⭕ 聞いたことは全部、質問帳（質問帳/<言語>/<端末>.jsonl）に1行足す。Claude が確かめた答えは 質問帳/<言語>/claude.jsonl。
+   ⭕ 答えの段：確かめた（Claude）＞ AI の答え（未確認）＞ 答え待ち。⛔ AI の答えを確かめた物のように見せない。
+   ⭕ AI は自分の知識ではなく「材料（文・訳・語・文法メモ）の範囲で」答えさせる（材料ありで 10問中10問、なしは大きく崩れた：AITeam_モデル台帳）。
+   AI の相手：iPhone のアプリなら window.oto.ask（Groq）／Mac は手元から開いたとき localhost:8791（mlx の Qwen3.8-27B）／どちらも無ければ貯めるだけ。 */
+const AI_LOCAL = 'http://localhost:8791/v1/chat/completions';
+let aiBackend = null;            // 'app' | 'local' | null
+let qaOwn = load('qa:own', []), qaOthers = [], qaPend = load('qa:pend', []);
+(async function detectAI(){
+  if(window.oto && typeof window.oto.ask === 'function'){ aiBackend = 'app'; return; }
+  if(!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return;
+  try{
+    const c = new AbortController(); setTimeout(()=> c.abort(), 1500);
+    const r = await fetch('http://localhost:8791/v1/models', {signal: c.signal});
+    if(r.ok) aiBackend = 'local';
+  }catch(e){}
+})();
+const aiName = () => aiBackend === 'app' ? 'AI（Groq）' : aiBackend === 'local' ? 'AI（この Mac のモデル）' : null;
+
+function material(ctx){
+  const lines = ['文：' + ctx.text];
+  if(ctx.ja) lines.push('訳：' + ctx.ja);
+  if(ctx.words && ctx.words.length) lines.push('語：' + ctx.words.map(([w, j]) => w + '＝' + j).join('／'));
+  (ctx.notes || []).forEach(n => lines.push('文法メモ：' + (n.title ? n.title + '：' : '') + n.body));
+  return lines.join('\n');
+}
+async function aiAsk(ctx, question){
+  const system = ((LP.ai && LP.ai.instructions) || '日本語で短く答えます。') +
+    ' 必ず【材料】に沿って説明し、材料に無いことを言うときは「材料には無いが」と断ってから言う。答えは3〜6行。';
+  const user = '【材料】\n' + material(ctx) + '\n\n質問：' + question;
+  if(aiBackend === 'app') return {text: await window.oto.ask(system, user), model: 'groq'};
+  if(aiBackend === 'local'){
+    const r = await fetch(AI_LOCAL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+      messages: [{role: 'system', content: system}, {role: 'user', content: user}],
+      max_tokens: 500, temperature: 0.3, chat_template_kwargs: {enable_thinking: false}})});
+    const j = await r.json();
+    return {text: (j.choices[0].message.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim(), model: 'local:Qwen3.8-27B'};
+  }
+  return null;
+}
+
+/* ---- 質問帳の読み書き（記録と同じく、端末ごとのファイルに足すだけ） ---- */
+function qaEmit(e){
+  e = Object.assign({id: DEV + '.q' + Date.now().toString(36) + (evSeq++), t: Date.now(), dev: DEV, lang: LP.code}, e);
+  qaOwn.push(e); qaPend.push(e.id); save('qa:own', qaOwn); save('qa:pend', qaPend);
+  flushQA();
+  return e;
+}
+async function qaDir(lang){
+  if(!recDir) return null;
+  const d = await recDir.getDirectoryHandle('質問帳', {create: true});
+  return await d.getDirectoryHandle(lang, {create: true});
+}
+async function flushQA(){
+  if(!recDir || !qaPend.length) return;
+  try{
+    const pend = new Set(qaPend);
+    const byLang = {};
+    qaOwn.filter(e => pend.has(e.id)).forEach(e => (byLang[e.lang] = byLang[e.lang] || []).push(e));
+    for(const [lang, es] of Object.entries(byLang)){
+      const fh = await (await qaDir(lang)).getFileHandle(DEV + '.jsonl', {create: true});
+      const f = await fh.getFile(); const w = await fh.createWritable({keepExistingData: true});
+      await w.seek(f.size); await w.write(es.map(e => JSON.stringify(e)).join('\n') + '\n'); await w.close();
+    }
+    qaPend = []; save('qa:pend', qaPend);
+  }catch(e){ recInfo.err = '質問帳に書けませんでした（' + e.name + '）'; paintRecInfo(); }
+}
+async function readQA(){
+  if(!recDir) return;
+  try{
+    const d = await qaDir(LP.code), out = [];
+    for await (const [name, h] of d.entries()){
+      if(h.kind !== 'file' || !name.endsWith('.jsonl') || name === DEV + '.jsonl') continue;
+      (await (await h.getFile()).text()).split('\n').forEach(l => { if(l.trim()){ try{ out.push(JSON.parse(l)); }catch(e){} } });
+    }
+    qaOthers = out;
+  }catch(e){}
+}
+/* この文について聞いたことと、その答え（確かめた答えがあればそれを先に） */
+function qaFor(text){
+  const all = qaOwn.concat(qaOthers);
+  const answers = {};
+  all.filter(e => e.k === 'a').forEach(a => { answers[a.qid] = a; });
+  return all.filter(e => e.k === 'q' && e.lang === LP.code && norm(e.text) === norm(text))
+    .sort((a, b) => a.t - b.t).map(q => ({q, a: answers[q.id] || null}));
+}
+
+function qaItemHTML(x){
+  const v = x.a && x.a.status === 'verified';
+  const body = v ? x.a.answer : (x.a && x.a.answer) || x.q.ai || '';
+  const tag = v ? '<span class="pill ok">確かめた答え</span>' : x.a && x.a.status === 'unverifiable' ? '<span class="pill">確かめられなかった</span>' :
+    x.q.ai ? '<span class="pill">AI の答え（未確認）</span>' : '<span class="pill">答え待ち</span>';
+  return '<div class="qaitem"><div class="qaq"><b>問</b>' + esc(x.q.q) + '</div>' +
+    (body ? '<div class="qaa">' + tag + '<div class="qatext">' + esc(body) + '</div></div>' : '<div class="qaa">' + tag + '</div>') + '</div>';
+}
+/* 解説・引いた語の窓の下に出す「これどういうこと？」 */
+function askEl(ctx){
+  const box = document.createElement('section'); box.className = 'ask';
+  const paint = () => {
+    const past = qaFor(ctx.text);
+    box.innerHTML = (past.length ? '<div class="qalist">' + past.map(qaItemHTML).join('') + '</div>' : '') +
+      '<form class="askform"><input name="q" placeholder="これどういうこと？（例：なぜ là が無いの？）" autocomplete="off" aria-label="この文について聞く"><button class="primary">聞く</button></form>' +
+      '<div class="asknote">' + (aiName() ? aiName() + 'が文法メモと訳を材料に答えます。聞いたことは質問帳に貯まり、あとで Claude が確かめます。'
+        : 'いまは AI につながっていません。聞いたことは質問帳に貯まり、あとで Claude が答えます。') + '</div>';
+    const f = box.querySelector('form');
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      const q = f.q.value.trim(); if(!q) return;
+      f.q.disabled = true; f.querySelector('button').disabled = true;
+      box.querySelector('.asknote').textContent = aiName() ? aiName() + 'が考えています…' : '質問帳に貯めました。';
+      let ai = null;
+      try{ ai = await aiAsk(ctx, q); }catch(err){ ai = null; }
+      qaEmit({k: 'q', book: bookId, item: ctx.item || null, text: ctx.text, ja: ctx.ja || '', q, ai: ai ? ai.text : null, model: ai ? ai.model : null});
+      paint();
+    });
+    f.addEventListener('keydown', e => e.stopPropagation());   // 練習のキー（space・数字）に取られないように
+  };
+  paint();
+  return box;
+}
+function ctxOf(text, item){
+  const g = glossOf(text);
+  return {text, item, ja: g ? g.ja : '', words: g ? g.words : [], notes: notesFor(text)};
+}
 /* 操作卓の高さは画面幅で変わる。引いた語の窓が下に潜らないよう、実測して渡す。 */
 (function(){
   const dock = $('#dock');
