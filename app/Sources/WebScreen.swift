@@ -106,6 +106,12 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
             try { await oto.fs.append('rec', '記録/selftest.jsonl', '{"x":1}\\n'); await oto.fs.append('rec', '記録/selftest.jsonl', '{"x":2}\\n'); r.read = await oto.fs.read('rec', '記録/selftest.jsonl'); } catch(e) { r.read = 'エラー ' + e; }
             try { const res = await fetch(oto.fs.url('book', 'images.json')); r.fetch = res.status + ' ' + (await res.text()).length; } catch(e) { r.fetch = 'エラー ' + e; }
             try { const res = await fetch(oto.fs.url('book', '001.mp3'), {headers: {Range: 'bytes=0-99'}}); r.range = res.status + ' ' + (await res.arrayBuffer()).byteLength; } catch(e) { r.range = 'エラー ' + e; }
+            const a = window.__oto && window.__oto.audio;
+            if(a){ a.muted = true; a.volume = 0; }
+            if(window.__oto){ window.__oto.clip.muted = true; }
+            const t0 = Date.now(); document.querySelector('#play').click();
+            await new Promise(res => setTimeout(res, 4000));
+            r.audio = { paused: a && a.paused, t: a && Math.round(a.currentTime * 10) / 10, src: a && a.src.slice(0, 12), ms: Date.now() - t0, err: a && a.error && a.error.code };
             return JSON.stringify(r);
             """
             webView.callAsyncJavaScript(js, arguments: [:], in: nil, in: .page) { res in

@@ -1525,14 +1525,21 @@ async function filesFromDrop(dt){
 }
 
 /* ---------- 再生 ---------- */
+let playSeq = 0;
 function play(i, autoplay, seekTo){
   if(i < 0 || i >= tracks.length) return;
   clearTimeout(gapTimer);
-  if(url) URL.revokeObjectURL(url);
+  if(url && !NATIVE) URL.revokeObjectURL(url);
   idx = i;
-  url = objURL(tracks[i].file);
-  audio.src = url;
-  audio.playbackRate = rate;
+  const f = tracks[i].file, mySeq = ++playSeq;
+  const start = u => {
+    if(mySeq !== playSeq) return;     // 読んでいるあいだに別の本へ移った
+    url = u; audio.src = u; audio.playbackRate = rate;
+    if(seekTo) audio.addEventListener('loadedmetadata', ()=>{ audio.currentTime = seekTo; }, {once:true});
+    if(autoplay) audio.play().catch(()=>{});
+  };
+  if(NATIVE && f._url) nativeAudioURL(f).then(start).catch(() => start(f._url));
+  else start(objURL(f));
   playsLeft = Number($('#repeatN').value) || 0;
 
   const width = String(tracks.length).length;
@@ -1548,10 +1555,6 @@ function play(i, autoplay, seekTo){
   paintList();
   scrollToCurrent();
 
-  if(seekTo){
-    audio.addEventListener('loadedmetadata', ()=>{ audio.currentTime = seekTo; }, {once:true});
-  }
-  if(autoplay) audio.play().catch(()=>{});
   saveLast();
 }
 
@@ -1659,6 +1662,17 @@ function idb(){
 const NATIVE = !!(window.oto && window.oto.fs);
 const canFolders = !!window.showDirectoryPicker || NATIVE;
 const objURL = f => (f && f._url) || URL.createObjectURL(f);
+/* iPhone：音声は1回だけまるごと読み、手元の Blob から鳴らす（2026-10-03 本人「音声再生をしても始まらない」）。
+   ⛔ otofs:// のまま渡すと、iPhone の再生は小さく何度も読みに来て、そのたびに iCloud から読み直して止まっていた。直近の4本は控える */
+const nAudio = new Map();
+async function nativeAudioURL(f){
+  if(nAudio.has(f._url)){ const u = nAudio.get(f._url); nAudio.delete(f._url); nAudio.set(f._url, u); return u; }
+  const b = await (await fetch(f._url)).blob();
+  const u = URL.createObjectURL(new Blob([b], {type: f.type || 'audio/mpeg'}));
+  nAudio.set(f._url, u);
+  while(nAudio.size > 4){ const [k, old] = nAudio.entries().next().value; URL.revokeObjectURL(old); nAudio.delete(k); }
+  return u;
+}
 class NFile {
   constructor(kind, path, name, size){ this.kind = 'file'; this._k = kind; this._p = path; this.name = name; this._size = size || 0; }
   async getFile(){
@@ -2245,6 +2259,7 @@ $('#export').addEventListener('click', ()=>{
    ⭕ 記録は項目の id（vi.letter.a など、本ではなく言語の側の名前）で持つ。別の本に同じ音が出ても記録がつながる。 */
 
 const clip = new Audio();
+if(NATIVE) window.__oto = {audio, clip};   // iPhone のアプリの自己試験が再生を確かめるため
 clip.preload = 'auto';
 let pdata = null, pfiles = {}, purls = {};
 let pdeck = load('p:deck', 'all');
@@ -2408,8 +2423,13 @@ function urlFor(src){
   return purls[src];
 }
 function say(it){
-  const u = urlFor(srcOf(it));
+  const src = srcOf(it), f = pfiles[src] || afiles[src];
+  if(NATIVE && f && f._url){ nativeAudioURL(f).then(u => sayWith(it, u)).catch(() => {}); return; }
+  const u = urlFor(src);
   if(!u) return;
+  sayWith(it, u);
+}
+function sayWith(it, u){
   cancelAnimationFrame(raf); clearTimeout(stopTimer);
   const go = ()=>{
     clip.currentTime = it.start;
