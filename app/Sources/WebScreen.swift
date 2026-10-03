@@ -4,12 +4,10 @@ import WebKit
 /// 公開ページを開く。ページの直しはアプリを入れ直さずに届く。
 /// 試すときの記録（アプリのフォルダの oto.log）。Mac から simctl get_app_container で読める
 func dlog(_ m: String) {
-    #if DEBUG
     let u = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("oto.log")
     let line = "\(Date()) \(m)\n"
     if let h = try? FileHandle(forWritingTo: u) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
     else { try? line.data(using: .utf8)?.write(to: u) }
-    #endif
 }
 
 let PAGE: URL = {

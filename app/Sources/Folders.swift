@@ -36,6 +36,7 @@ final class Folders: NSObject, UIDocumentPickerDelegate {
         guard let url else { return nil }
         _ = url.startAccessingSecurityScopedResource()
         if let data = try? url.bookmarkData() { UserDefaults.standard.set(data, forKey: key(kind)) }
+        dlog("選んだ \(kind) \(url.path)")
         return url.lastPathComponent
     }
 
@@ -57,7 +58,16 @@ final class Folders: NSObject, UIDocumentPickerDelegate {
     /// 一覧：iCloud にだけあるファイル（.名前.icloud）も、元の名前で返す
     func list(_ kind: String, _ path: String) throws -> [[String: Any]] {
         let dir = try url(kind, path)
-        let items = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey], options: [])
+        // ⭕ iPhone の iCloud のフォルダは、まだ開いていないと中身が空に見える。読みに行く合図（NSFileCoordinator）を出してから一覧する
+        var items: [URL] = []
+        var cerr: NSError?, inner: Error?
+        NSFileCoordinator().coordinate(readingItemAt: dir, options: [], error: &cerr) { real in
+            do { items = try FileManager.default.contentsOfDirectory(at: real, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey], options: []) }
+            catch { inner = error }
+        }
+        if let cerr { dlog("一覧 失敗 \(kind)/\(path) \(cerr)"); throw cerr }
+        if let inner { dlog("一覧 失敗 \(kind)/\(path) \(inner)"); throw inner }
+        dlog("一覧 \(kind)/\(path) \(items.count)件 例：\(items.prefix(3).map { $0.lastPathComponent })")
         var out: [[String: Any]] = []
         for u in items {
             var name = u.lastPathComponent

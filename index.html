@@ -1468,7 +1468,11 @@ function scrollToCurrent(){
 function loadFiles(files){
   const list = files.filter(f => AUDIO_RE.test(f.name) && !f.name.startsWith('.'));
   if(!list.length){
-    $('#fname').textContent = '音声ファイルが見つかりませんでした。mp3・m4a・wav などが入ったフォルダを選んでください。';
+    // ⭕ 2026-10-03 iPhone で、記録のフォルダ（記録・質問帳が入っている）を教材として選んでいた。同じ「音声ドリル」という名前で迷う
+    const isRec = files.some(f => /(^|\/)(記録|質問帳)\//.test(f._rel || ''));
+    $('#fname').textContent = isRec
+      ? 'これは記録のフォルダです。教材は' + (NATIVE ? ' iCloud Drive の「音声ドリル」→「教材」→「26295」' : '音声の入ったフォルダ') + 'を選んでください。記録のフォルダは、見出しの「同期」から選びます。'
+      : '音声ファイルが見つかりませんでした。mp3・m4a・wav などが入ったフォルダを選んでください。';
     $('#fname').classList.add('blank');
     return;
   }
