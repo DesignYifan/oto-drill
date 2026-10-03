@@ -481,6 +481,9 @@ li.hidden{display:none}
 .quiz .ask{font-size:72px; font-weight:500; line-height:1.1; min-height:80px; text-align:center}
 .quiz .hear{display:inline-flex; align-items:center; gap:8px; padding:8px 20px; font-size:14px}
 .quiz .hear .ic{width:16px; height:16px}
+.japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
+.choices.mean button{text-align:left; font-size:16px; line-height:1.5}
+.exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
 .qprompt{font-size:17px; font-weight:600; line-height:1.5; text-align:center; color:var(--ui-text-fgColor)}
 .qprompt small{display:block; margin-top:4px; font-size:12px; font-weight:400; color:var(--ui-text-muted-fgColor)}
 .qresult{display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline; justify-content:center; width:100%; padding:12px 20px; border-radius:var(--ui-control-radius); font-size:14px; text-align:center}
@@ -1285,10 +1288,14 @@ button.linkish:hover{background:none; text-decoration:underline}
       <select id="pdecks" aria-label="練習する組"></select>
       <div class="seg" id="pviews">
         <button data-v="table">表</button>
-        <button data-v="hear">聴いて選ぶ</button>
-        <button data-v="order">並べ替える</button>
-        <button data-v="cloze">穴埋め</button>
+        <button data-v="mean">聴いて意味</button>
+        <button data-v="build">組み立てる</button>
+        <button data-v="gap">穴を書く</button>
         <button data-v="type">聴いて書く</button>
+        <button data-v="speak">日本語から言う</button>
+        <button data-v="transform">書き換える</button>
+        <button data-v="respond">質問に答える</button>
+        <button data-v="hear">聴いて選ぶ</button>
         <button data-v="say">見て言う</button>
       </div>
       <button class="linkish" id="plesson" hidden></button>
@@ -1811,6 +1818,7 @@ let script = null;    // { "001.mp3": {lang, segments:[{start,end,text,words}]} 
 let lex = {morphemes:{}, words:{}};
 let notes = {};       // 文（正規化した本文）→ 文法メモ
 let gloss = {};       // 文 → {ja, words:[[語, 意味]], point}（gloss.json。機械の訳・未確認）
+let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
 let sentEls = [];     // いま出している文の要素
 let nowSent = -1;
@@ -1820,13 +1828,15 @@ const norm = t => t.normalize('NFC').trim().toLowerCase().replace(/[.,!?;:"'()\[
 async function loadSidecars(files){
   const pick = n => files.find(f => f.name.toLowerCase() === n);
   const read = async f => { try{ return JSON.parse(await f.text()); }catch(e){ return null; } };
-  script = null; lex = {morphemes:{}, words:{}}; notes = {}; gloss = {};
+  script = null; lex = {morphemes:{}, words:{}}; notes = {}; gloss = {}; drills = [];
   const t = pick('transcript.json'), l = pick('lexicon.json'), n = pick('notes.json');
   if(t) script = await read(t);
   if(l){ const d = await read(l); if(d) lex = {morphemes:d.morphemes||{}, words:d.words||{}}; }
   if(n) notes = await read(n) || {};
   const g = pick('gloss.json');
   if(g){ const d = await read(g); gloss = (d && d.sentences) || {}; }
+  const dr = pick('drills.json');
+  if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
   const p = pick('practice.json');
   const bk = pick('book.json');
   const lj = pick('lang.json');
@@ -2101,6 +2111,7 @@ clip.preload = 'auto';
 let pdata = null, pfiles = {}, purls = {};
 let pdeck = load('p:deck', 'all');
 let pview = load('p:view', 'table');
+if(pview === 'order') pview = 'build'; if(pview === 'cloze') pview = 'gap';   // 2026-10-03 に組み替えた練習の名前
 let srs = load('srs', {});
 let q = null;            // いまの問い
 let stopAt = 0, raf = 0, stopTimer = 0;
@@ -2315,10 +2326,33 @@ const orderable = it => it.deck.kind === 'text' && words(it.show).length >= 3 &&
 const clozable = it => it.deck.kind === 'text' && words(it.show).length >= 2 && words(it.show).length <= 14;
 // 書く：文と語、発音編の語（ma・cam など）。字の名前（A a）と音の断片（-ng）は書く対象にしない
 const typable = it => it.deck.kind === 'text' || (!/[\s\/]/.test(it.show) && !/^-/.test(it.show) && it.group !== 'letter');
-const FILTER = {order: orderable, cloze: clozable, type: typable};
+/* ---- 定着する問い（2026-10-03・仕様 20261003_oto-drill-定着する問い_仕様 の B案）----
+   本人「聞いた音声をそのまま選んで当てる問題はあんまり練習になってない」「長期記憶・定着、構文や文法が習熟する観点で」。
+   ⭕ 選ぶより思い出して書く・言う／日本語の意味とベトナム語の形を行き来する／文法を使って書き換える・答える。
+   ⭕ 同じ文を当てる「聴いて選ぶ」と「見て言う」は、字と音の聞き分け（発音編）だけに残す。 */
+function jaOf(it){
+  const g = glossOf(it.show) || glossOf((it.show || '').replace(/[.。]$/, ''));
+  if(g && g.ja) return g.ja;
+  if(catOf(it, it.deck) === 'word'){ const m = wordMeaning(it.show, it.show); if(m) return m.ja; }
+  return null;
+}
+const isSound = it => it.deck.kind === 'sound';
+const FILTER = {order: orderable, cloze: clozable, type: typable,
+  hear: isSound, say: isSound,
+  mean: it => !isSound(it) && !!jaOf(it),
+  build: it => orderable(it) && !!jaOf(it),
+  gap: it => clozable(it) && !!jaOf(it),
+  speak: it => !isSound(it) && !!jaOf(it)};
+const DRILLV = {transform: 'transform', respond: 'respond'};
+function drillItem(d){
+  const deck = (pdata && pdata.decks.find(x => x.id === d.deck)) || {id: d.deck, kind: 'text', book: '', title: '', items: []};
+  return {id: 'drill:' + d.id, show: d.answer, deck, drill: d, group: 'drill'};
+}
+function drillsIn(kind, deckIds){ return drills.filter(d => d.kind === kind && (!deckIds || deckIds.has(d.deck))); }
 function nextItem(prevId){
   const now = Date.now();
-  const all = FILTER[pview] ? items().filter(FILTER[pview]) : items();
+  const all = DRILLV[pview] ? drillsIn(pview, new Set(decks().map(d => d.id))).map(drillItem)
+    : FILTER[pview] ? items().filter(FILTER[pview]) : items();
   let pool = all.filter(it => it.id !== prevId);
   if(!pool.length) pool = all;
   if(!pool.length) return null;
@@ -2383,10 +2417,16 @@ function renderPractice(){
   paintSets();
   [...$('#pviews').children].forEach(b => b.classList.toggle('on', b.dataset.v === pview));
   paintStat();
+  // 字と音の聞き分けは、発音編が入っているときだけ。書き換える・答えるは問いがあるときだけ
+  const hasSound = items().some(isSound), ds = new Set(decks().map(d => d.id));
+  [...$('#pviews').children].forEach(b => { const v = b.dataset.v;
+    b.hidden = (v === 'hear' || v === 'say') ? !hasSound : DRILLV[v] ? !drillsIn(v, ds).length : false; });
   if(pview === 'table') renderTable();
-  else if(pview === 'order') renderOrder();
-  else if(pview === 'cloze') renderCloze();
+  else if(pview === 'order' || pview === 'build') renderOrder();
+  else if(pview === 'cloze' || pview === 'gap') renderCloze();
   else if(pview === 'type') renderType();
+  else if(pview === 'mean') renderMean();
+  else if(DRILLV[pview]) renderDrill();
   else renderQuiz();
 }
 
@@ -2446,6 +2486,161 @@ function hearBtn(onClick){
   b.addEventListener('click', ()=>{ onClick(); b.blur(); });
   return b;
 }
+/* ---- 聴いて意味を選ぶ：音だけ聞いて、日本語の意味を4つから ---- */
+function meanChoices(it){
+  const mine = jaOf(it), cat = catOf(it, it.deck);
+  const seen = new Set([mine]), pool = [];
+  const add = x => { const j = jaOf(x); if(j && !seen.has(j) && catOf(x, x.deck) === cat){ seen.add(j); pool.push({id: x.id, ja: j}); } };
+  it.deck.items.forEach(x => add({...x, deck: it.deck}));
+  if(pool.length < 6 && pdata) pdata.decks.filter(d => d !== it.deck && d.book === it.deck.book && d.kind === it.deck.kind).forEach(d => d.items.forEach(x => add({...x, deck: d})));
+  // 長さの近い意味を先に（短い語に長い文の訳が並ぶと、聞かずに分かってしまう）
+  const near = pool.map(c => [c, Math.abs(c.ja.length - mine.length) + Math.random() * 6]).sort((a, b) => a[1] - b[1]).slice(0, 3).map(x => x[0]);
+  return [{id: it.id, ja: mine}, ...near].sort(() => Math.random() - .5);
+}
+function answerMean(c){
+  if(q.done) return;
+  q.done = true; q.picked = c.id; mark(q.it, c.id === q.it.id, 'mean'); renderMean();
+}
+function renderMean(){
+  const body = $('#pbody');
+  if(!q){ q = makeQ('mean', nextItem(null)); }
+  if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">意味の分かる項目がありません。訳（gloss.json）のある教材を選んでください</div></div>'; return; }
+  const it = q.it;
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz';
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' + qPrompt('聴いて、意味を選んでください', '文字は答えたあとに出ます');
+  box.appendChild(hearBtn(()=> say(it)));
+  if(q.done) box.insertAdjacentHTML('beforeend', '<div class="ask long" lang="' + LP.code + '">' + esc(it.show) + '</div>');
+  const ch = document.createElement('div'); ch.className = 'choices text mean';
+  q.choices.forEach((c, i) => {
+    const b = document.createElement('button'); b.lang = 'ja';
+    b.innerHTML = esc(c.ja) + '<small>' + (i + 1) + '</small>';
+    if(q.done){ if(c.id === it.id) b.classList.add('right'); else if(c.id === q.picked) b.classList.add('wrong'); }
+    b.addEventListener('click', () => answerMean(c));
+    ch.appendChild(b);
+  });
+  box.appendChild(ch);
+  if(q.done){
+    const ok = q.picked === it.id;
+    box.insertAdjacentHTML('beforeend', ok ? qResult('ok', '正解') : qResult('ng', '不正解', '正しくは「' + esc(jaOf(it)) + '」'));
+    box.appendChild(explainEl(it, {ok}));
+    box.appendChild(nextRow());
+  }
+  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
+  body.appendChild(box);
+  if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
+}
+
+/* ---- 書く欄（聴いて書く・穴を書く・書き換える・答える で共通） ---- */
+function writeInput(id, placeholder, onEnter, onTab){
+  const inp = document.createElement('input');
+  inp.id = id; inp.className = 'typein'; inp.autocomplete = 'off'; inp.spellcheck = false; inp.lang = LP.code;
+  inp.setAttribute('autocapitalize', 'off'); inp.placeholder = placeholder;
+  inp.value = q.draft || '';
+  inp.addEventListener('input', e => {
+    if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){ const v = telexLine(inp.value); if(v !== inp.value) inp.value = v; }
+    q.draft = inp.value;
+  });
+  inp.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); onEnter(inp.value); }
+    else if(e.key === 'Tab' && onTab){ e.preventDefault(); onTab(); }
+  });
+  return inp;
+}
+function telexOpt(inp){
+  if(LP.inputMethod !== 'telex') return null;
+  const opt = document.createElement('label'); opt.className = 'opt';
+  opt.innerHTML = '<input type="checkbox"' + (load('telex', true) ? ' checked' : '') + '> 画面の Telex で打つ（aa→â　dd→đ　s f r x j で声調）';
+  opt.querySelector('input').addEventListener('change', e => { save('telex', e.target.checked); inp.focus(); });
+  return opt;
+}
+/* 書いた答えを、正しい答え（いくつか）のうち一番近いものと比べる */
+function gradeAgainst(answers, typed){
+  let best = null;
+  answers.filter(Boolean).forEach(a => {
+    const res = checkTyped(a, typed), n = res.filter(r => r.k === 'ok').length - res.filter(r => r.k !== 'ok' && r.k !== 'near').length;
+    if(!best || n > best.n) best = {a, res, n};
+  });
+  const ok = best.res.every(r => r.k === 'ok'), close = !ok && best.res.every(r => r.k === 'ok' || r.k === 'near');
+  return {answer: best.a, res: best.res, ok, close};
+}
+function diffEl(res){
+  const diff = document.createElement('div'); diff.className = 'diff';
+  diff.innerHTML = res.map(r => {
+    if(r.k === 'ok') return '<span class="w ok">' + esc(r.t) + '</span>';
+    if(r.k === 'near') return '<span class="w near" title="あなた：' + esc(r.y) + '">' + esc(r.t) + '<small>' + esc(r.y) + '</small></span>';
+    if(r.k === 'wrong') return '<span class="w bad" title="あなた：' + esc(r.y) + '">' + esc(r.t) + '<small>' + esc(r.y) + '</small></span>';
+    if(r.k === 'miss') return '<span class="w miss">' + esc(r.t) + '<small>抜け</small></span>';
+    return '<span class="w extra"><s>' + esc(r.y) + '</s><small>余り</small></span>';
+  }).join(' ');
+  return diff;
+}
+
+/* ---- 文法を使う：書き換える・質問に答える（drills.json） ---- */
+let viVoice = null;
+function findVoice(){ try{ viVoice = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith(LP.code)) || null; }catch(e){} return viVoice; }
+if(window.speechSynthesis){ findVoice(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', findVoice); }
+function speakText(t){   // 教材の音が無い文（作った問い）は、端末の声で読む
+  if(!findVoice()) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t); u.voice = viVoice; u.lang = viVoice.lang; u.rate = .9;
+  speechSynthesis.speak(u);
+}
+function gradeDrill(v){
+  const d = q.it.drill;
+  q.typedText = v; q.g = gradeAgainst([d.answer].concat(d.alts || []), v); q.done = true;
+  mark(q.it, q.g.ok, pview);
+  renderDrill();
+}
+function renderDrill(){
+  const body = $('#pbody');
+  if(!q){ q = makeQ(pview, nextItem(null)); }
+  if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">この組には、文法を使う問いがまだありません</div></div>'; return; }
+  const it = q.it, d = it.drill, resp = d.kind === 'respond';
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz';
+  box.innerHTML = '<div class="from">' + esc((it.deck.book || '') + '　' + (it.deck.title || '')) + (d.pattern ? '　' + esc(d.pattern) : '') + '</div>' +
+    qPrompt(resp ? '質問に、ベトナム語で答えてください' : esc(d.instr), resp ? esc(d.instr || '') : '');
+  box.insertAdjacentHTML('beforeend', '<div class="ask long" lang="' + LP.code + '">' + esc(d.base) + '</div>' +
+    (d.base_ja ? '<div class="baseja pnote" lang="ja">' + esc(d.base_ja) + '</div>' : ''));
+  if(findVoice()) box.appendChild(hearBtn(() => speakText(d.base)));
+  if(!q.done){
+    const inp = writeInput('drillin', resp ? '答えをここに書く（Enter で答え合わせ）' : '書き換えた文をここに書く（Enter で答え合わせ）', gradeDrill);
+    box.appendChild(inp);
+    const opt = telexOpt(inp); if(opt) box.appendChild(opt);
+    const row = document.createElement('div'); row.className = 'row';
+    const give = document.createElement('button'); give.textContent = '分からない'; give.className = 'miss';
+    give.addEventListener('click', () => gradeDrill(''));
+    const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = '答え合わせ';
+    ok.addEventListener('click', () => gradeDrill(inp.value));
+    row.append(give, ok); box.appendChild(row);
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 答え合わせ</div>');
+    setTimeout(() => inp.focus(), 0);
+  }else{
+    const g = q.g, ok = g.ok || q.self;
+    box.insertAdjacentHTML('beforeend', ok ? qResult('ok', '正解', q.self ? '自分で合っていたことにしました' : '')
+      : g.close ? qResult('near', 'おしい', '文字は合っています。声調・記号を直せば正解です') : qResult('ng', '不正解', '答えの例は下のとおりです'));
+    box.appendChild(diffEl(g.res));
+    const sec = document.createElement('section'); sec.className = 'explain';
+    let h = '<div class="exja"><span class="exk">答え</span><div lang="' + LP.code + '"><b>' + esc(d.answer) + '</b>' +
+      (d.alts && d.alts.length ? '<div class="exalt">ほかの言い方：' + d.alts.map(esc).join('／') + '</div>' : '') + '</div></div>';
+    if(d.ja) h += '<div class="exja"><span class="exk">意味</span><div lang="ja">' + esc(d.ja) + '</div></div>';
+    if(d.note) h += '<div class="exnote"><span class="exk">文法</span><div lang="ja">' + esc(d.note) + '</div></div>';
+    sec.innerHTML = h;
+    sec.appendChild(askEl({text: d.answer, item: null, ja: d.ja || '', words: [], notes: d.note ? [{title: d.pattern || '', body: d.note}] : []}));
+    box.appendChild(sec);
+    // 答えが1つに決まらない問い（質問に答える）は、自分の答えも合っていたら押せる
+    if(resp && !g.ok && !q.self && (q.typedText || '').trim()){
+      const self = document.createElement('button'); self.className = 'linkish'; self.textContent = '自分の答えも合っていた（正解にする）';
+      self.addEventListener('click', () => { q.self = true; mark(it, true, pview); renderDrill(); });
+      box.appendChild(self);
+    }
+    box.appendChild(nextRow());
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 次へ</div>');
+  }
+  body.appendChild(box);
+}
+
 function renderQuiz(){
   if(!q){
     const it = nextItem(null);
@@ -2489,8 +2684,10 @@ function renderQuiz(){
     box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
     if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
   }else{
-    box.insertAdjacentHTML('beforeend', qPrompt(q.heard ? '言えましたか' : '声に出して言ってから、答えを聴いてください'));
-    box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
+    const sp = pview === 'speak';
+    box.insertAdjacentHTML('beforeend', qPrompt(q.heard ? '言えましたか' : sp ? 'この意味をベトナム語で声に出して言ってから、答えを聴いてください' : '声に出して言ってから、答えを聴いてください'));
+    if(sp) box.insertAdjacentHTML('beforeend', '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>');
+    if(!sp || q.heard) box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
     box.insertAdjacentHTML('beforeend', '<div class="say">' + (q.heard ? esc(it.say) : '') + '</div>');
     if(!q.heard){
       const b = document.createElement('button'); b.className = 'primary hear'; b.textContent = '声に出してから、答えを聴く';
@@ -2531,41 +2728,60 @@ function clozeQ(it){
   return {it, at, ans, w, opts:[ans, ...others].sort(()=> Math.random() - .5), done:false};
 }
 function answerCloze(c){
+  if(q.done) return;
   q.done = true; q.picked = c;
-  mark(q.it, c === q.ans, 'cloze');
+  if(q.typed){
+    const r = checkTyped(q.ans, c.trim());
+    q.gapOk = r.length === 1 && r[0].k === 'ok' || r.every(x => x.k === 'ok');
+    q.gapClose = !q.gapOk && r.every(x => x.k === 'ok' || x.k === 'near');
+    q.picked = c.trim() || '（なし）';
+  }
+  mark(q.it, q.typed ? q.gapOk : c === q.ans, q.typed ? 'gap' : 'cloze');
   say(q.it);
   renderCloze();
 }
 function renderCloze(){
   const body = $('#pbody');
-  if(!q) q = clozeQ(nextItem(null));
+  if(!q) q = makeQ(pview, nextItem(null));
   if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">この組には穴埋めにできる文がありません。文法編やまとめ問題を選んでください</div></div>'; return; }
   const it = q.it;
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
-    qPrompt('空いているところに入る語を選んでください', '答えると文が鳴ります');
+    (q.typed ? qPrompt('この意味になるように、空いているところに入る語を書いてください', '答えると文が鳴ります') + '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>'
+      : qPrompt('空いているところに入る語を選んでください', '答えると文が鳴ります'));
   const line = q.w.map((x,i)=> i === q.at
     ? '<span class="blank' + (q.done ? (q.picked === q.ans ? ' right' : ' wrong') : '') + '">' + (q.done ? esc(x) : '　　') + '</span>'
     : esc(x)).join(' ');
   box.insertAdjacentHTML('beforeend', '<div class="ask long">' + line + '</div>');
-  const ch = document.createElement('div'); ch.className = 'choices';
-  q.opts.forEach((c, i)=>{
-    const b = document.createElement('button');
-    b.innerHTML = esc(c) + '<small>' + (i+1) + '</small>';
-    if(q.done){ if(c === q.ans) b.classList.add('right'); else if(c === q.picked) b.classList.add('wrong'); }
-    b.addEventListener('click', ()=>{ if(!q.done) answerCloze(c); });
-    ch.appendChild(b);
-  });
-  box.appendChild(ch);
+  if(q.typed){
+    if(!q.done){
+      const inp = writeInput('gapin', '空いているところの語（Enter で答え合わせ）', v => answerCloze(v));
+      box.appendChild(inp);
+      const opt = telexOpt(inp); if(opt) box.appendChild(opt);
+      setTimeout(() => inp.focus(), 0);
+    }
+  }else{
+    const ch = document.createElement('div'); ch.className = 'choices';
+    q.opts.forEach((c, i)=>{
+      const b = document.createElement('button');
+      b.innerHTML = esc(c) + '<small>' + (i+1) + '</small>';
+      if(q.done){ if(c === q.ans) b.classList.add('right'); else if(c === q.picked) b.classList.add('wrong'); }
+      b.addEventListener('click', ()=>{ if(!q.done) answerCloze(c); });
+      ch.appendChild(b);
+    });
+    box.appendChild(ch);
+  }
   if(q.done){
-    const ok = q.picked === q.ans;
-    box.insertAdjacentHTML('beforeend', ok ? qResult('ok', '正解', '文を聴いて確かめてください') : qResult('ng', '不正解', '正しくは「' + esc(q.ans) + '」'));
+    const ok = q.gapOk != null ? q.gapOk : q.picked === q.ans;
+    box.insertAdjacentHTML('beforeend', ok ? qResult('ok', '正解', '文を聴いて確かめてください')
+      : q.gapClose ? qResult('near', 'おしい', '正しくは「' + esc(q.ans) + '」。声調・記号だけ違います') : qResult('ng', '不正解', '正しくは「' + esc(q.ans) + '」'));
     box.appendChild(hearBtn(()=> say(it)));
     box.appendChild(explainEl(it, {ok, wrong: ok ? [] : [{you: q.picked, right: q.ans}]}));
     box.appendChild(nextRow());
   }
-  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
+  box.insertAdjacentHTML('beforeend', q.typed ? '<div class="pkeys"><kbd>enter</kbd> ' + (q.done ? '次へ' : '答え合わせ') + '</div>'
+    : '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
   body.appendChild(box);
 }
 
@@ -2725,14 +2941,21 @@ function orderQ(it){
 }
 function renderOrder(){
   const body = $('#pbody');
-  if(!q) q = orderQ(nextItem(null));
+  if(!q) q = makeQ(pview, nextItem(null));
   if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">この組には並べられる文がありません。文法編やまとめ問題を選んでください</div></div>'; return; }
   const it = q.it, w = words(it.show);
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
-  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
-    qPrompt('聴いて、聞こえた順に語を押してください', '並べた語を押すと戻せます');
-  box.appendChild(hearBtn(()=> say(it)));
+  if(q.build){
+    // 日本語から組み立てる：意味を見て語を並べる。音は答えたあとに（先に聞かせると答えを読み上げてしまう）
+    box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
+      qPrompt('この意味になるように、語を並べてください', '並べた語を押すと戻せます') + '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>';
+    if(q.done) box.appendChild(hearBtn(()=> say(it)));
+  }else{
+    box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
+      qPrompt('聴いて、聞こえた順に語を押してください', '並べた語を押すと戻せます');
+    box.appendChild(hearBtn(()=> say(it)));
+  }
 
   const slots = document.createElement('div'); slots.className = 'slots';
   q.picked.forEach((ti, k)=>{
@@ -2752,7 +2975,7 @@ function renderOrder(){
       if(q.picked.length === w.length){
         q.done = true;
         q.ok = q.picked.map(i => q.tiles[i].x.toLowerCase()).join(' ') === w.map(x => x.toLowerCase()).join(' ');
-        mark(it, q.ok, 'order'); say(it);
+        mark(it, q.ok, q.build ? 'build' : 'order'); say(it);
       }
       renderOrder();
     });
@@ -2825,7 +3048,7 @@ function explainEl(it, res){
   return box;
 }
 
-function answerSay(ok){ q.done = true; mark(q.it, ok, 'say'); nextQ(); }
+function answerSay(ok){ q.done = true; mark(q.it, ok, pview === 'speak' ? 'speak' : 'say'); nextQ(); }
 function nextRow(){
   const row = document.createElement('div'); row.className = 'row';
   const b = document.createElement('button'); b.className = 'primary'; b.textContent = '次へ';
@@ -2834,25 +3057,36 @@ function nextRow(){
   setTimeout(()=> b.focus(), 0);
   return row;
 }
+/* 問いを1つ作る（どの練習も同じ入口） */
+function makeQ(v, it){
+  if(!it) return null;
+  if(v === 'order' || v === 'build'){ const x = orderQ(it); if(x){ x.build = v === 'build'; if(x.build) x.heard = true; } return x; }
+  if(v === 'cloze' || v === 'gap'){ const x = clozeQ(it); if(x) x.typed = v === 'gap'; return x; }
+  if(v === 'type') return {it, done: false, heard: false};
+  if(v === 'mean') return {it, done: false, heard: false, choices: meanChoices(it)};
+  if(DRILLV[v]) return {it, done: false};
+  return {it, done: false, heard: false, choices: v === 'hear' ? choicesFor(it) : null};
+}
 function nextQ(){
   if(runOn && run){ runNext(); return; }
   const prev = q && q.it.id;
-  const it = nextItem(prev);
-  if(pview === 'order'){ q = orderQ(it); renderOrder(); return; }
-  if(pview === 'cloze'){ q = clozeQ(it); renderCloze(); return; }
-  if(pview === 'type'){ q = it ? {it, done:false, heard:false} : null; renderType(); return; }
-  if(!it){ q = null; renderQuiz(); return; }
-  q = {it, done:false, heard:false, choices: pview === 'hear' ? choicesFor(it) : null};
-  renderQuiz();
+  q = makeQ(pview, nextItem(prev));
+  renderPractice();
 }
 
 document.addEventListener('keydown', e=>{
   if(mode !== 'practice' || !q || pview === 'table') return;
   if(e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
-  if(pview === 'type'){   // 書く欄の中では space と enter を欄に任せる
-    if(e.target.id === 'typein') return;
+  if(pview === 'type' || pview === 'gap' || DRILLV[pview]){   // 書く欄の中では space と enter を欄に任せる
+    if(e.target.classList && e.target.classList.contains('typein')) return;
     if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
+    return;
+  }
+  if(pview === 'mean'){
+    if(!q.done && /^[1-4]$/.test(k)){ const c = q.choices[Number(k)-1]; if(c) answerMean(c); }
+    else if(k === ' '){ e.preventDefault(); say(q.it); }
+    else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
     return;
   }
   if(pview === 'cloze'){
@@ -2861,8 +3095,8 @@ document.addEventListener('keydown', e=>{
     else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
     return;
   }
-  if(pview === 'order'){
-    if(k === ' '){ e.preventDefault(); say(q.it); }
+  if(pview === 'order' || pview === 'build'){
+    if(k === ' '){ e.preventDefault(); if(pview === 'order' || q.done) say(q.it); }
     else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
     return;
   }
@@ -2879,7 +3113,7 @@ document.addEventListener('keydown', e=>{
 
 /* ================= 見渡す ================= */
 /* どこまで覚えたかを、項目・語・練習の3つの目で見る。数え方は README と実現方式に書いた。 */
-const SKILL = [['hear','聴いて選ぶ'], ['order','並べ替える'], ['cloze','穴埋め'], ['type','聴いて書く'], ['say','見て言う']];
+const SKILL = [['mean','聴いて意味'], ['build','組み立てる'], ['gap','穴を書く'], ['type','聴いて書く'], ['speak','日本語から言う'], ['transform','書き換える'], ['respond','質問に答える'], ['hear','聴いて選ぶ'], ['say','見て言う'], ['order','並べ替える'], ['cloze','穴埋め']];
 const dayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); };
 function level(id){ const r = rec(id); return r.box >= 3 ? 2 : (r.seen > 0 ? 1 : 0); }   // 0 未着手 1 覚えかけ 2 覚えた
 
@@ -3904,14 +4138,17 @@ function ctxOf(text, item){
    ⭕ ステージの中は練習の種類を自動で切り替える（易しい順）。1ステージ＝小さな組（10項目まで）。
    ⭕ 終わると正答率と星。80% 以上でクリア。次のステージは前をクリアすると開く（本文と紙の問題はいつでも）。
    ⭕ 途中の位置は端末に保存（「セーブしてやめる」→「続きから」）。クリアは出来事（stage）として iCloud で連動。 */
-const STEPS = {word: ['hear', 'say'], sentence: ['hear', 'order', 'cloze'], grammar: ['order', 'cloze', 'type'], drill: ['hear', 'cloze'], sound: ['hear', 'say'], other: ['hear', 'say']};
-const STEPNAME = {hear: '聴いて選ぶ', say: '見て言う', order: '並べ替える', cloze: '穴埋め', type: '聴いて書く'};
+// ⭕ 易しい順：意味が分かる → 形を作る → 思い出して書く・言う（2026-10-03 組み替え）
+const STEPS = {word: ['mean', 'speak', 'type'], sentence: ['mean', 'build', 'gap'], grammar: ['mean', 'build', 'gap'], drill: ['mean', 'gap'], sound: ['hear', 'say'], other: ['mean', 'type']};
+const STEPNAME = {hear: '聴いて選ぶ', say: '見て言う', order: '並べ替える', cloze: '穴埋め', type: '聴いて書く',
+  mean: '聴いて意味を選ぶ', build: '日本語から組み立てる', gap: '穴を書く', speak: '日本語から言う', transform: '書き換える', respond: '質問に答える'};
 const PASS = 0.8;
 let run = load('run', null);        // {book, stage, title, queue:[[項目, 練習]], i, res:[], t}
 let runOn = false;                  // いま「進める」で解いているか（自由に練習とは別）
 const starsOf = sc => sc >= 0.95 ? 3 : sc >= 0.85 ? 2 : sc >= PASS ? 1 : 0;
 const starHTML = (n, of) => '<span class="stars" aria-label="星 ' + n + '">' + [1, 2, 3].map(k => '<i class="' + (k <= n ? 'on' : '') + '">★</i>').slice(0, of || 3).join('') + '</span>';
 function itemById(id){
+  if(id.startsWith('drill:')){ const d = drills.find(x => 'drill:' + x.id === id); return d ? drillItem(d) : null; }
   for(const d of pdata.decks) for(const it of d.items) if(it.id === id) return {...it, deck: d};
   return null;
 }
@@ -3933,13 +4170,21 @@ function stagesOf(li, defs, last){
     CATS.forEach(([c, name]) => sets.filter(s => s.cat === c).forEach(sx => out.push({id: L.id + '|' + sx.id, kind: 'set', set: sx,
       title: name + ' ' + sx.n, sub: sx.items.length + '項目・' + STEPS[c].map(v => STEPNAME[v]).join(' → ')})));
   }
+  if(pdata){
+    // 文法を使う：この課の組に付いた「書き換える」「質問に答える」（drills.json の確かめた物）
+    const ids = new Set(x.items.map(i => i.deck.id));
+    [['transform', '文法を使う：書き換える'], ['respond', '文法を使う：質問に答える']].forEach(([k, t]) => {
+      const n = drillsIn(k, ids).length;
+      if(n) out.push({id: L.id + '|' + k, kind: 'drill', dk: k, title: t, sub: n + '問'});
+    });
+  }
   if(st.paper) out.push({id: L.id + '|paper', kind: 'paper', title: '紙の問題（本で解く）', sub: st.paper.of + '問', free: true,
     cleared: st.paper.done, stars: st.paper.done ? starsOf(st.paper.ps.tot ? st.paper.ps.got / st.paper.ps.tot : 0) || 1 : 0, n: st.paper.n, of: st.paper.of});
-  if(pdata && x.items.length) out.push({id: L.id + '|final', kind: 'final', title: '課のまとめ', sub: Math.min(10, x.items.length) + '問・この課から混ぜて'});
+  if(pdata && x.items.length) out.push({id: L.id + '|final', kind: 'final', title: '課のまとめ', sub: Math.min(10, x.items.length) + '問・前の課も少し混ぜて'});
   const best = stageBest();
   let open = true;
   out.forEach(sg => {
-    if(sg.kind === 'set' || sg.kind === 'final'){ const b = best[sg.id]; sg.cleared = !!b; sg.stars = b ? b.stars : 0; sg.score = b ? b.score : null; }
+    if(sg.kind === 'set' || sg.kind === 'final' || sg.kind === 'drill'){ const b = best[sg.id]; sg.cleared = !!b; sg.stars = b ? b.stars : 0; sg.score = b ? b.score : null; }
     sg.open = sg.free || open || sg.cleared;
     if(!sg.free && !sg.cleared) open = false;    // 練習のステージは前をクリアすると開く
   });
@@ -3985,15 +4230,19 @@ function startStage(stageId){
   if(sg.kind === 'paper'){ const el = document.querySelector('#book .lstep.paper-step'); if(el) el.scrollIntoView({block: 'start'}); return; }
   const queue = [];
   const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q2) => p[0] - q2[0]).map(v => v[1]);
+  const hardest = it => isSound(it) ? 'hear' : FILTER.gap(it) ? 'gap' : FILTER.mean(it) ? (catOf(it, it.deck) === 'word' ? 'speak' : 'mean') : 'type';
   if(sg.kind === 'set'){
     const its = sg.set.items.map(it => ({...it, deck: sg.set.deck}));
     STEPS[sg.set.cat].forEach(v => shuffle(its.filter(it => !FILTER[v] || FILTER[v](it))).forEach(it => queue.push([it.id, v])));
+  }else if(sg.kind === 'drill'){
+    shuffle(drillsIn(sg.dk, new Set(ld[li].items.map(i => i.deck.id)))).forEach(d => queue.push(['drill:' + d.id, sg.dk]));
   }else{
-    // 章のまとめ：この章から10問。種類ごとに一番難しい練習で（穴埋めにできれば穴埋め）
-    shuffle(ld[li].items).slice(0, 10).forEach(it => {
-      const c = catOf(it, it.deck), v = c === 'word' || c === 'sound' ? 'hear' : (FILTER.cloze(it) ? 'cloze' : 'hear');
-      queue.push([it.id, v]);
-    });
+    // 課のまとめ：この課から7問（一番難しい練習で）＋前の課から3問（混ぜると見分けが育つ）＋文法を使う問いを2問
+    shuffle(ld[li].items).slice(0, 7).forEach(it => queue.push([it.id, hardest(it)]));
+    shuffle(ld.slice(0, li).flatMap(x => x.items).filter(it => !isSound(it))).slice(0, 3).forEach(it => queue.push([it.id, hardest(it)]));
+    const ids = new Set(ld[li].items.map(i => i.deck.id));
+    shuffle(drillsIn('transform', ids).concat(drillsIn('respond', ids))).slice(0, 2).forEach(d => queue.push(['drill:' + d.id, d.kind]));
+    queue.splice(0, queue.length, ...shuffle(queue));
   }
   if(!queue.length) return;
   run = {book: bookId, stage: sg.id, title: ld[li].L.title + '　' + sg.title, queue, i: 0, res: [], t: Date.now()};
@@ -4019,10 +4268,8 @@ function runNext(){
   const it = itemById(id);
   if(!it){ run.i++; save('run', run); runNext(); return; }
   pview = v;
-  if(v === 'order') q = orderQ(it);
-  else if(v === 'cloze') q = clozeQ(it);
-  else if(v === 'type') q = {it, done: false, heard: false};
-  else q = {it, done: false, heard: false, choices: v === 'hear' ? choicesFor(it) : null};
+  q = makeQ(v, it);
+  if(!q){ run.i++; save('run', run); runNext(); return; }
   q.runId = id;
   renderPractice();
 }
