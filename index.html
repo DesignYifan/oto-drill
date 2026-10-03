@@ -481,6 +481,19 @@ li.hidden{display:none}
 .quiz .ask{font-size:72px; font-weight:500; line-height:1.1; min-height:80px; text-align:center}
 .quiz .hear{display:inline-flex; align-items:center; gap:8px; padding:8px 20px; font-size:14px}
 .quiz .hear .ic{width:16px; height:16px}
+.howto{background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius, 16px); padding:20px 24px; margin:0 0 24px; display:flex; flex-direction:column; gap:8px; font-size:14px; line-height:1.7}
+.howto b{font-size:16px}
+.howto ol{margin:0; padding:0 0 0 24px; list-style:decimal; display:flex; flex-direction:column; gap:4px}
+.howto li{margin:0; padding:0; display:list-item}
+.howto p{margin:0; color:var(--ui-text-muted-fgColor); font-size:13px}
+.pnone{display:flex; flex-direction:column; gap:8px}
+.pnrow, .addmore{background:var(--ui-surface-bgColor); border-radius:12px; padding:12px 20px}
+.addmore{padding:0; background:none; margin-top:8px}
+.pnrow summary, .addmore summary{cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px; list-style:none}
+.pnrow summary::-webkit-details-marker, .addmore summary::-webkit-details-marker{display:none}
+.pnrow summary span, .addmore summary{color:var(--ui-primary-fgColor); font-size:13px}
+.pnrow[open] summary{margin-bottom:12px}
+.addex label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--ui-text-muted-fgColor)}
 .japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
 .choices.mean button{text-align:left; font-size:16px; line-height:1.5}
 .exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
@@ -606,8 +619,9 @@ span.blank.right{color:var(--ui-success-fgColor)} span.blank.wrong{color:var(--u
 .pc.ro{border-color:var(--ui-success-fgColor); background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
 .pc.rs{border-color:var(--ui-warning-fgColor); background:var(--ui-warning-muted-bgColor); color:var(--ui-warning-fgColor)}
 .pc.rx{border-color:var(--ui-danger-fgColor); background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor)}
-.addex{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
-.addex input{font:inherit; font-size:12px; padding:4px 8px; border:1px solid var(--ui-outline-borderColor); border-radius:6px; background:var(--ui-surface-bgColor); color:var(--ui-text-fgColor)}
+.addex{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-top:8px}
+.addex label:first-child{flex:1; min-width:200px}
+.addex input{font:inherit; font-size:14px; padding:8px 12px; border:1px solid var(--ui-outline-borderColor); border-radius:6px; background:var(--ui-surface-bgColor); color:var(--ui-text-fgColor)}
 .addex input[name=label]{flex:1; min-width:10em}
 .addex input[name=count]{width:5em}
 .addex button{font-size:12px; padding:4px 12px}
@@ -3419,7 +3433,7 @@ function renderBook(){
   if(!tracks.length){ box.innerHTML = html + '<p class="pnote" style="text-align:left">フォルダを選ぶと、ここに教材の中身が出ます。</p>'; wireBook(box); return; }
 
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
-    (book && book.answers ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
+    (book && book.answers && bview !== 'paper' ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
   html += '<div class="seg wf bviews">' + [['lesson','課'], ['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
     .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
 
@@ -3442,15 +3456,27 @@ function renderBook(){
     html += '</div><p class="bfoot">— はその課にまだ中身が無いものです。練習の正答率は直近50回、紙の問題は ○＝1・△＝0.5 で数えます（最後に付けた印）。</p>';
   }
   else if(bview === 'paper'){
-    html += '<p class="bfoot" style="margin-top:0">マスを押すと ○ → △ → × の順に印が付きます。前の印は消えず、やり直した回も履歴に残ります。問題は解きながら足していけます。</p>';
-    ld.forEach(x => {
-      const L = x.L, exs = defs[L.id] || [];
-      const ps = paperScore(L.id, defs, last);
-      html += '<section class="ovsec bpaper"><div class="ovhead"><b>' + esc(L.title) + '</b><span>' + (ps.tot ? fmtN(ps.got) + ' / ' + ps.tot : '') + '</span></div>';
-      exs.forEach(ex => { html += exHTML(L.id, ex, last); });
-      html += '<form class="addex" data-l="' + esc(L.id) + '"><input name="label" placeholder="問題の名前（Bài tập 1 など）" required>' +
-        '<input name="count" type="number" min="1" max="60" value="5" aria-label="問の数"><button>問題を足す</button></form></section>';
+    // ⭕ 2026-10-03 本人「このページが何でどうやって使うのかが分からなかった」：何のページか・どう使うかを先に出す
+    html += '<section class="howto"><b>紙の問題：教科書の練習問題の成績を付けるページです</b><ol>' +
+      '<li>教科書の練習問題を、本で解きます' + (book && book.answers ? '（' + esc(book.answers) + '）' : '') + '</li>' +
+      '<li>その課に問題を登録します（問題の名前と問の数）。1度だけで大丈夫です</li>' +
+      '<li>答え合わせをしながら、マスを押して印を付けます（押すたびに ○ → △ → ×）</li></ol>' +
+      '<p>付けた印は「進み具合」と、課のゴールの「紙の問題」に反映されます。やり直した回も履歴に残ります。</p></section>';
+    const has = ld.filter(x => (defs[x.L.id] || []).length), none = ld.filter(x => !(defs[x.L.id] || []).length);
+    const addForm = L => '<form class="addex" data-l="' + esc(L.id) + '"><label>問題の名前<input name="label" placeholder="例：Bài tập 1" required></label>' +
+      '<label>問の数<input name="count" type="number" min="1" max="60" value="5"></label><button class="primary">登録する</button></form>';
+    if(has.length) html += '<h3 class="ovh">登録した問題<small>' + has.length + '課</small></h3>';
+    has.forEach(x => {
+      const L = x.L, ps = paperScore(L.id, defs, last);
+      html += '<section class="ovsec bpaper"><div class="ovhead"><b>' + esc(L.title) + '</b><span>' + (ps.tot ? fmtN(ps.got) + ' / ' + ps.tot + ' 点' : '') + '</span></div>';
+      (defs[L.id] || []).forEach(ex => { html += exHTML(L.id, ex, last); });
+      html += '<details class="addmore"><summary>この課に問題を足す</summary>' + addForm(L) + '</details></section>';
     });
+    if(none.length){
+      html += '<h3 class="ovh">まだ問題を登録していない課<small>解いた課だけ登録すれば大丈夫です</small></h3><div class="pnone">';
+      none.forEach(x => { html += '<details class="pnrow"><summary>' + esc(x.L.title) + '<span>問題を登録</span></summary>' + addForm(x.L) + '</details>'; });
+      html += '</div>';
+    }
   }
   else if(bview === 'grammar'){
     const G = grammar();
