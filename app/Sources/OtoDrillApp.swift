@@ -7,7 +7,7 @@ struct OtoDrillApp: App {
     var body: some Scene {
         WindowGroup {
             WebScreen()
-                .ignoresSafeArea(.container, edges: .bottom)
+                .ignoresSafeArea()   // 時刻の帯とホームの帯までページを描く（ページ側が safe-area で余白を取る）
         }
     }
 }

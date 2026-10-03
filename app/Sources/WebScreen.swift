@@ -4,6 +4,9 @@ import WebKit
 /// 公開ページを開く。ページの直しはアプリを入れ直さずに届く。
 /// 試すときの記録（アプリのフォルダの oto.log）。Mac から simctl get_app_container で読める
 func dlog(_ m: String) {
+    #if !DEBUG
+    if !UserDefaults.standard.bool(forKey: "log") { return }   // 入れたままの版では書かない（調べるときだけ log を立てる）
+    #endif
     let u = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("oto.log")
     let line = "\(Date()) \(m)\n"
     if let h = try? FileHandle(forWritingTo: u) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
@@ -28,7 +31,7 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(red: 0.96, green: 0.965, blue: 0.973, alpha: 1)
+        view.backgroundColor = .white
         let cfg = WKWebViewConfiguration()
         cfg.allowsInlineMediaPlayback = true
         cfg.mediaTypesRequiringUserActionForPlayback = []
@@ -39,6 +42,8 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
         web = WKWebView(frame: view.bounds, configuration: cfg)
         web.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         web.navigationDelegate = self
+        web.scrollView.contentInsetAdjustmentBehavior = .never   // 余白はページが env(safe-area-inset-*) で取る
+        web.isOpaque = false; web.backgroundColor = .clear
         web.isInspectable = true          // Mac の Safari から中を見て直せるように
         web.allowsBackForwardNavigationGestures = false
         view.addSubview(web)

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>音声ドリル</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1236,6 +1236,15 @@ button.linkish:hover{background:none; text-decoration:underline}
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
+
+/* ⭕ 2026-10-03 本人「時間やバッテリーのところまで背景がかかっていなくて浮いている。上との境目が気持ち悪い。グラスエフェクトにするとか」
+   ⭕ 画面いっぱいに描き（viewport-fit=cover）、見出しは時刻の帯の下まで伸ばしてすりガラスにする。下の操作卓もホームの帯まで伸ばす */
+header{padding-top:calc(16px + env(safe-area-inset-top, 0px)) !important;
+  background:color-mix(in srgb, var(--ui-surface-bgColor) 82%, transparent) !important;
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px); position:relative; z-index:30}
+.dock{background:color-mix(in srgb, var(--ui-surface-bgColor) 86%, transparent) !important;
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px)}
+html{background:var(--ui-surface-bgColor)}
 </style>
 </head>
 <body>
