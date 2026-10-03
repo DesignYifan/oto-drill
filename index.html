@@ -479,7 +479,15 @@ li.hidden{display:none}
 .quiz{max-width:560px; margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:20px; padding-top:12px}
 .quiz .from{font-size:12px; color:var(--ui-text-muted-fgColor)}
 .quiz .ask{font-size:72px; font-weight:500; line-height:1.1; min-height:80px; text-align:center}
-.quiz .hear{min-width:180px; padding:16px 20px; font-size:15px}
+.quiz .hear{display:inline-flex; align-items:center; gap:8px; padding:8px 20px; font-size:14px}
+.quiz .hear .ic{width:16px; height:16px}
+.qprompt{font-size:17px; font-weight:600; line-height:1.5; text-align:center; color:var(--ui-text-fgColor)}
+.qprompt small{display:block; margin-top:4px; font-size:12px; font-weight:400; color:var(--ui-text-muted-fgColor)}
+.qresult{display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline; justify-content:center; width:100%; padding:12px 20px; border-radius:var(--ui-control-radius); font-size:14px; text-align:center}
+.qresult b{font-size:16px; font-weight:600}
+.qresult.ok{background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
+.qresult.ng{background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor)}
+.qresult.near{background:var(--ui-warning-muted-bgColor); color:var(--ui-warning-fgColor)}
 .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%}
 .choices button{padding:16px 8px; font-size:24px; display:flex; flex-direction:column; align-items:center; gap:2px}
 .choices button small{font-size:11px; color:var(--ui-text-muted-fgColor); font-family:inherit}
@@ -2426,6 +2434,18 @@ function renderTable(){
   body.appendChild(wrap);
 }
 
+/* ---- 問いの形（どの練習も同じ並び）：どこ → 問題文 → 音 → 答える所 → 結果 → 解説 → 次へ
+   ⭕ 2026-10-03 本人「『聞こえた文を選んでください』は問題を解く上で大事な問題文なので、下にあるのはおかしい。UX 的に配置し直して」。
+   ⭕ 問題文は答える前から一番上に。結果（正解・不正解）は答えた所のすぐ下に色つきで。
+   ⭕ もう一度聴くは脇の操作なので、主の色にしない（主の操作は答えること）。 */
+function qPrompt(text, sub){ return '<div class="qprompt">' + text + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; }
+function qResult(kind, head, msg){ return '<div class="qresult ' + kind + '" role="status"><b>' + head + '</b>' + (msg ? '<span>' + msg + '</span>' : '') + '</div>'; }
+const SPEAKER = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h2.5L9 3v10L5.5 10H3z"/><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5M13.2 3.8a6 6 0 0 1 0 8.4"/></svg>';
+function hearBtn(onClick){
+  const b = document.createElement('button'); b.className = 'hear'; b.innerHTML = SPEAKER + 'もう一度聴く';
+  b.addEventListener('click', ()=>{ onClick(); b.blur(); });
+  return b;
+}
 function renderQuiz(){
   if(!q){
     const it = nextItem(null);
@@ -2440,10 +2460,8 @@ function renderQuiz(){
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
 
   if(pview === 'hear'){
-    const hear = document.createElement('button');
-    hear.className = 'primary hear'; hear.textContent = 'もう一度聴く';
-    hear.addEventListener('click', ()=>{ say(it); hear.blur(); });
-    box.appendChild(hear);
+    box.insertAdjacentHTML('beforeend', qPrompt('聴いて、聞こえた' + esc(it.deck.ask || '音') + 'を選んでください'));
+    box.appendChild(hearBtn(()=> say(it)));
 
     const ch = document.createElement('div'); ch.className = 'choices' + (it.deck.kind === 'text' ? ' text' : '');
     q.choices.forEach((c, i)=>{
@@ -2461,12 +2479,9 @@ function renderQuiz(){
     });
     box.appendChild(ch);
 
-    const note = document.createElement('div'); note.className = 'pnote';
-    note.textContent = q.done
-      ? (q.picked === it.id ? '正解。' : '正しくは「' + it.show + '」。') + '選択肢を押すと、それぞれの音を聞き比べられます'
-      : '聞こえた' + (it.deck.ask || '音') + 'を選んでください';
-    box.appendChild(note);
     if(q.done){
+      box.insertAdjacentHTML('beforeend', (q.picked === it.id ? qResult('ok', '正解') : qResult('ng', '不正解', '正しくは「' + esc(it.show) + '」')) +
+        '<div class="pnote">選択肢を押すと、それぞれの音を聞き比べられます</div>');
       const ok = q.picked === it.id, you = q.choices.find(c => c.id === q.picked);
       box.appendChild(explainEl(it, {ok, wrong: ok || it.deck.kind !== 'text' ? [] : [{you: you && you.show, right: it.show}]}));
       box.appendChild(nextRow());
@@ -2474,6 +2489,7 @@ function renderQuiz(){
     box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
     if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
   }else{
+    box.insertAdjacentHTML('beforeend', qPrompt(q.heard ? '言えましたか' : '声に出して言ってから、答えを聴いてください'));
     box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
     box.insertAdjacentHTML('beforeend', '<div class="say">' + (q.heard ? esc(it.say) : '') + '</div>');
     if(!q.heard){
@@ -2483,9 +2499,7 @@ function renderQuiz(){
       box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> 答えを聴く</div>');
     }else if(!q.done){
       if(it.deck.kind === 'text') box.appendChild(explainEl(it, {ok: true, msg: '答えの文'}));
-      const again = document.createElement('button'); again.textContent = 'もう一度聴く';
-      again.addEventListener('click', ()=>{ say(it); again.blur(); });
-      box.appendChild(again);
+      box.appendChild(hearBtn(()=> say(it)));
       const row = document.createElement('div'); row.className = 'row';
       const ng = document.createElement('button'); ng.className = 'miss'; ng.textContent = '言えなかった';
       const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = '言えた';
@@ -2529,7 +2543,8 @@ function renderCloze(){
   const it = q.it;
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
-  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
+    qPrompt('空いているところに入る語を選んでください', '答えると文が鳴ります');
   const line = q.w.map((x,i)=> i === q.at
     ? '<span class="blank' + (q.done ? (q.picked === q.ans ? ' right' : ' wrong') : '') + '">' + (q.done ? esc(x) : '　　') + '</span>'
     : esc(x)).join(' ');
@@ -2543,15 +2558,11 @@ function renderCloze(){
     ch.appendChild(b);
   });
   box.appendChild(ch);
-  const note = document.createElement('div'); note.className = 'pnote';
-  note.textContent = q.done ? (q.picked === q.ans ? '正解です。文を聴いて確かめてください' : '正しくは「' + q.ans + '」') : '空いているところに入る語を選んでください（答えると文が鳴ります）';
-  box.appendChild(note);
   if(q.done){
     const ok = q.picked === q.ans;
+    box.insertAdjacentHTML('beforeend', ok ? qResult('ok', '正解', '文を聴いて確かめてください') : qResult('ng', '不正解', '正しくは「' + esc(q.ans) + '」'));
+    box.appendChild(hearBtn(()=> say(it)));
     box.appendChild(explainEl(it, {ok, wrong: ok ? [] : [{you: q.picked, right: q.ans}]}));
-    const again = document.createElement('button'); again.textContent = 'もう一度聴く';
-    again.addEventListener('click', ()=>{ say(it); again.blur(); });
-    box.appendChild(again);
     box.appendChild(nextRow());
   }
   box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
@@ -2634,16 +2645,15 @@ function renderType(){
   const it = q.it;
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
-  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
-  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聴く';
-  hear.addEventListener('click', ()=>{ say(it); $('#typein') && $('#typein').focus(); });
-  box.appendChild(hear);
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
+    qPrompt('聴いて、聞こえたとおりに書いてください');
+  box.appendChild(hearBtn(()=>{ say(it); $('#typein') && $('#typein').focus(); }));
 
   if(!q.done){
     const inp = document.createElement('input');
     inp.id = 'typein'; inp.className = 'typein'; inp.autocomplete = 'off'; inp.spellcheck = false;
     inp.setAttribute('autocapitalize', 'off');
-    inp.placeholder = '聞こえたとおりに書いてください（Enter で答え合わせ）';
+    inp.placeholder = 'ここに書く（Enter で答え合わせ）';
     inp.value = q.draft || '';
     inp.addEventListener('input', e=>{
       if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){   // Mac のベトナム語入力で打っているあいだは触らない
@@ -2670,6 +2680,8 @@ function renderType(){
     box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>tab</kbd> もう一度聴く　<kbd>enter</kbd> 答え合わせ</div>');
     setTimeout(()=> inp.focus(), 0);
   }else{
+    box.insertAdjacentHTML('beforeend', q.ok ? qResult('ok', '正解') : q.close ? qResult('near', 'おしい', '文字は合っています。' + (LP.nearMiss ? LP.nearMiss.label.replace('だけ違う', '') : '記号') + 'を直せば正解です')
+      : qResult('ng', '不正解', '正しい文は下のとおりです'));
     const diff = document.createElement('div'); diff.className = 'diff';
     diff.innerHTML = q.res.map(r => {
       if(r.k === 'ok') return '<span class="w ok">' + esc(r.t) + '</span>';
@@ -2681,7 +2693,7 @@ function renderType(){
     box.appendChild(diff);
     const legend = '<span class="lg"><i class="ok"></i>合っている</span>' + (LP.nearMiss ? '<span class="lg"><i class="near"></i>' + esc(LP.nearMiss.label) + '</span>' : '') + '<span class="lg"><i class="bad"></i>違う・抜け</span>';
     const note = document.createElement('div'); note.className = 'pnote';
-    note.innerHTML = (q.ok ? '正解。' : q.close ? '文字は合っています。' + (LP.nearMiss ? LP.nearMiss.label.replace('だけ違う', '') : '記号') + 'を直せば正解です。' : '正しい文は上のとおりです。') + '<div class="legend">' + legend + '</div>';
+    note.innerHTML = '<div class="legend">' + legend + '</div>';
     box.appendChild(note);
     box.appendChild(explainEl(it, {ok: q.ok, close: q.close, wrong: q.res.filter(r => r.k === 'wrong').map(r => ({you: r.y, right: r.t}))}));
     box.appendChild(nextRow());
@@ -2718,10 +2730,9 @@ function renderOrder(){
   const it = q.it, w = words(it.show);
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
-  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
-  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聴く';
-  hear.addEventListener('click', ()=>{ say(it); hear.blur(); });
-  box.appendChild(hear);
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
+    qPrompt('聴いて、聞こえた順に語を押してください', '並べた語を押すと戻せます');
+  box.appendChild(hearBtn(()=> say(it)));
 
   const slots = document.createElement('div'); slots.className = 'slots';
   q.picked.forEach((ti, k)=>{
@@ -2749,10 +2760,7 @@ function renderOrder(){
   });
   box.appendChild(tiles);
 
-  const note = document.createElement('div'); note.className = 'pnote';
-  note.textContent = q.done ? (q.ok ? '正解' : '正しくは「' + it.show + '」') : '聞こえた順に語を押してください。並べた語を押すと戻せます';
-  box.appendChild(note);
-  if(q.done){ box.appendChild(explainEl(it, {ok: q.ok, msg: q.ok ? '' : '上が並べた順、下が正しい文と意味'})); box.appendChild(nextRow()); }
+  if(q.done){ box.insertAdjacentHTML('beforeend', q.ok ? qResult('ok', '正解') : qResult('ng', '不正解', '正しくは「' + esc(it.show) + '」')); box.appendChild(explainEl(it, {ok: q.ok, msg: q.ok ? '' : '上が並べた順、下が正しい文と意味'})); box.appendChild(nextRow()); }
   box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
   body.appendChild(box);
   if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
