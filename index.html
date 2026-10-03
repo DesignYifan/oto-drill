@@ -523,6 +523,11 @@ li.hidden{display:none}
 .quiz code, .thint kbd{font-size:15px}
 .flowpanel{left:auto}
 .flowkind{align-self:flex-start}
+.flowhr{border:0; border-top:1px solid var(--ui-outline-borderColor); margin:4px 0; width:100%}
+.mainbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--ui-primary-muted-bgColor); color:var(--ui-text-fgColor); border-radius:12px; padding:12px 16px; margin:0 0 12px; font-size:13px}
+.mainbar[hidden]{display:none}
+.mainbar b{margin-right:12px; color:var(--ui-primary-fgColor)}
+.mainbar button{font-size:13px}
 .listmode{display:flex; align-items:center; gap:12px; padding:0 0 12px; font-size:12px; color:var(--ui-text-muted-fgColor); flex-wrap:wrap}
 .listmode[hidden]{display:none}
 .listmode .seg button{font-size:13px}
@@ -540,7 +545,7 @@ li.hidden{display:none}
 /* ⭕ 2026-10-03 本人「AI に聞くとき、めちゃくちゃ大きくなるのはやりにくい」：iPhone は 16px 未満の入力欄を押すと画面ごと拡大する。
    ⭕ 指で触る端末では、入力欄はすべて 16px にする（⛔ 拡大そのものを禁じるのは使う人の自由を奪うのでしない） */
 @media (pointer: coarse){
-  input, select, textarea, .askform input, .addex input, .typein, #filter{font-size:16px}
+  input, select, textarea, .askform input, .addex input, .typein, #filter{font-size:16px !important}   /* ⛔ 後ろにある 14px の指定に負けていた（2026-10-03 本人「やっぱり拡大される」） */
 }
 /* ⭕ 同じ指摘：細い画面では「AI に聞く」を画面いっぱいの AI モードで開く。入力欄は下に固定 */
 @media (max-width: 640px){
@@ -549,7 +554,7 @@ li.hidden{display:none}
   .askpanel .ask{flex:1; min-height:0; display:flex; flex-direction:column}
   .askpanel .thread{flex:1; overflow-y:auto; min-height:0}
   .askpanel .askform{position:sticky; bottom:0; background:var(--ui-surface-bgColor); padding-top:8px}
-  .askform input, .typein, input, select{font-size:16px}
+  .askform input, .typein, input, select, textarea{font-size:16px !important}
   body:has(#askPanel:not([hidden])) .askfab{display:none}
 }
 .japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
@@ -1270,7 +1275,7 @@ button.linkish:hover{background:none; text-decoration:underline}
         <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
         <div class="setwrap">
           <span class="setsum" id="setSum"></span>
-          <button id="flowBtn" aria-haspopup="dialog" aria-controls="flowPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h5"/><path d="M11.5 9.5v4l3-2z"/></svg><span>文だけ聴く</span></button>
+          <button id="flowBtn" aria-haspopup="dialog" aria-controls="flowPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h5"/><path d="M11.5 9.5v4l3-2z"/></svg><span>基本文だけ聴く</span></button>
           <button id="settingsBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.6"/><circle cx="5" cy="11.5" r="1.6"/></svg><span>設定</span></button>
           <div class="settings" id="settings" role="dialog" aria-label="再生の設定" hidden>
             <div class="setting">
@@ -1509,6 +1514,16 @@ function stepTrack(from, dir){   // 見えている中で次（前）のトラ�
   for(let i = from + dir; i >= 0 && i < tracks.length; i += dir) if(visibleTrack(i)) return i;
   return -1;
 }
+function paintMainBar(){
+  let bar = $('#mainBar');
+  if(!bar){ bar = document.createElement('div'); bar.id = 'mainBar'; bar.className = 'mainbar'; const nh = document.querySelector('.nowhead'); if(!nh) return; nh.after(bar); }
+  const mt = mainTracks(), on = listMode === 'main' && mt.size;
+  bar.hidden = !on; if(!on) return;
+  const cur = idx >= 0 && tracks[idx] ? mt.get(tracks[idx].name) : null;
+  const list = [...mt.keys()], k = cur ? list.indexOf(tracks[idx].name) + 1 : 0;
+  bar.innerHTML = '<span><b>基本文の音声だけを流しています</b>' + (cur ? esc(cur) + '　' + k + ' / ' + list.length : '') + '</span><button id="mainOff">すべての音声に戻す</button>';
+  $('#mainOff').onclick = () => { listMode = 'all'; save('listmode', listMode); applyFilter(); };
+}
 function applyFilter(){
   const items = $('#list').children, mt = mainTracks();
   const lm = $('#listMode'); lm.hidden = !mt.size;
@@ -1518,6 +1533,7 @@ function applyFilter(){
     const nm = items[i].querySelector('.nm');
     nm.textContent = listMode === 'main' && mt.has(tracks[i].name) ? mt.get(tracks[i].name) + '　基本文' : tracks[i].name;
   }
+  paintMainBar();
 }
 $('#listMode').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -1613,6 +1629,7 @@ function play(i, autoplay, seekTo){
   $('#bignum').textContent = String(i+1).padStart(width,'0');
   $('#oftotal').textContent = '/ ' + tracks.length + '　残り ' + (tracks.length-i-1) + '本';
   $('#fname').textContent = tracks[i].name;
+  setTimeout(paintMainBar, 0);
   $('#fname').classList.remove('blank');
   $('#nowN').textContent = String(i+1).padStart(width,'0') + '/' + tracks.length;
   $('#nowName').textContent = tracks[i].name;
@@ -4325,7 +4342,9 @@ function openFlow(on){
   const sel = new Set(o.sel || (cur ? [ld[cur.li].L.id] : []));
   const rows = ld.map((x, li) => [x, li, flowItems(li, o.kind).length]).filter(r => r[2]);
   p.innerHTML = '<div class="aph"><b>文だけ聴く</b><button class="apclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
-    '<div class="apctx">課の文だけを、続けて鳴らします</div>' +
+    (mainTracks().size ? '<div class="flowstreak"><button class="primary" id="flowMain">各課の基本文の音声を、UNIT 1 から通しで流す<small>' + mainTracks().size + '課</small></button></div>' +
+      '<div class="apctx">基本文の音声（トラックまるごと）だけを、課の順に流します。止めたいときは、音声の画面の上の帯から「すべての音声に戻す」</div><hr class="flowhr">' : '') +
+    '<div class="apctx">または、基本文を1文ずつ流す（回数・間・訳を選べます）</div>' +
     (function(){ const pos = load('flow:pos', null); const all = rows.reduce((n, r) => n + r[2], 0);
       return '<div class="flowstreak"><button class="primary" id="flowStreak">全部の課の' + FLOWNAME[o.kind] + 'を通しで聴く<small>' + all + '文</small></button>' +
         (pos && pos.kind === o.kind && pos.all && pos.i > 0 && pos.i < all ? '<button id="flowResume">続きから（' + (pos.i + 1) + '文目）</button>' : '') + '</div>'; })() +
@@ -4352,6 +4371,10 @@ function openFlow(on){
     flow = {queue, i: Math.min(from || 0, queue.length - 1), r: 0, opt: n, all, paused: false, timer: null}; paintFlow(); flowStep();
   };
   $('#flowGo').onclick = () => go(new Set(keep().sel), false, 0);
+  const mb = $('#flowMain'); if(mb) mb.onclick = () => {
+    openFlow(false); listMode = 'main'; save('listmode', listMode); applyFilter(); setMode('listen');
+    const j = idx >= 0 && visibleTrack(idx) ? idx : stepTrack(-1, 1); if(j >= 0) play(j, true);
+  };
   const sb = $('#flowStreak'); if(sb) sb.onclick = () => go(null, true, 0);
   const rb = $('#flowResume'); if(rb) rb.onclick = () => go(null, true, load('flow:pos', {}).i || 0);
   p.hidden = false;
