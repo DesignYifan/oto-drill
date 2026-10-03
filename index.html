@@ -1072,6 +1072,25 @@ button.linkish:hover{background:none; text-decoration:underline}
   background:var(--ui-text-fgColor); color:var(--ui-surface-bgColor); box-shadow:var(--ui-card-raised-shadow); font-weight:500}
 .askfab:hover{background:var(--ui-text-fgColor); filter:brightness(1.15)}
 .askfab .ic{width:18px; height:18px}
+/* AI の印：中で色がゆっくり回る球。考えているあいだは4つの玉と弧が回る
+   （2026-10-03 本人「幾何学の立体みたいな丸いグネグネ」「実行してるときの動きが気に入ってる。4つの玉とか何本かの線が動き回る」） */
+.askfab{padding-left:8px}
+.askfab .orb{width:28px; height:28px; flex:none; filter:drop-shadow(0 1px 2px rgb(0 0 0 / .3))}
+.orb g, .orb path, .orb circle{transform-box:view-box; transform-origin:32px 32px}
+.orb .orb-a{animation:orbSpin 9s linear infinite}
+.orb .orb-b{animation:orbSpin 13s linear infinite reverse}
+.orb .orb-think{opacity:0; transition:opacity .3s}
+.askfab:hover .orb-a{animation-duration:3s} .askfab:hover .orb-b{animation-duration:4.5s}
+.askfab.thinking .orb-a{animation-duration:1.6s} .askfab.thinking .orb-b{animation-duration:2.2s}
+.askfab.thinking .orb-think{opacity:1}
+.askfab.thinking .orb-d1{animation:orbSpin 1.1s cubic-bezier(.5,0,.5,1) infinite}
+.askfab.thinking .orb-d2{animation:orbSpin 1.5s cubic-bezier(.5,0,.5,1) infinite reverse}
+.askfab.thinking .orb-d3{animation:orbSpin 1.9s cubic-bezier(.5,0,.5,1) infinite .2s}
+.askfab.thinking .orb-d4{animation:orbSpin 2.4s cubic-bezier(.5,0,.5,1) infinite reverse .4s}
+.askfab.thinking .orb-arc1{animation:orbSpin 1.3s linear infinite}
+.askfab.thinking .orb-arc2{animation:orbSpin 1.7s linear infinite reverse}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){ .orb *{animation:none !important} }
 .app.practicing ~ .askfab{bottom:24px}
 .askpanel{position:fixed; right:24px; bottom:calc(var(--_app-dockHeight, 104px) + 72px); z-index:46; width:min(440px, calc(100vw - 32px)); max-height:min(70vh, 640px); overflow-y:auto;
   background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-raised-shadow); padding:20px; display:flex; flex-direction:column; gap:12px}
@@ -1249,7 +1268,19 @@ button.linkish:hover{background:none; text-decoration:underline}
 <div class="lookup" id="lookup" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <!-- どの画面からでも AI に聞く（本人 2026-10-03「AI はどこにあるか分からない」） -->
-<button class="askfab" id="askFab" aria-haspopup="dialog" aria-controls="askPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H8l-3 2.5v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"/><path d="M6.6 6.4a1.5 1.5 0 1 1 2.1 1.4c-.4.2-.7.5-.7 1M8 10.1v.1"/></svg>AI に聞く</button>
+<button class="askfab" id="askFab" aria-haspopup="dialog" aria-controls="askPanel"><svg class="orb" viewBox="0 0 64 64" aria-hidden="true"><defs>
+<radialGradient id="orbBase" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3a63e0"/><stop offset="1" stop-color="#1b2a7a"/></radialGradient>
+<linearGradient id="orbA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fe0c8"/><stop offset="1" stop-color="#1fa3b8" stop-opacity="0"/></linearGradient>
+<linearGradient id="orbB" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b48cff"/><stop offset="1" stop-color="#7b5cff" stop-opacity="0"/></linearGradient>
+<radialGradient id="orbShine" cx="35%" cy="25%" r="40%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="orbShade" cx="50%" cy="50%" r="50%"><stop offset=".7" stop-color="#0b1440" stop-opacity="0"/><stop offset="1" stop-color="#0b1440" stop-opacity=".45"/></radialGradient>
+<clipPath id="orbClip"><circle cx="32" cy="32" r="30"/></clipPath></defs>
+<circle cx="32" cy="32" r="30" fill="url(#orbBase)"/>
+<g clip-path="url(#orbClip)"><g class="orb-a"><path fill="url(#orbA)" d="M6 30c6-14 20-20 30-12s8 22 22 20c2 10-10 22-24 20S0 46 6 30z"/></g>
+<g class="orb-b"><path fill="url(#orbB)" d="M58 22c-4 14-18 12-26 22S20 62 10 54c10-2 6-16 16-26S52 4 58 22z"/></g>
+<g class="orb-think" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2"><path class="orb-arc1" d="M32 12a20 20 0 0 1 20 20" opacity=".7"/><path class="orb-arc2" d="M32 50a18 18 0 0 1-18-18" opacity=".5"/>
+<g fill="#fff" stroke="none"><circle class="orb-d1" cx="32" cy="14" r="3"/><circle class="orb-d2" cx="32" cy="20" r="2.4"/><circle class="orb-d3" cx="32" cy="16" r="2"/><circle class="orb-d4" cx="32" cy="22" r="1.6"/></g></g></g>
+<circle cx="32" cy="32" r="30" fill="url(#orbShade)"/><ellipse cx="24" cy="18" rx="14" ry="9" fill="url(#orbShine)"/></svg>AI に聞く</button>
 <div class="askpanel" id="askPanel" role="dialog" aria-label="AI に聞く" hidden></div>
 
 <div id="drop">フォルダをここに落とす</div>
@@ -3607,15 +3638,19 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState 
 const AI_LOCAL = 'http://localhost:8791/v1/chat/completions';
 let aiBackend = null;            // 'app' | 'local' | null
 let qaOwn = load('qa:own', []), qaOthers = [], qaPend = load('qa:pend', []);
-(async function detectAI(){
+const onLocalhost = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+/* ⭕ 開いたときに AI がまだ起きていなくても、あとで起きたら気づく（2026-10-03 本人「連動中にはなるけど AI につながっていませんと言われる」） */
+async function detectAI(){
   if(window.oto && typeof window.oto.ask === 'function'){ aiBackend = 'app'; return; }
-  if(!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return;
+  if(!onLocalhost) return;
   try{
     const c = new AbortController(); setTimeout(()=> c.abort(), 1500);
     const r = await fetch('http://localhost:8791/v1/models', {signal: c.signal});
-    if(r.ok) aiBackend = 'local';
-  }catch(e){}
-})();
+    aiBackend = r.ok ? 'local' : null;
+  }catch(e){ aiBackend = null; }
+}
+detectAI();
+if(onLocalhost) setInterval(detectAI, 10000);
 const aiName = () => aiBackend === 'app' ? 'AI（Groq）' : aiBackend === 'local' ? 'AI（この Mac のモデル）' : null;
 
 function material(ctx){
@@ -3625,7 +3660,12 @@ function material(ctx){
   (ctx.notes || []).forEach(n => lines.push('文法メモ：' + (n.title ? n.title + '：' : '') + n.body));
   return lines.join('\n');
 }
+/* 考えているあいだ、右下の球の中で玉と弧が回る */
 async function aiAsk(ctx, question){
+  const fab = document.getElementById('askFab'); fab && fab.classList.add('thinking');
+  try{ return await aiAskRaw(ctx, question); } finally { fab && fab.classList.remove('thinking'); }
+}
+async function aiAskRaw(ctx, question){
   const system = ((LP.ai && LP.ai.instructions) || '日本語で短く答えます。') +
     ' 必ず【材料】に沿って説明し、材料に無いことを言うときは「材料には無いが」と断ってから言う。答えは3〜6行。';
   const user = '【材料】\n' + material(ctx) + '\n\n質問：' + question;
@@ -3702,7 +3742,8 @@ function askEl(ctx){
     box.innerHTML = (past.length ? '<div class="qalist">' + past.map(qaItemHTML).join('') + '</div>' : '') +
       '<form class="askform"><input name="q" placeholder="これどういうこと？（例：なぜ là が無いの？）" autocomplete="off" aria-label="この文について聞く"><button class="primary">聞く</button></form>' +
       '<div class="asknote">' + (aiName() ? aiName() + 'が文法メモと訳を材料に答えます。聞いたことは質問帳に貯まり、あとで Claude が確かめます。'
-        : 'いまは AI につながっていません。聞いたことは質問帳に貯まり、あとで Claude が答えます。') + '</div>';
+        : (onLocalhost ? 'いまは AI につながっていません（この Mac のモデルが止まっています。oto-drill.command を開き直すと立ちます）。'
+          : 'AI は、Mac では oto-drill.command で開いたページ（localhost）でだけ使えます。') + '聞いたことは質問帳に貯まり、あとで Claude が答えます。') + '</div>';
     const f = box.querySelector('form');
     f.addEventListener('submit', async e => {
       e.preventDefault();

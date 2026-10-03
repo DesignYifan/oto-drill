@@ -17,7 +17,7 @@ MODEL="mlx-community/Qwen3.8-27B-8bit"
 MLX="$HOME/.local/bin/mlx_lm.server"
 
 pids=()
-cleanup(){ for p in $pids; do kill $p 2>/dev/null; done; echo "\n止めました。"; }
+cleanup(){ for p in $pids; do pkill -P $p 2>/dev/null; kill $p 2>/dev/null; done; echo "\n止めました。"; }
 trap cleanup EXIT INT TERM
 
 up(){ curl -s -o /dev/null -m 1 "$1" }
@@ -33,8 +33,15 @@ fi
 if up "http://localhost:$AI_PORT/v1/models"; then
   echo "・AI：もう立っています"
 elif [[ -x "$MLX" ]]; then
-  "$MLX" --model "$MODEL" --host 127.0.0.1 --port $AI_PORT >/tmp/oto-drill-ai.log 2>&1 &
-  pids+=($!); echo "・AI：立てました（$AI_PORT・最初の質問のときにモデルを読み込みます。メモリを約29GB使います）"
+  # ⭕ HF_HUB_OFFLINE：モデルは手元にあるので、読み込むたびにネットへ確かめに行かない（2026-10-03 そこで落ちていた）
+  # ⭕ 落ちたら立て直す（ページは10秒ごとに見直すので、立てば自然につながる）
+  ( while true; do
+      HF_HUB_OFFLINE=1 "$MLX" --model "$MODEL" --host 127.0.0.1 --port $AI_PORT >>/tmp/oto-drill-ai.log 2>&1
+      echo "$(date '+%H:%M:%S') AI が止まったので立て直します" >>/tmp/oto-drill-ai.log; sleep 3
+    done ) &
+  pids+=($!); echo "・AI：立てました（$AI_PORT・メモリを約29GB使います）"
+  for i in {1..30}; do up "http://localhost:$AI_PORT/v1/models" && break; sleep 1; done
+  up "http://localhost:$AI_PORT/v1/models" && echo "・AI：答えられます" || echo "・AI：まだ起きていません（起きたらページが自分で気づきます。記録は /tmp/oto-drill-ai.log）"
 else
   echo "・AI：mlx_lm.server が見つかりません。AI なしで開きます（質問は質問帳に貯まります）"
 fi
