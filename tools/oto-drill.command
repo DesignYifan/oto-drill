@@ -26,7 +26,15 @@ echo "音声ドリル：$HERE"
 if up "http://localhost:$PAGE_PORT/"; then
   echo "・ページ：もう立っています"
 else
-  python3 -m http.server $PAGE_PORT --bind 127.0.0.1 --directory "$HERE" >/dev/null 2>&1 &
+  # ⭕ 毎回いまのページを配る（Chrome が古いページを覚えて出していた：2026-10-03）
+  python3 -c '
+import http.server, functools, sys
+class H(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store"); super().end_headers()
+    def log_message(self, *a): pass
+http.server.ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])), functools.partial(H, directory=sys.argv[2])).serve_forever()
+' $PAGE_PORT "$HERE" >/dev/null 2>&1 &
   pids+=($!); echo "・ページ：立てました（$PAGE_PORT）"
 fi
 

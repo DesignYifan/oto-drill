@@ -991,6 +991,7 @@ button.linkish:hover{background:none; text-decoration:underline}
 .msg.ai .bwrap{display:flex; flex-direction:column; gap:4px; align-items:flex-start; min-width:0; max-width:calc(100% - 36px)}
 .msg.ai .bub{background:var(--ui-surface-muted-bgColor); color:var(--ui-text-fgColor); border-top-left-radius:4px; max-width:100%}
 .msg.wait .bub{color:var(--ui-text-muted-fgColor)}
+.msg.wait .askretry{display:block; margin-top:4px}
 .btag{font-size:12px; color:var(--ui-text-muted-fgColor)}
 .btag .pill{background:var(--ui-surface-muted-bgColor)}
 .orb.mini{width:28px; height:28px; flex:none; margin-top:2px}
@@ -3753,8 +3754,10 @@ function qaFor(text){
   const all = qaOwn.concat(qaOthers);
   const answers = {};
   all.filter(e => e.k === 'a').forEach(a => { answers[a.qid] = a; });
+  const later = {};   // 答え待ちだった問いに、あとから AI が答えたもの
+  all.filter(e => e.k === 'ai').forEach(a => { later[a.qid] = a; });
   return all.filter(e => e.k === 'q' && e.lang === LP.code && norm(e.text) === norm(text))
-    .sort((a, b) => a.t - b.t).map(q => ({q, a: answers[q.id] || null}));
+    .sort((a, b) => a.t - b.t).map(q => ({q: q.ai || !later[q.id] ? q : Object.assign({}, q, {ai: later[q.id].ai, model: later[q.id].model}), a: answers[q.id] || null}));
 }
 
 /* 会話の形：自分の問いは右、答えは左（球の印つき）。答えの段の札は吹き出しの上に小さく */
@@ -3770,7 +3773,8 @@ function qaItemHTML(x){
   const tag = v ? '<span class="pill ok">確かめた答え</span>' : x.a && x.a.status === 'unverifiable' ? '<span class="pill">確かめられなかった</span>' :
     x.q.ai ? 'AI の答え（未確認）' : '';
   return bubbleQ(x.q.q) + (body ? bubbleA(tag, esc(body)) :
-    bubbleA('', '答え待ちです。AI につながっていなかったので、質問帳に残しました。あとで Claude が確かめて答えます。', 'wait'));
+    bubbleA('', '答え待ちです。AI につながっていなかったので、質問帳に残しました。あとで Claude が確かめて答えます。' +
+      (aiName() ? '<button class="linkish askretry" data-qid="' + esc(x.q.id) + '">いま AI に聞く</button>' : ''), 'wait'));
 }
 const THINK_DOTS = '<span class="dots" aria-label="考えています"><i></i><i></i><i></i><i></i></span>';
 /* 解説・引いた語の窓の下に出す「これどういうこと？」 */
@@ -3788,6 +3792,16 @@ function askEl(ctx){
       '<div class="asknote">' + note() + '</div>';
     const th = box.querySelector('.thread');
     requestAnimationFrame(() => { th.scrollTop = th.scrollHeight; const pnl = box.closest('.askpanel'); if(pnl) pnl.scrollTop = pnl.scrollHeight; });
+    // 答え待ちの問いを、いまの AI に聞き直す（考えているあいだは点が動く）
+    box.querySelectorAll('.askretry').forEach(b => b.addEventListener('click', async () => {
+      const x = past.find(y => y.q.id === b.dataset.qid); if(!x) return;
+      const bub = b.closest('.bub'); bub.innerHTML = THINK_DOTS;
+      const history = past.filter(y => y.q.t < x.q.t).map(y => ({q: y.q.q, a: (y.a && y.a.answer) || y.q.ai || ''}));
+      let ai = null;
+      try{ ai = await aiAsk(ctx, x.q.q, history, t => { bub.textContent = t; }); }catch(err){ ai = null; }
+      if(ai) qaEmit({k: 'ai', qid: x.q.id, ai: ai.text, model: ai.model});
+      paint();
+    }));
     const f = box.querySelector('form');
     f.addEventListener('submit', async e => {
       e.preventDefault();

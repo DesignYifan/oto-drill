@@ -15,7 +15,7 @@ from pathlib import Path
 
 def read(folder, lang):
     d = Path(folder) / "質問帳" / lang
-    qs, ans = [], {}
+    qs, ans, later = [], {}, {}
     if not d.exists():
         return qs, ans
     for f in sorted(d.glob("*.jsonl")):
@@ -27,6 +27,11 @@ def read(folder, lang):
                 qs.append(e)
             elif e.get("k") == "a":
                 ans[e["qid"]] = e
+            elif e.get("k") == "ai":   # 答え待ちだった問いに、あとから AI が答えた
+                later[e["qid"]] = e
+    for q in qs:
+        if not q.get("ai") and q["id"] in later:
+            q["ai"], q["model"] = later[q["id"]]["ai"], later[q["id"]].get("model")
     return sorted(qs, key=lambda e: e["t"]), ans
 
 
