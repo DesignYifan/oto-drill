@@ -486,7 +486,10 @@ li.hidden{display:none}
 .howto ol{margin:0; padding:0 0 0 24px; list-style:decimal; display:flex; flex-direction:column; gap:4px}
 .howto li{margin:0; padding:0; display:list-item}
 .howto p{margin:0; color:var(--ui-text-muted-fgColor); font-size:13px}
-.pnone{display:flex; flex-direction:column; gap:8px}
+.pnone{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+.addother{margin-top:32px}
+.addother > summary{cursor:pointer; font-size:14px; color:var(--ui-primary-fgColor); display:flex; gap:8px; align-items:center}
+.addother > summary span{color:var(--ui-text-muted-fgColor); font-size:12px}
 .pnrow, .addmore{background:var(--ui-surface-bgColor); border-radius:12px; padding:12px 20px}
 .addmore{padding:0; background:none; margin-top:8px}
 .pnrow summary, .addmore summary{cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px; list-style:none}
@@ -631,7 +634,8 @@ span.blank.right{color:var(--ui-success-fgColor)} span.blank.wrong{color:var(--u
 .addex input{font:inherit; font-size:14px; padding:8px 12px; border:1px solid var(--ui-outline-borderColor); border-radius:6px; background:var(--ui-surface-bgColor); color:var(--ui-text-fgColor)}
 .addex input[name=label]{flex:1; min-width:10em}
 .addex input[name=count]{width:5em}
-.addex button{font-size:12px; padding:4px 12px}
+.addex button{font-size:14px; padding:8px 16px}
+.addex button.primary{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor)}
 .bsec .ovh{margin-top:20px}
 .gram{border:1px solid var(--ui-outline-borderColor); border-radius:8px; background:var(--ui-surface-bgColor); margin-bottom:8px; overflow:hidden}
 .gt{display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; border:0; border-radius:0; text-align:left; padding:12px 12px; background:transparent}
@@ -3484,26 +3488,28 @@ function renderBook(){
     html += '</div><p class="bfoot">— はその課にまだ中身が無いものです。練習の正答率は直近50回、紙の問題は ○＝1・△＝0.5 で数えます（最後に付けた印）。</p>';
   }
   else if(bview === 'paper'){
-    // ⭕ 2026-10-03 本人「このページが何でどうやって使うのかが分からなかった」：何のページか・どう使うかを先に出す
+    // ⭕ 2026-10-03 本人「このページが何でどうやって使うのか分からない」「問題を登録するってどういうこと」
+    //   → 教科書の練習問題は教材から自動で並べ（book.json の exercises）、手で足すのは一覧に無いときだけにした
     html += '<section class="howto"><b>紙の問題：教科書の練習問題の成績を付けるページです</b><ol>' +
-      '<li>教科書の練習問題を、本で解きます' + (book && book.answers ? '（' + esc(book.answers) + '）' : '') + '</li>' +
-      '<li>その課に問題を登録します（問題の名前と問の数）。1度だけで大丈夫です</li>' +
-      '<li>答え合わせをしながら、マスを押して印を付けます（押すたびに ○ → △ → ×）</li></ol>' +
+      '<li>教科書の練習問題を、本で解きます</li>' +
+      '<li>答え合わせをします。「この問題の音声」で、答えの音声を聴けます' + (book && book.answers ? '（' + esc(book.answers) + '）' : '') + '</li>' +
+      '<li>1問ずつマスを押して印を付けます（押すたびに ○ → △ → ×）</li></ol>' +
       '<p>付けた印は「進み具合」と、課のゴールの「紙の問題」に反映されます。やり直した回も履歴に残ります。</p></section>';
     const has = ld.filter(x => (defs[x.L.id] || []).length), none = ld.filter(x => !(defs[x.L.id] || []).length);
-    const addForm = L => '<form class="addex" data-l="' + esc(L.id) + '"><label>問題の名前<input name="label" placeholder="例：Bài tập 1" required></label>' +
-      '<label>問の数<input name="count" type="number" min="1" max="60" value="5"></label><button class="primary">登録する</button></form>';
-    if(has.length) html += '<h3 class="ovh">登録した問題<small>' + has.length + '課</small></h3>';
+    const addForm = L => '<form class="addex" data-l="' + esc(L.id) + '"><label>問題の名前<input name="label" placeholder="例：練習 2" required></label>' +
+      '<label>問の数<input name="count" type="number" min="1" max="60" value="5"></label><button class="primary">追加する</button></form>';
+    if(!has.length) html += '<p class="pnote" style="text-align:left">この教材には、練習問題の一覧がまだありません。下の「一覧に無い問題を追加する」から足せます。</p>';
     has.forEach(x => {
       const L = x.L, ps = paperScore(L.id, defs, last);
       html += '<section class="ovsec bpaper"><div class="ovhead"><b>' + esc(L.title) + '</b><span>' + (ps.tot ? fmtN(ps.got) + ' / ' + ps.tot + ' 点' : '') + '</span></div>';
       (defs[L.id] || []).forEach(ex => { html += exHTML(L.id, ex, last); });
-      html += '<details class="addmore"><summary>この課に問題を足す</summary>' + addForm(L) + '</details></section>';
+      html += '<details class="addmore"><summary>この課の、一覧に無い問題を追加する</summary>' + addForm(L) + '</details></section>';
     });
     if(none.length){
-      html += '<h3 class="ovh">まだ問題を登録していない課<small>解いた課だけ登録すれば大丈夫です</small></h3><div class="pnone">';
-      none.forEach(x => { html += '<details class="pnrow"><summary>' + esc(x.L.title) + '<span>問題を登録</span></summary>' + addForm(x.L) + '</details>'; });
-      html += '</div>';
+      html += '<details class="addother"><summary>ほかの課の、一覧に無い問題を追加する<span>' + none.length + '課</span></summary>' +
+        '<p class="pnote" style="text-align:left">教科書にあるのにこのページに出ていない問題だけ、名前と問の数を入れて追加してください。</p><div class="pnone">';
+      none.forEach(x => { html += '<details class="pnrow"><summary>' + esc(x.L.title) + '<span>追加する</span></summary>' + addForm(x.L) + '</details>'; });
+      html += '</div></details>';
     }
   }
   else if(bview === 'grammar'){
