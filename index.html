@@ -30,10 +30,10 @@
   --ui-primary-fgColor:#1f56d6;      /* 青の文字（淡い青の面の上で 5.5:1）。⛔ --ui-primary-color は面・線・点に使い、文字には使わない */
   --ui-primary-bgColor:#2f6bf0;     /* 白い文字を載せる青の面（4.7:1） */
   --ui-primary-onEmphasis-fgColor:#FFFFFF;
-  --ui-success-color:#21a9a0;
-  --ui-success-fgColor:#16786f;
-  --ui-success-muted-bgColor:#e4f3f1;
-  --ui-danger-color:#7a68f0;
+  --ui-success-color:#1f9d55;
+  --ui-success-fgColor:#177a3e;
+  --ui-success-muted-bgColor:#e6f5ec;
+  --ui-danger-color:#e5484d;
   --ui-card-shadow:0 1px 2px rgba(20,24,32,.02), 0 14px 38px rgba(20,24,32,.055);
   --ui-card-raised-shadow:0 1px 2px rgba(20,24,32,.02), 0 22px 52px rgba(20,24,32,.08);
   --ui-control-shadow:0 1px 2px rgba(20,24,32,.04), 0 4px 14px rgba(20,24,32,.05);
@@ -45,7 +45,7 @@
     --ui-scrollbar-thumb-bgColor:#3a3f4a; --ui-scrollbar-thumb-hover-bgColor:#555b68;
     --ui-text-fgColor:#e8eaee; --ui-text-muted-fgColor:#a0a6b1; --ui-text-alt-fgColor:#6f7581;
     --ui-primary-color:#5b8af4; --ui-primary-muted-bgColor:#1f2a44; --ui-primary-onEmphasis-fgColor:#FFFFFF; --ui-primary-fgColor:#7ea3f7; --ui-primary-bgColor:#2f6bf0;
-    --ui-success-color:#3cc3b8; --ui-success-fgColor:#5fd0c5; --ui-success-muted-bgColor:#173330; --ui-danger-color:#9b8cf5;
+    --ui-success-color:#3fbf73; --ui-success-fgColor:#6fd69a; --ui-success-muted-bgColor:#15301f; --ui-danger-color:#f0686c;
     --ui-card-shadow:0 1px 2px rgba(0,0,0,.3), 0 14px 38px rgba(0,0,0,.35);
     --ui-card-raised-shadow:0 1px 2px rgba(0,0,0,.3), 0 22px 52px rgba(0,0,0,.45);
     --ui-control-shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
@@ -56,7 +56,7 @@
   --ui-scrollbar-thumb-bgColor:#3a3f4a; --ui-scrollbar-thumb-hover-bgColor:#555b68;
   --ui-text-fgColor:#e8eaee; --ui-text-muted-fgColor:#a0a6b1; --ui-text-alt-fgColor:#6f7581;
   --ui-primary-color:#5b8af4; --ui-primary-muted-bgColor:#1f2a44; --ui-primary-onEmphasis-fgColor:#FFFFFF; --ui-primary-fgColor:#7ea3f7; --ui-primary-bgColor:#2f6bf0;
-  --ui-success-color:#3cc3b8; --ui-success-fgColor:#5fd0c5; --ui-success-muted-bgColor:#173330; --ui-danger-color:#9b8cf5;
+  --ui-success-color:#3fbf73; --ui-success-fgColor:#6fd69a; --ui-success-muted-bgColor:#15301f; --ui-danger-color:#f0686c;
   --ui-card-shadow:0 1px 2px rgba(0,0,0,.3), 0 14px 38px rgba(0,0,0,.35);
   --ui-card-raised-shadow:0 1px 2px rgba(0,0,0,.3), 0 22px 52px rgba(0,0,0,.45);
   --ui-control-shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
@@ -423,11 +423,12 @@ li.hidden{display:none}
 /* ================= 練習（practice.json があるときだけ出る） ================= */
 /* 聴くだけだと、自分で選んで確かめられないので覚えられない（本人 2026-09-30）。
    表を押して1音ずつ鳴らす／聞いて選ぶ／見て言う、の3つ。 */
-:root{ --ui-danger-fgColor:#5a46d6; --ui-danger-muted-bgColor:#efedfd }
+/* 正解は緑・不正解は赤（本人 2026-10-03「赤が間違い・緑が正解という固定概念があるから、それでいきたい」） */
+:root{ --ui-danger-fgColor:#c2272d; --ui-danger-muted-bgColor:#fdecec }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){ --ui-danger-fgColor:#a99cf7; --ui-danger-muted-bgColor:#26223d }
+  :root:not([data-theme="light"]){ --ui-danger-fgColor:#ff8a8d; --ui-danger-muted-bgColor:#3a1d1f }
 }
-:root[data-theme="dark"]{ --ui-danger-fgColor:#a99cf7; --ui-danger-muted-bgColor:#26223d }
+:root[data-theme="dark"]{ --ui-danger-fgColor:#ff8a8d; --ui-danger-muted-bgColor:#3a1d1f }
 
 .modes{display:flex; border:1px solid var(--ui-outline-borderColor); border-radius:6px; overflow:hidden}
 .modes button{border:0; border-radius:0; padding:8px 16px}
@@ -468,7 +469,7 @@ li.hidden{display:none}
   padding:12px; border:1px dashed var(--ui-outline-borderColor); border-radius:8px; background:var(--ui-surface-bgColor)}
 .tiles{display:flex; flex-wrap:wrap; gap:8px; justify-content:center}
 .tiles button, .slots button{font-size:18px; padding:8px 16px}
-.slots.right{border-style:solid; border-color:var(--ui-success-fgColor); background:var(--ui-primary-muted-bgColor)}
+.slots.right{border-style:solid; border-color:var(--ui-success-fgColor); background:var(--ui-success-muted-bgColor)}
 .slots.wrong{border-style:solid; border-color:var(--ui-danger-fgColor); background:var(--ui-danger-muted-bgColor)}
 .meter{display:flex; gap:4px; margin-top:8px}
 .meter i{width:6px; height:6px; border-radius:50%; background:var(--ui-outline-borderColor)}
@@ -482,7 +483,7 @@ li.hidden{display:none}
 .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%}
 .choices button{padding:16px 8px; font-size:24px; display:flex; flex-direction:column; align-items:center; gap:2px}
 .choices button small{font-size:11px; color:var(--ui-text-muted-fgColor); font-family:inherit}
-.choices button.right{border-color:var(--ui-success-fgColor); background:var(--ui-primary-muted-bgColor); color:var(--ui-success-fgColor)}
+.choices button.right{border-color:var(--ui-success-fgColor); background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
 .choices button.wrong{border-color:var(--ui-danger-fgColor); background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor)}
 .quiz .say{font-size:14px; color:var(--ui-text-muted-fgColor); font-family:inherit; min-height:22px}
 .quiz .pnote{font-size:12px; color:var(--ui-text-muted-fgColor); text-align:center; min-height:20px}
@@ -591,7 +592,7 @@ span.blank.right{color:var(--ui-success-fgColor)} span.blank.wrong{color:var(--u
 .pcells{display:flex; flex-wrap:wrap; gap:4px}
 .pc{width:38px; height:38px; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:16px; line-height:1}
 .pc small{font-size:11px; color:var(--ui-text-muted-fgColor); font-family:inherit}
-.pc.ro{border-color:var(--ui-success-fgColor); background:var(--ui-primary-muted-bgColor); color:var(--ui-success-fgColor)}
+.pc.ro{border-color:var(--ui-success-fgColor); background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
 .pc.rs{border-color:var(--ui-warning-fgColor); background:var(--ui-warning-muted-bgColor); color:var(--ui-warning-fgColor)}
 .pc.rx{border-color:var(--ui-danger-fgColor); background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor)}
 .addex{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
@@ -3517,6 +3518,7 @@ let evOwn = load('ev:own', []);      // この端末の出来事（全部）
 let evOthers = [];                    // ほかの端末の出来事（フォルダから読んだもの）
 let evPend = load('ev:pend', [])  ;   // まだフォルダに書いていない出来事の id
 let recDir = null;                    // 記録のフォルダ（音声ドリル/）
+let recWait = null;                   // 前に選んだが、まだ書き込みの許可を取り直していないフォルダ
 let flushT = 0, evSeq = 0;
 let recInfo = {devices: [], read: 0, wrote: null, err: ''};
 
@@ -3638,27 +3640,35 @@ function paintRecInfo(){
   if(chip){
     chip.hidden = !window.showDirectoryPicker;
     chip.classList.toggle('ok', !!recDir && !recInfo.err);
-    chip.textContent = !recDir ? '同期：オフ' : recInfo.err ? '同期：問題あり' : '同期中（' + (recInfo.devices.length || 1) + '台）';
+    chip.textContent = !recDir ? (recWait ? '同期：押して再開' : '同期：オフ') : recInfo.err ? '同期：問題あり' : '同期中（' + (recInfo.devices.length || 1) + '台）';
   }
   const el = $('#recInfo'); if(!el) return;
   if(!window.showDirectoryPicker){ el.textContent = 'このブラウザではフォルダに書き込めません。Chrome か Edge で開いてください。記録はこのブラウザの中だけにあります。'; $('#recPick').hidden = true; return; }
-  if(!recDir){ el.textContent = 'まだ同期していません。記録はこのブラウザの中だけにあります（端末名 ' + DEV + '）。'; return; }
+  if(!recDir){ el.textContent = recWait ? '前に選んだ「' + recWait.name + '」に、もう一度書き込みの許可が要ります。見出しの「同期：押して再開」を押すと、選び直さずに再開します。'
+    : 'まだ同期していません。記録はこのブラウザの中だけにあります（端末名 ' + DEV + '）。'; return; }
   el.textContent = '同期中：' + recDir.name + '／この端末 ' + DEV + '／端末 ' + (recInfo.devices.length || 1) + ' 台ぶん・出来事 ' + recInfo.read + ' 件' +
     (recInfo.wrote ? '／最後に書いた ' + new Date(recInfo.wrote).toLocaleTimeString('ja-JP') : '') + (evPend.length ? '／未送信 ' + evPend.length : '') + (recInfo.err ? '／⚠ ' + recInfo.err : '');
 }
 $('#recPick').addEventListener('click', async ()=>{
-  try{ recDir = await showDirectoryPicker({id: 'otodrill-rec', mode: 'readwrite'}); }catch(e){ return; }
+  try{ recDir = await showDirectoryPicker({id: 'otodrill-rec', mode: 'readwrite'}); recWait = null; }catch(e){ return; }
   await putDir(recDir, 'records');
   evPend = evOwn.map(e => e.id); save('ev:pend', evPend);   // 選んだときに、それまでの分をまとめて書く
   try{ const dir = await recFolder(true); await dir.removeEntry(DEV + '.jsonl').catch(()=>{}); }catch(e){}
   await syncRecords();
 });
 $('#recSync').addEventListener('click', syncRecords);
-$('#recChip').addEventListener('click', ()=> { if(recDir) syncRecords(); else $('#recPick').click(); });
+// ⭕ 2026-10-03 本人「同期がオフになってる」：読み込み直すと Chrome が書き込みの許可を聞き直す。選び直させずに、押したら許可だけ取り直す
+$('#recChip').addEventListener('click', async ()=> {
+  if(recDir) return syncRecords();
+  if(recWait){
+    try{ if(await recWait.requestPermission({mode: 'readwrite'}) === 'granted'){ recDir = recWait; recWait = null; return syncRecords(); } }catch(e){}
+  }
+  $('#recPick').click();
+});
 (async function(){
   const h = await getDir('records');
   if(h && h.queryPermission){
-    try{ if(await h.queryPermission({mode: 'readwrite'}) === 'granted'){ recDir = h; await syncRecords(); } else { recDir = null; $('#recInfo').textContent = '前に選んだ ' + h.name + ' に、もう一度書き込みの許可が要ります。「フォルダを選ぶ」から選び直してください。'; } }catch(e){}
+    try{ if(await h.queryPermission({mode: 'readwrite'}) === 'granted'){ recDir = h; await syncRecords(); } else { recDir = null; recWait = h; } }catch(e){}
   }
   paintRecInfo();
 })();
