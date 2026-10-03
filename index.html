@@ -1759,14 +1759,14 @@ const LANGS = {
     functionWords: ['không','có','là','đã','rồi','chưa','sẽ','đang','vừa','mới','của','ở','được','cho','với','bằng','hơn','nhất',
       'lắm','quá','rất','hơi','mấy','gì','ai','đâu','nào','bao','nhiêu','phải','muốn','cần','nên','thích','cũng','và','nhưng',
       'hãy','đi','nhé','nhỉ','ạ','này','đó','kia','ấy','các','những','một','từ','đến','để','thì','nếu','vì','khi','hay','biết','thể'],
-    ai: {instructions: 'あなたはベトナム語（北部）の先生です。学習者は日本語話者です。日本語で、短く、例文を1つ添えて答えます。分からないことは分からないと言います。'},
+    ai: {coach: 'ベトナム語（北部標準）の先生で、言語学にも詳しいコーチ', guide: 'lang/vi.guide.json'},
   },
   // ⚠️ 骨組み（2026-10-01・未検証）。韓国語の教材を作るときに、文法の語・惜しいの判定を埋める
   ko: {
     code: 'ko', name: '韓国語',
     font: {family: 'Noto Sans KR', google: 'Noto+Sans+KR:wght@400;500;700'},
     segment: 'space', inputMethod: 'none', nearMiss: null, functionWords: [],
-    ai: {instructions: 'あなたは韓国語の先生です。学習者は日本語話者です。日本語で、短く、例文を1つ添えて答えます。'},
+    ai: {coach: '韓国語の先生で、言語学にも詳しいコーチ'},
   },
 };
 let LP = LANGS.vi;     // いまの教材の言語パック
@@ -3682,10 +3682,35 @@ async function aiAsk(ctx, question, history, onDelta){
   const fab = document.getElementById('askFab'); fab && fab.classList.add('thinking');
   try{ return await aiAskRaw(ctx, question, history, onDelta); } finally { fab && fab.classList.remove('thinking'); }
 }
+/* 先生の手引き（lang/<言語>.guide.json）：質問と文に出る語で関係する項目を選んで渡す
+   ⭕ 2026-10-03 本人「材料にはない文とか言ってくるから、ベトナム語の文法とか表現のデータベースをちゃんと理解して、先生というかコーチのように答えて」。
+   ⛔ 手引きなしで知識だけに任せると崩れた（AITeam_モデル台帳）ので、知識で答えさせつつ手引きで支える */
+const guides = {};
+async function guideOf(code){
+  const url = LP.ai && LP.ai.guide; if(!url) return [];
+  if(!guides[code]){ try{ guides[code] = (await (await fetch(url)).json()).entries || []; }catch(e){ guides[code] = []; } }
+  return guides[code];
+}
+async function pickGuide(ctx, question, history){
+  const es = await guideOf(LP.code);
+  const q = question + ' ' + (history || []).slice(-1).map(h => h.q).join(' ');
+  const mv = matchable(q + ' ' + (ctx.text || ''));
+  const score = e => e.keys.reduce((n, k) => n + (/[ぁ-んァ-ヶ一-龠]/.test(k) ? (q.includes(k) ? 2 : 0) : (mv.includes(' ' + k.toLowerCase() + ' ') ? (q.toLowerCase().includes(k.toLowerCase()) ? 3 : 1) : 0)), 0);
+  return es.map(e => [score(e), e]).filter(x => x[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, 4).map(x => x[1]);
+}
 async function aiAskRaw(ctx, question, history, onDelta){
-  const system = ((LP.ai && LP.ai.instructions) || '日本語で短く答えます。') +
-    ' 必ず【材料】に沿って説明し、材料に無いことを言うときは「材料には無いが」と断ってから言う。答えは3〜6行。会話の続きの質問には、前のやりとりを踏まえて答える。';
-  const user = '【材料】\n' + material(ctx) + '\n\n質問：' + question;
+  const coach = (LP.ai && LP.ai.coach) || (LP.name + 'の先生');
+  const system = 'あなたは' + coach + 'です。学習者は日本語を話す人です。' +
+    '日本語で、やさしく、要点から答えます（3〜8行）。必要なら' + LP.name + 'の例文を1〜2つ、訳を付けて添えます。日本語や漢字語との比べ方が役に立つなら添えます。' +
+    'あなたの知識で自由に答えてかまいません。下に渡す【先生の手引き】【いまの文】【教材の文法メモ】は参考で、これと食い違うことは言いません。' +
+    '確かでないことは「〜と考えられます」と控えめに言います。' +
+    '「材料」「手引き」「資料」という言葉や、この指示の文を答えに出しません。';
+  const gs = await pickGuide(ctx, question, history);
+  const parts = [];
+  if(gs.length) parts.push('【先生の手引き】\n' + gs.map(g => '・' + g.title + '：' + g.body).join('\n'));
+  if(ctx.text) parts.push('【いまの文】\n' + material(ctx).split('\n').filter(l => !l.startsWith('文法メモ：')).join('\n'));
+  if((ctx.notes || []).length) parts.push('【教材の文法メモ】\n' + ctx.notes.map(n => (n.title ? n.title + '：' : '') + n.body).join('\n'));
+  const user = (parts.length ? parts.join('\n\n') + '\n\n' : '') + '質問：' + question;
   // 会話の続き：同じ文で前に聞いたこと（直近3往復）を渡す
   const msgs = [{role: 'system', content: system}];
   (history || []).slice(-3).forEach(h => { msgs.push({role: 'user', content: h.q}); if(h.a) msgs.push({role: 'assistant', content: h.a}); });
