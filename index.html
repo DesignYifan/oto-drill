@@ -1137,18 +1137,18 @@ button.linkish:hover{background:none; text-decoration:underline}
       <span class="eyebrow">folder player</span>
     </div>
     <div class="modes" id="modes" hidden>
-      <button data-mode="book">進める</button>
-      <button data-mode="listen" class="on">聴く</button>
-      <button data-mode="practice">自由に練習</button>
-      <button data-mode="overview">見渡す</button>
+      <button data-mode="book">コース</button>
+      <button data-mode="listen" class="on">音声</button>
+      <button data-mode="practice">練習</button>
+      <button data-mode="overview">ダッシュボード</button>
     </div>
     <button class="primary" id="pick">フォルダを選ぶ</button>
     <button id="reopen" hidden></button>
     <input type="file" id="picker" webkitdirectory directory multiple hidden>
     <div class="folder">
       <button id="toggleList" aria-controls="list" aria-expanded="true"><span class="caret"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span><span class="lbl">一覧を隠す</span></button>
-      <button id="export" hidden>貯めた語を書き出す</button>
-      <button class="recchip" id="recChip" title="記録を iCloud のフォルダで Mac と iPhone に連動する">記録：連動していない</button>
+      <button id="export" hidden>保存した語を書き出す</button>
+      <button class="recchip" id="recChip" title="記録を iCloud のフォルダで Mac と iPhone に同期します">同期：オフ</button>
       <span class="name" id="folder">未読み込み</span>
     </div>
   </header>
@@ -1197,14 +1197,14 @@ button.linkish:hover{background:none; text-decoration:underline}
             </div>
 
             <div class="recsync">
-              <span class="eyebrow">記録の連動</span>
+              <span class="eyebrow">記録の同期</span>
               <p id="recInfo" class="recinfo"></p>
-              <div class="recbtns"><button id="recPick">iCloud のフォルダを選ぶ</button><button id="recSync">今すぐ読み直す</button></div>
+              <div class="recbtns"><button id="recPick">iCloud のフォルダを選ぶ</button><button id="recSync">今すぐ同期</button></div>
             </div>
             <div class="keys">
         <span><kbd>space</kbd>再生／停止</span>
         <span><kbd>←</kbd><kbd>→</kbd>5秒</span>
-        <span><kbd>⇧←</kbd><kbd>⇧→</kbd>前後の本</span>
+        <span><kbd>⇧←</kbd><kbd>⇧→</kbd>前後のトラック</span>
         <span><kbd>↑</kbd><kbd>↓</kbd>速度</span>
         <span><kbd>0</kbd>速度を1.0に</span>
         <span><kbd>R</kbd>頭から</span>
@@ -1263,10 +1263,10 @@ button.linkish:hover{background:none; text-decoration:underline}
       <select id="pdecks" aria-label="練習する組"></select>
       <div class="seg" id="pviews">
         <button data-v="table">表</button>
-        <button data-v="hear">聞いて選ぶ</button>
-        <button data-v="order">並べる</button>
+        <button data-v="hear">聴いて選ぶ</button>
+        <button data-v="order">並べ替える</button>
         <button data-v="cloze">穴埋め</button>
-        <button data-v="type">聞いて書く</button>
+        <button data-v="type">聴いて書く</button>
         <button data-v="say">見て言う</button>
       </div>
       <button class="linkish" id="plesson" hidden></button>
@@ -1990,14 +1990,14 @@ async function lookup(token, at, seg, file){
   if(gm && (!hit || !hit.ja)){
     const g = document.createElement('div');
     g.className = 'gloss';
-    g.innerHTML = '<span class="src">この文での意味（機械の訳・未確認）</span>';
+    g.innerHTML = '<span class="src">この文での意味（自動翻訳・未確認）</span>';
     g.appendChild(document.createTextNode(gm.w + '　' + gm.ja));
     box.appendChild(g);
   }
   if(hit && hit.ja){
     const g = document.createElement('div');
     g.className = 'gloss';
-    g.innerHTML = '<span class="src">手元の台帳</span>';
+    g.innerHTML = '<span class="src">単語の一覧</span>';
     g.appendChild(document.createTextNode(hit.ja));
     box.appendChild(g);
   }
@@ -2020,14 +2020,14 @@ async function lookup(token, at, seg, file){
   const keep = document.createElement('button');
   keep.className = 'keep';
   const already = kept.some(k => k.form === form && k.sentence === seg.text);
-  keep.textContent = already ? '貯めてある' : 'この文ごと貯める';
+  keep.textContent = already ? '保存済み' : 'この文を保存';
   keep.disabled = already;
   keep.addEventListener('click', ()=>{
     kept.push({form, ja: (hit && hit.ja) || '', kanji: han.map(x => x.m.kanji).join(''),
                sentence: seg.text, file, start: seg.start, at: new Date().toISOString().slice(0,10)});
     save('kept:'+folderKey, kept);
     emit('keep', {f: folderKey, v: kept[kept.length - 1]});
-    keep.textContent = '貯めてある'; keep.disabled = true;
+    keep.textContent = '保存済み'; keep.disabled = true;
     paintExport();
   });
   box.appendChild(keep);
@@ -2056,7 +2056,7 @@ async function lookup(token, at, seg, file){
 function paintExport(){
   const b = $('#export');
   b.hidden = !kept.length;
-  b.textContent = '貯めた語 ' + kept.length + ' を書き出す';
+  b.textContent = '保存した語（' + kept.length + '）を書き出す';
 }
 $('#export').addEventListener('click', ()=>{
   const head = ['word','kanji','gloss_ja','sentence','file','start','date'].join('\t');
@@ -2338,7 +2338,7 @@ function paintSets(){
   if(!ds.length){ box.innerHTML = ''; box.hidden = true; return; }
   const st = pdeck.startsWith('set:') ? findSet(pdeck) : null;
   box.hidden = false;
-  box.innerHTML = '<div class="psh"><b>' + esc(ds.map(d => d.title).join('・')) + '</b><span>種類ごとに ' + SET_SIZE + ' 項目までの小さな組。押すとその組だけを練習します</span>' +
+  box.innerHTML = '<div class="psh"><b>' + esc(ds.map(d => d.title).join('・')) + '</b><span>種類ごとに ' + SET_SIZE + ' 項目までの小さな組に分けています。押すとその組だけを練習します</span>' +
     (st ? '<span class="psnow">この組 ' + setSeen(st) + ' / ' + st.items.length + (setDone(st) ? '　済んだ' : '') + '</span>' : '') +
     (st && setDone(st) && nextSet(st) ? '<button class="primary psnext" data-set="' + esc(nextSet(st).id) + '">次の組へ：' + CATNAME[nextSet(st).cat] + ' ' + nextSet(st).n +
       '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' : '') + '</div>' + setChipsHTML(ds, pdeck);
@@ -2376,7 +2376,7 @@ function renderTable(){
     d.items.forEach(it => { let g = groups.find(x => x.name === it.group); if(!g) groups.push(g = {name:it.group, list:[]}); g.list.push(it); });
     const sec = document.createElement('section');
     sec.innerHTML = '<div class="eyebrow ghead">' + esc(d.book + '　' + (d.section ? d.section + '　' : '') + d.title) + '</div>' +
-      (d.items.some(x => x.checked === false) ? '<div class="unchecked" style="margin:0 0 8px">綴りは付属音声の聞き取りで、本とはまだ照らしていません</div>' : '');
+      (d.items.some(x => x.checked === false) ? '<div class="unchecked" style="margin:0 0 8px">綴りは付属音声から聞き取ったもので、本とはまだ照らし合わせていません</div>' : '');
     groups.forEach(g=>{
       if(groups.length > 1){
         const h = document.createElement('div'); h.className = 'ghead'; h.style.fontSize = '12px'; h.style.color = 'var(--ui-text-muted-fgColor)';
@@ -2417,7 +2417,7 @@ function renderQuiz(){
 
   if(pview === 'hear'){
     const hear = document.createElement('button');
-    hear.className = 'primary hear'; hear.textContent = 'もう一度聞く';
+    hear.className = 'primary hear'; hear.textContent = 'もう一度聴く';
     hear.addEventListener('click', ()=>{ say(it); hear.blur(); });
     box.appendChild(hear);
 
@@ -2447,19 +2447,19 @@ function renderQuiz(){
       box.appendChild(explainEl(it, {ok, wrong: ok || it.deck.kind !== 'text' ? [] : [{you: you && you.show, right: it.show}]}));
       box.appendChild(nextRow());
     }
-    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聞く　<kbd>enter</kbd> 次へ</div>');
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
     if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
   }else{
     box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
     box.insertAdjacentHTML('beforeend', '<div class="say">' + (q.heard ? esc(it.say) : '') + '</div>');
     if(!q.heard){
-      const b = document.createElement('button'); b.className = 'primary hear'; b.textContent = '声に出してから、答えを聞く';
+      const b = document.createElement('button'); b.className = 'primary hear'; b.textContent = '声に出してから、答えを聴く';
       b.addEventListener('click', ()=>{ q.heard = true; say(it); renderQuiz(); });
       box.appendChild(b);
-      box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> 答えを聞く</div>');
+      box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> 答えを聴く</div>');
     }else if(!q.done){
       if(it.deck.kind === 'text') box.appendChild(explainEl(it, {ok: true, msg: '答えの文'}));
-      const again = document.createElement('button'); again.textContent = 'もう一度聞く';
+      const again = document.createElement('button'); again.textContent = 'もう一度聴く';
       again.addEventListener('click', ()=>{ say(it); again.blur(); });
       box.appendChild(again);
       const row = document.createElement('div'); row.className = 'row';
@@ -2468,7 +2468,7 @@ function renderQuiz(){
       ng.addEventListener('click', ()=> answerSay(false));
       ok.addEventListener('click', ()=> answerSay(true));
       row.append(ng, ok); box.appendChild(row);
-      box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> もう一度聞く　<kbd>←</kbd> 言えなかった　<kbd>→</kbd> 言えた</div>');
+      box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> もう一度聴く　<kbd>←</kbd> 言えなかった　<kbd>→</kbd> 言えた</div>');
     }
   }
   body.appendChild(box);
@@ -2520,17 +2520,17 @@ function renderCloze(){
   });
   box.appendChild(ch);
   const note = document.createElement('div'); note.className = 'pnote';
-  note.textContent = q.done ? (q.picked === q.ans ? '正解。文を聞いて確かめてください' : '正しくは「' + q.ans + '」') : '空いているところに入る語を選んでください（答えると文が鳴ります）';
+  note.textContent = q.done ? (q.picked === q.ans ? '正解です。文を聴いて確かめてください' : '正しくは「' + q.ans + '」') : '空いているところに入る語を選んでください（答えると文が鳴ります）';
   box.appendChild(note);
   if(q.done){
     const ok = q.picked === q.ans;
     box.appendChild(explainEl(it, {ok, wrong: ok ? [] : [{you: q.picked, right: q.ans}]}));
-    const again = document.createElement('button'); again.textContent = 'もう一度聞く';
+    const again = document.createElement('button'); again.textContent = 'もう一度聴く';
     again.addEventListener('click', ()=>{ say(it); again.blur(); });
     box.appendChild(again);
     box.appendChild(nextRow());
   }
-  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聞く　<kbd>enter</kbd> 次へ</div>');
+  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ　<kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
   body.appendChild(box);
 }
 
@@ -2611,7 +2611,7 @@ function renderType(){
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
-  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聞く';
+  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聴く';
   hear.addEventListener('click', ()=>{ say(it); $('#typein') && $('#typein').focus(); });
   box.appendChild(hear);
 
@@ -2619,7 +2619,7 @@ function renderType(){
     const inp = document.createElement('input');
     inp.id = 'typein'; inp.className = 'typein'; inp.autocomplete = 'off'; inp.spellcheck = false;
     inp.setAttribute('autocapitalize', 'off');
-    inp.placeholder = '聞こえたとおりに書く（enter で答え合わせ）';
+    inp.placeholder = '聞こえたとおりに書いてください（Enter で答え合わせ）';
     inp.value = q.draft || '';
     inp.addEventListener('input', e=>{
       if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){   // Mac のベトナム語入力で打っているあいだは触らない
@@ -2643,7 +2643,7 @@ function renderType(){
     const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = '答え合わせ';
     ok.addEventListener('click', ()=> gradeType(inp.value));
     row.append(give, ok); box.appendChild(row);
-    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>tab</kbd> もう一度聞く　<kbd>enter</kbd> 答え合わせ</div>');
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>tab</kbd> もう一度聴く　<kbd>enter</kbd> 答え合わせ</div>');
     setTimeout(()=> inp.focus(), 0);
   }else{
     const diff = document.createElement('div'); diff.className = 'diff';
@@ -2695,7 +2695,7 @@ function renderOrder(){
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>';
-  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聞く';
+  const hear = document.createElement('button'); hear.className = 'primary hear'; hear.textContent = 'もう一度聴く';
   hear.addEventListener('click', ()=>{ say(it); hear.blur(); });
   box.appendChild(hear);
 
@@ -2729,7 +2729,7 @@ function renderOrder(){
   note.textContent = q.done ? (q.ok ? '正解' : '正しくは「' + it.show + '」') : '聞こえた順に語を押してください。並べた語を押すと戻せます';
   box.appendChild(note);
   if(q.done){ box.appendChild(explainEl(it, {ok: q.ok, msg: q.ok ? '' : '上が並べた順、下が正しい文と意味'})); box.appendChild(nextRow()); }
-  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> もう一度聞く　<kbd>enter</kbd> 次へ</div>');
+  box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> もう一度聴く　<kbd>enter</kbd> 次へ</div>');
   body.appendChild(box);
   if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
 }
@@ -2743,10 +2743,10 @@ function renderOrder(){
 function glossOf(text){ return gloss[text] || gloss[(text || '').trim()] || null; }
 function wordMeaning(w, text){
   const g = glossOf(text), k = norm(w);
-  if(g) for(const [x, ja] of g.words){ if(norm(x) === k || norm(x).split(' ').includes(k)) return {w: x, ja, src: '機械'}; }
+  if(g) for(const [x, ja] of g.words){ if(norm(x) === k || norm(x).split(' ').includes(k)) return {w: x, ja, src: 'auto'}; }
   const lx = lex.words[k] || lex.words[w];
-  if(lx && lx.ja) return {w, ja: lx.ja, src: '台帳'};
-  for(const t of Object.keys(gloss)){ const h = gloss[t].words.find(([x]) => norm(x) === k); if(h) return {w: h[0], ja: h[1], src: '機械'}; }
+  if(lx && lx.ja) return {w, ja: lx.ja, src: 'lex'};
+  for(const t of Object.keys(gloss)){ const h = gloss[t].words.find(([x]) => norm(x) === k); if(h) return {w: h[0], ja: h[1], src: 'auto'}; }
   return null;
 }
 /* 訳の無い文：台帳の語（bác sĩ・Việt Nam など2〜3音節）に合わせ、長い語から先にまとめる */
@@ -2786,8 +2786,8 @@ function explainEl(it, res){
   const ns = it.deck && it.deck.kind === 'text' ? notesFor(it.show) : [];
   ns.forEach(n => { h += '<div class="exnote"><span class="exk">文法</span><div><b>' + esc(n.title || '') + '</b>' + esc(n.body) + '</div></div>'; });
   if(g && g.point && !ns.length) h += '<div class="exnote"><span class="exk">要点</span><div>' + esc(g.point) + '</div></div>';
-  if(g) h += '<div class="exsrc">意味と要点は機械の訳（未確認）。文法は手で書いたメモ。</div>';
-  else if(it.deck && it.deck.kind === 'text') h += '<div class="exsrc">この文の訳はまだありません。語の意味は台帳から。</div>';
+  if(g) h += '<div class="exsrc">意味と要点は自動翻訳です（未確認）。文法は手で書いたメモです。</div>';
+  else if(it.deck && it.deck.kind === 'text') h += '<div class="exsrc">この文の訳はまだありません。語の意味は単語の一覧から出しています。</div>';
   box.innerHTML = h;
   if(it.deck && it.deck.kind === 'text') box.appendChild(askEl(ctxOf(it.show, it.id)));
   return box;
@@ -2847,7 +2847,7 @@ document.addEventListener('keydown', e=>{
 
 /* ================= 見渡す ================= */
 /* どこまで覚えたかを、項目・語・練習の3つの目で見る。数え方は README と実現方式に書いた。 */
-const SKILL = [['hear','聞いて選ぶ'], ['order','並べる'], ['cloze','穴埋め'], ['type','聞いて書く'], ['say','見て言う']];
+const SKILL = [['hear','聴いて選ぶ'], ['order','並べ替える'], ['cloze','穴埋め'], ['type','聴いて書く'], ['say','見て言う']];
 const dayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); };
 function level(id){ const r = rec(id); return r.box >= 3 ? 2 : (r.seen > 0 ? 1 : 0); }   // 0 未着手 1 覚えかけ 2 覚えた
 
@@ -2889,7 +2889,7 @@ function renderOverview(){
     tile('今日答えた数', perDay[today] || 0, null) +
     tile('続けた日数', streak, null) + '</div>';
 
-  html += '<div class="legend ov"><span class="lg"><i class="lv2"></i>覚えた（箱3以上）</span><span class="lg"><i class="lv1"></i>覚えかけ</span><span class="lg"><i class="lv0"></i>未着手</span></div>';
+  html += '<div class="legend ov"><span class="lg"><i class="lv2"></i>覚えた</span><span class="lg"><i class="lv1"></i>覚えかけ</span><span class="lg"><i class="lv0"></i>未着手</span></div>';
 
   // 編とユニットの帯
   html += '<div class="ovgrid">';
@@ -2900,7 +2900,7 @@ function renderOverview(){
     html += '<section class="ovsec"><div class="ovhead"><b>' + esc(sec) + '</b><span>' + c[2] + ' / ' + ids.size + '</span></div>' + stackBar(c, ids.size);
     ds.forEach(d => {
       const cc = [0,0,0]; d.items.forEach(i => cc[level(i.id)]++);
-      html += '<button class="ovrow" data-deck="' + esc(d.id) + '" title="押すとこの組の練習へ"><span class="nm">' + esc(d.title) + '</span>' +
+      html += '<button class="ovrow" data-deck="' + esc(d.id) + '" title="押すとこの組を練習します"><span class="nm">' + esc(d.title) + '</span>' +
         stackBar(cc, d.items.length) + '<span class="ct">' + cc[2] + '/' + d.items.length + '</span></button>';
     });
     html += '</section>';
@@ -2923,7 +2923,7 @@ function renderOverview(){
   // 語の地図
   const wf = load('ov:wf', 'all');
   const cnt = [0,0,0]; wl.forEach(e => cnt[e.lv]++);
-  html += '<h3 class="ovh">語の地図<small>よく出る語から。色はその語を含む文の進み具合、下線は書いて正解した語。押すと鳴る</small></h3>' +
+  html += '<h3 class="ovh">語の地図<small>よく出る語の順です。色はその語を含む文の進み具合、下線は書いて正解した語です。押すと音が鳴ります</small></h3>' +
     '<div class="seg wf">' + [['all','すべて ' + wl.length], ['2','覚えた ' + cnt[2]], ['1','覚えかけ ' + cnt[1]], ['0','未着手 ' + cnt[0]]]
       .map(([k,l]) => '<button data-wf="' + k + '"' + (wf === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
     '<div class="wmap">' + wl.filter(e => wf === 'all' || String(e.lv) === wf).map(e =>
@@ -2945,7 +2945,7 @@ function renderOverview(){
     const it = e.items.slice().sort((x,y)=> x.show.length - y.show.length)[0];   // 一番短い項目（多くはその語だけ）を鳴らす
     say(it);
     const m = wordMeaning(e.w, it.show);
-    toast('<b lang="' + LP.code + '">' + esc(m ? m.w : e.w) + '</b>' + (m ? esc(m.ja) + '<small>' + (m.src === '機械' ? '機械の訳（未確認）' : '台帳') + '</small>' : '<small>意味はまだありません</small>'));
+    toast('<b lang="' + LP.code + '">' + esc(m ? m.w : e.w) + '</b>' + (m ? esc(m.ja) + '<small>' + (m.src === 'auto' ? '自動翻訳（未確認）' : '単語の一覧') + '</small>' : '<small>意味はまだありません</small>'));
   }));
   box.querySelectorAll('.wk').forEach(b => b.addEventListener('click', ()=> say(all.get(b.dataset.id))));
 }
@@ -3146,7 +3146,7 @@ function renderBook(){
   const title = (book && book.title) || folderKey || '（未読み込み）';
 
   // 教材の一覧
-  let html = '<h3 class="ovh" style="margin-top:0">教材<small>開いたことのある教材。押すとそのフォルダを開く</small></h3><div class="blib">' +
+  let html = '<h3 class="ovh" style="margin-top:0">教材<small>開いたことのある教材です。押すとそのフォルダを開きます</small></h3><div class="blib">' +
     Object.entries(lib).sort((a, b) => b[1].last - a[1].last).map(([id, b]) =>
       '<button class="bcard' + (id === bookId ? ' on' : '') + '" data-book="' + esc(id) + '"><b>' + esc(b.title) + '</b><small>' +
       esc(b.folder) + '　' + b.lessons + '課　' + new Date(b.last).toLocaleDateString('ja-JP') + '</small></button>').join('') + '</div>';
@@ -3154,7 +3154,7 @@ function renderBook(){
 
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
-  html += '<div class="seg wf bviews">' + [['lesson','課を進める'], ['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
+  html += '<div class="seg wf bviews">' + [['lesson','課'], ['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
     .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
 
   const defs = paperDefs(), last = paperLatest();
@@ -3173,10 +3173,10 @@ function renderBook(){
         '<span>' + (ps.tot ? (ps.done ? fmtN(ps.got) + ' / ' + ps.tot : 'まだ　' + ps.tot + '問') : '—') + '</span>' +
         '<span>' + (vs.length ? vk + ' / ' + vs.length : '—') + '</span></div>';
     });
-    html += '</div><p class="bfoot">— はその課にまだ中身が無いもの。練習の正答率は直近50回。紙の問題は ○＝1・△＝0.5 で数える（最後に付けた印）。</p>';
+    html += '</div><p class="bfoot">— はその課にまだ中身が無いものです。練習の正答率は直近50回、紙の問題は ○＝1・△＝0.5 で数えます（最後に付けた印）。</p>';
   }
   else if(bview === 'paper'){
-    html += '<p class="bfoot" style="margin-top:0">マスを押すと ○ → △ → × の順に付く。前の印は消さずに残る（やり直した回も履歴に残る）。問題は解きながら足していく。</p>';
+    html += '<p class="bfoot" style="margin-top:0">マスを押すと ○ → △ → × の順に印が付きます。前の印は消えず、やり直した回も履歴に残ります。問題は解きながら足していけます。</p>';
     ld.forEach(x => {
       const L = x.L, exs = defs[L.id] || [];
       const ps = paperScore(L.id, defs, last);
@@ -3209,7 +3209,7 @@ function renderBook(){
     const V = vocab();
     const vf = load('b:vf', '');
     html += '<input class="bfilter" id="vfilter" placeholder="語か意味でしぼる" value="' + esc(vf) + '" autocomplete="off">';
-    if(V.out.some(a => a.some(e => e.syl))) html += '<p class="bfoot" style="margin-top:0">この教材には語の台帳（lexicon.json）が無いので、本文に出た音節を最初に出た課に並べています。押すと、その語を含む最初の文が鳴ります。</p>';
+    if(V.out.some(a => a.some(e => e.syl))) html += '<p class="bfoot" style="margin-top:0">この教材には単語の一覧（lexicon.json）が無いので、本文に出た音節を最初に出た課に並べています。押すと、その語を含む最初の文が鳴ります。</p>';
     const q = vf.toLowerCase();
     const sec = (name, list) => {
       const l2 = q ? list.filter(e => e.w.includes(q) || (e.ja || '').toLowerCase().includes(q)) : list;
@@ -3218,14 +3218,14 @@ function renderBook(){
         const lv = wordLevel(e.w);
         const han = (e.mo && e.mo !== '—') ? e.mo.split('+').map(m => (lex.morphemes[m] || {}).kanji || '').join('') : '';
         return '<button class="vw lv' + lv + '" data-w="' + esc(e.w) + '"><b>' + esc(e.w) + '</b>' + (han ? '<i>' + esc(han) + '</i>' : '') +
-          '<span>' + esc(e.ja) + '</span>' + (e.kept ? '<em>貯めた</em>' : '') + '</button>';
+          '<span>' + esc(e.ja) + '</span>' + (e.kept ? '<em>保存済み</em>' : '') + '</button>';
       }).join('') + '</div></section>';
     };
     ld.forEach((x, li) => { html += sec(x.L.title, V.out[li]); });
     html += sec('課の分からないもの', V.rest);
   }
 
-  html += '<div class="bport"><b>記録を運ぶ</b><span>練習の箱・答えの履歴・紙の問題・貯めた語は、このブラウザの中だけにあります。別のブラウザや端末へは、書き出したファイルを読み込んで運びます。</span>' +
+  html += '<div class="bport"><b>記録を運ぶ</b><span>練習の記録・答えの履歴・紙の問題・保存した語は、このブラウザの中だけにあります。別のブラウザや端末へは、書き出したファイルを読み込んで運びます。</span>' +
     '<button id="bexp">記録を書き出す</button><button id="bimp">記録を読み込む</button><input type="file" id="bimpf" accept=".json,application/json" hidden></div>';
 
   box.innerHTML = html;
@@ -3256,7 +3256,7 @@ function exHTML(lid, ex, last){
     h += '<button class="pc' + (r ? ' r' + r.r : '') + '" data-l="' + esc(lid) + '" data-ex="' + esc(ex.id) + '" data-n="' + n + '" aria-label="' + n + '問目　' + (r ? PAPER[r.r][0] : 'まだ') + '" title="' +
       (r ? new Date(r.t).toLocaleDateString('ja-JP') : 'まだ') + '"><small>' + n + '</small>' + (r ? PAPER[r.r][0] : '') + '</button>';
   }
-  return h + '</div>' + (ex.count && !load('excount:' + bookId, {})[ex.id] ? '<div class="exnote">問の数は音声の番号からの見積もり。違ったら <button class="linkish recount" data-ex="' + esc(ex.id) + '">直す</button></div>' : '') + '</div>';
+  return h + '</div>' + (ex.count && !load('excount:' + bookId, {})[ex.id] ? '<div class="exnote">問の数は音声の番号から見積もっています。違っていたら <button class="linkish recount" data-ex="' + esc(ex.id) + '">直す</button></div>' : '') + '</div>';
 }
 
 /* 課の4段。null はその段が無い（中身が無い） */
@@ -3294,7 +3294,7 @@ function lessonHTML(defs, last){
     '<button class="lrow' + (i === li ? ' on' : '') + (steps[i].all ? ' fin' : '') + '" data-lesson="' + esc(y.L.id) + '"><span class="nm">' + esc(y.L.title) + '</span>' +
     (cst => '<span class="lprog" aria-label="ステージ ' + cst.cleared + ' / ' + cst.of + ' クリア">' + (cst.all ? '<b class="crown">クリア</b>' : '<i style="--p:' + (cst.of ? cst.cleared / cst.of * 100 : 0) + '%"></i><small>' + cst.cleared + '/' + cst.of + '</small>') + '</span>')(chapterState(i, defs, last)) +
     '</button>').join('') + '</nav><div class="lmain">';
-  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + journeyHTML(li, defs, last) + '<h3 class="ovh">この章の中身<small>聴く音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
+  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + journeyHTML(li, defs, last) + '<h3 class="ovh">この課の中身<small>音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
   let n = 0;
   const card = (k, name, body, sum) => {
     const s = st[k]; if(!s) return '';
@@ -3307,15 +3307,15 @@ function lessonHTML(defs, last){
   if(st.words) h += card('words', '単語', '<div class="lwords">' + st.words.list.map(e =>
     '<span class="lw' + (st.words.isKnown(e.w) ? ' known' : '') + '"><button class="lwp" data-w="' + esc(e.w) + '"><b>' + esc(e.w) + '</b>' + (e.ja ? '<small>' + esc(e.ja) + '</small>' : '') + '</button>' +
     '<button class="lwk" data-w="' + esc(e.w) + '" aria-label="' + esc(e.w) + ' を覚えた" aria-pressed="' + st.words.isKnown(e.w) + '"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></button></span>').join('') + '</div>' +
-    '<p class="bfoot">語を押すと、その語を含む文が鳴る。右の印で「覚えた」。練習で覚えた語（箱3以上）にも自動で付く。</p>',
+    '<p class="bfoot">語を押すと、その語を含む文が鳴ります。右の印で「覚えた」にできます。練習で覚えた語にも自動で付きます。</p>',
     st.words.n + ' / ' + st.words.of + ' 語');
   if(!st.words && V.out[li].some(e => e.syl)) h += '<section class="lstep muted"><div class="lsh"><span class="num">–</span><b>単語</b><span class="ct">まだ無い</span></div>' +
     '<p class="bfoot" style="margin:0">この教材には語の一覧（lexicon.json）がまだありません。巻末の語彙表か各課の「新しい語」の頁の写真があれば、課ごとの単語をここに並べられます。</p></section>';
   if(st.practice) h += card('practice', '練習', '<div class="lsets">' + setChipsHTML([...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id)), null) + '</div>' +
-    '<div class="lprac"><span>種類ごとの小さな組（' + SET_SIZE + ' 項目まで）。押すとその組だけを練習します。全部の項目に一度ずつ正解したら、この段は済み。</span><button id="lpractice">この課を全部まとめて</button></div>',
+    '<div class="lprac"><span>種類ごとの小さな組（' + SET_SIZE + ' 項目まで）。押すとその組だけを練習します。全部の項目に一度ずつ正解すると、この段は済みです。</span><button id="lpractice">この課を全部まとめて</button></div>',
     st.practice.n + ' / ' + st.practice.of + ' 項目');
   if(st.paper) h += card('paper', '紙の問題', st.paper.exs.map(ex => exHTML(x.L.id, ex, last)).join('') +
-    '<p class="bfoot">本で解いて、1問ずつ ○ → △ → × で付ける。「この問題の音声」で聴く画面に移り、そこでも印を付けられる。</p>',
+    '<p class="bfoot">本で解いて、1問ずつ ○ → △ → × の印を付けます。「この問題の音声」を押すと音声の画面に移り、そこでも印を付けられます。</p>',
     st.paper.n + ' / ' + st.paper.of + ' 問' + (st.paper.ps.done ? '　' + fmtN(st.paper.ps.got) + ' 点' : ''));
   const next = ld[li + 1];
   h += '<div class="lnext">' + (next ? '<button class="' + (st.all ? 'primary' : '') + '" data-lesson="' + esc(next.L.id) + '">次の課へ：' + esc(next.L.title) + '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' : '') + '</div>';
@@ -3615,12 +3615,12 @@ function paintRecInfo(){
   if(chip){
     chip.hidden = !window.showDirectoryPicker;
     chip.classList.toggle('ok', !!recDir && !recInfo.err);
-    chip.textContent = !recDir ? '記録：連動していない' : recInfo.err ? '記録：連動に問題あり' : '記録：連動中（' + (recInfo.devices.length || 1) + '台）';
+    chip.textContent = !recDir ? '同期：オフ' : recInfo.err ? '同期：問題あり' : '同期中（' + (recInfo.devices.length || 1) + '台）';
   }
   const el = $('#recInfo'); if(!el) return;
-  if(!window.showDirectoryPicker){ el.textContent = 'この閲覧ソフトではフォルダに書けません（Chrome か Edge で開いてください）。記録はこの閲覧ソフトの中だけにあります。'; $('#recPick').hidden = true; return; }
-  if(!recDir){ el.textContent = 'まだ連動していません。記録はこの閲覧ソフトの中だけにあります（端末名 ' + DEV + '）。'; return; }
-  el.textContent = '連動中：' + recDir.name + '／この端末 ' + DEV + '／端末 ' + (recInfo.devices.length || 1) + ' 台ぶん・出来事 ' + recInfo.read + ' 件' +
+  if(!window.showDirectoryPicker){ el.textContent = 'このブラウザではフォルダに書き込めません。Chrome か Edge で開いてください。記録はこのブラウザの中だけにあります。'; $('#recPick').hidden = true; return; }
+  if(!recDir){ el.textContent = 'まだ同期していません。記録はこのブラウザの中だけにあります（端末名 ' + DEV + '）。'; return; }
+  el.textContent = '同期中：' + recDir.name + '／この端末 ' + DEV + '／端末 ' + (recInfo.devices.length || 1) + ' 台ぶん・出来事 ' + recInfo.read + ' 件' +
     (recInfo.wrote ? '／最後に書いた ' + new Date(recInfo.wrote).toLocaleTimeString('ja-JP') : '') + (evPend.length ? '／未送信 ' + evPend.length : '') + (recInfo.err ? '／⚠ ' + recInfo.err : '');
 }
 $('#recPick').addEventListener('click', async ()=>{
@@ -3770,16 +3770,16 @@ function qaItemHTML(x){
   const tag = v ? '<span class="pill ok">確かめた答え</span>' : x.a && x.a.status === 'unverifiable' ? '<span class="pill">確かめられなかった</span>' :
     x.q.ai ? 'AI の答え（未確認）' : '';
   return bubbleQ(x.q.q) + (body ? bubbleA(tag, esc(body)) :
-    bubbleA('', '答え待ちです。AI につながっていなかったので質問帳に貯めました。あとで Claude が確かめて答えます。', 'wait'));
+    bubbleA('', '答え待ちです。AI につながっていなかったので、質問帳に残しました。あとで Claude が確かめて答えます。', 'wait'));
 }
 const THINK_DOTS = '<span class="dots" aria-label="考えています"><i></i><i></i><i></i><i></i></span>';
 /* 解説・引いた語の窓の下に出す「これどういうこと？」 */
 function askEl(ctx){
   const box = document.createElement('section'); box.className = 'ask';
   const LOCAL_URL = 'http://localhost:8790/';
-  const note = () => aiName() ? aiName() + 'が文法メモと訳を材料に答えます。答えは質問帳に貯まり、あとで Claude が確かめます。'
-    : onLocalhost ? 'いまは AI につながっていません（この Mac のモデルが止まっています。oto-drill.command を開き直すと立ちます）。聞いたことは質問帳に貯まります。'
-    : 'このページ（公開版）からは AI を呼べません。Mac では oto-drill.command を開いてから、<a href="' + LOCAL_URL + '">この Mac の AI つきで開く</a>。聞いたことは質問帳に貯まります。';
+  const note = () => aiName() ? aiName() + 'が文法メモと訳を材料に答えます。答えは質問帳に残り、あとで Claude が確かめます。'
+    : onLocalhost ? 'いまは AI につながっていません（この Mac のモデルが止まっています。oto-drill.command を開き直すと立ちます）。質問は質問帳に残ります。'
+    : 'このページ（公開版）からは AI を呼べません。Mac では oto-drill.command を開いてから、<a href="' + LOCAL_URL + '">この Mac の AI つきで開く</a>。質問は質問帳に残ります。';
   const paint = () => {
     const past = qaFor(ctx.text);
     box.innerHTML = '<div class="thread" aria-live="polite">' + (past.length ? past.map(qaItemHTML).join('') :
@@ -3824,7 +3824,7 @@ function ctxOf(text, item){
    ⭕ 終わると正答率と星。80% 以上でクリア。次のステージは前をクリアすると開く（本文と紙の問題はいつでも）。
    ⭕ 途中の位置は端末に保存（「セーブしてやめる」→「続きから」）。クリアは出来事（stage）として iCloud で連動。 */
 const STEPS = {word: ['hear', 'say'], sentence: ['hear', 'order', 'cloze'], grammar: ['order', 'cloze', 'type'], drill: ['hear', 'cloze'], sound: ['hear', 'say'], other: ['hear', 'say']};
-const STEPNAME = {hear: '聞いて選ぶ', say: '見て言う', order: '並べる', cloze: '穴埋め', type: '聞いて書く'};
+const STEPNAME = {hear: '聴いて選ぶ', say: '見て言う', order: '並べ替える', cloze: '穴埋め', type: '聴いて書く'};
 const PASS = 0.8;
 let run = load('run', null);        // {book, stage, title, queue:[[項目, 練習]], i, res:[], t}
 let runOn = false;                  // いま「進める」で解いているか（自由に練習とは別）
@@ -3854,7 +3854,7 @@ function stagesOf(li, defs, last){
   }
   if(st.paper) out.push({id: L.id + '|paper', kind: 'paper', title: '紙の問題（本で解く）', sub: st.paper.of + '問', free: true,
     cleared: st.paper.done, stars: st.paper.done ? starsOf(st.paper.ps.tot ? st.paper.ps.got / st.paper.ps.tot : 0) || 1 : 0, n: st.paper.n, of: st.paper.of});
-  if(pdata && x.items.length) out.push({id: L.id + '|final', kind: 'final', title: '章のまとめ', sub: Math.min(10, x.items.length) + '問・この章から混ぜて'});
+  if(pdata && x.items.length) out.push({id: L.id + '|final', kind: 'final', title: '課のまとめ', sub: Math.min(10, x.items.length) + '問・この課から混ぜて'});
   const best = stageBest();
   let open = true;
   out.forEach(sg => {
@@ -3878,14 +3878,14 @@ function journeyHTML(li, defs, last){
   if(run && run.book === bookId){
     h += '<div class="resume"><div><b>続きから</b><span>' + esc(run.title) + '　' + run.i + ' / ' + run.queue.length + ' 問</span></div><button class="primary" id="runResume">続きから始める</button></div>';
   }
-  h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '章クリア' : 'この章のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　★ ' + cs.stars + '</span></div>' +
+  h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '課クリア' : 'この課のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　★ ' + cs.stars + '</span></div>' +
     '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><ol class="jpath">';
   cs.sgs.forEach((sg, k) => {
     const state = sg.cleared ? 'cleared' : !sg.open ? 'locked' : sg === cur ? 'current' : 'open';
     const icon = sg.cleared ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>'
       : state === 'locked' ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></svg>' : (k + 1);
-    const act = state === 'locked' ? '<span class="jlock">前のステージをクリアすると開く</span>'
-      : '<button class="' + (state === 'current' ? 'primary ' : '') + 'jgo" data-stage="' + esc(sg.id) + '">' + (sg.cleared ? 'もう一度' : sg.kind === 'listen' ? '聴く' : sg.kind === 'paper' ? '本で解いて印を付ける' : 'はじめる') + '</button>';
+    const act = state === 'locked' ? '<span class="jlock">前のステージをクリアすると開きます</span>'
+      : '<button class="' + (state === 'current' ? 'primary ' : '') + 'jgo" data-stage="' + esc(sg.id) + '">' + (sg.cleared ? 'もう一度' : sg.kind === 'listen' ? '聴く' : sg.kind === 'paper' ? '本で解いて印を付ける' : '始める') + '</button>';
     h += '<li class="jnode ' + state + '"><span class="jdot">' + icon + '</span><div class="jbody"><b>' + esc(sg.title) + (state === 'current' ? '<em>いまここ</em>' : '') + '</b><small>' + esc(sg.sub) +
       (sg.of && !sg.cleared && sg.n ? '　' + sg.n + '/' + sg.of : '') + (sg.score != null ? '　最高 ' + Math.round(sg.score * 100) + '%' : '') + '</small></div>' +
       (sg.cleared ? starHTML(sg.stars) : '') + act + '</li>';
@@ -3965,12 +3965,12 @@ function finishRun(){
   $('#runbar').hidden = true;
   $('#psets').hidden = true;
   $('#pbody').innerHTML = '<div class="result' + (cleared ? ' ok' : '') + '">' +
-    (chapterClear ? '<div class="rchapter">章クリア</div>' : '') +
+    (chapterClear ? '<div class="rchapter">課クリア</div>' : '') +
     '<div class="rtitle">' + esc(done_.title) + '</div>' + starHTML(stars) +
     '<div class="rscore">' + Math.round(sc * 100) + '%<small>' + ok + ' / ' + total + ' 問</small></div>' +
     '<div class="rmsg">' + (cleared ? (stars === 3 ? 'クリア。完璧です。' : 'クリア。') : 'あと少し。' + Math.round(PASS * 100) + '% でクリアです。') + '</div>' +
     '<div class="row">' + (nxt && cleared ? '<button class="primary" id="rnext" data-stage="' + esc(nxt.id) + '">次のステージへ：' + esc(nxt.title) + '</button>' : '') +
-    '<button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button><button id="rback">道のりに戻る</button></div></div>';
+    '<button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button><button id="rback">コースに戻る</button></div></div>';
   const bk = () => { $('#practice').classList.remove('running'); };
   const nb = $('#rnext'); if(nb) nb.onclick = () => { bk(); startStage(nb.dataset.stage); };
   $('#rretry').onclick = () => { bk(); startStage(done_.stage); };
@@ -3987,7 +3987,7 @@ function paintRunbar(){
   const v = run.queue[Math.min(run.i, run.queue.length - 1)][1];
   const steps = [...new Set(run.queue.map(x => x[1]))], si = steps.indexOf(v);
   bar.innerHTML = '<div class="rbtop"><b>' + esc(run.title) + '</b><span>ステップ ' + (si + 1) + ' / ' + steps.length + '　' + STEPNAME[v] + '</span>' +
-    '<button id="runStop">セーブしてやめる</button></div>' +
+    '<button id="runStop">保存してやめる</button></div>' +
     '<div class="rbbar"><i style="width:' + (run.i / run.queue.length * 100) + '%"></i></div><div class="rbnum">' + run.i + ' / ' + run.queue.length + ' 問</div>';
   $('#runStop').onclick = stopRun;
 }
