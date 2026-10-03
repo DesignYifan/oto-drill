@@ -1016,6 +1016,57 @@ button.linkish:hover{background:none; text-decoration:underline}
 .lsets{display:flex; flex-direction:column; gap:12px; margin-bottom:16px}
 @media (max-width:820px){ .setrow{grid-template-columns:1fr; gap:4px} }
 
+/* ---- 進める（2026-10-03） ---- */
+.resume{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--ui-text-fgColor); color:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); padding:16px 20px}
+.resume div{display:flex; flex-direction:column; gap:4px} .resume span{font-size:12px; opacity:.8}
+.journey{background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-shadow); padding:20px 24px; display:flex; flex-direction:column; gap:12px}
+.jhead{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.jhead b{font-size:16px} .jhead span{font-size:13px; color:var(--ui-text-muted-fgColor); font-variant-numeric:tabular-nums}
+.jbar, .rbbar{height:8px; border-radius:999px; background:var(--ui-outline-borderColor); overflow:hidden}
+.jbar i, .rbbar i{display:block; height:100%; border-radius:999px; background:var(--ui-success-color); transition:width .3s}
+.rbbar i{background:var(--ui-primary-color)}
+.jpath{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; position:relative}
+.jnode{display:grid; grid-template-columns:36px minmax(0,1fr) auto auto; gap:12px; align-items:center; padding:8px 12px 8px 0; border-radius:var(--ui-control-radius); position:relative}
+.jnode + .jnode::before{content:""; position:absolute; left:17px; top:-12px; height:16px; width:2px; background:var(--ui-outline-borderColor)}
+.jnode.cleared + .jnode::before{background:var(--ui-success-color)}
+.jdot{width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;
+  background:var(--ui-control-bgColor); color:var(--ui-text-muted-fgColor); position:relative; z-index:1}
+.jnode.cleared .jdot{background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
+.jnode.current .jdot{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); box-shadow:0 0 0 4px var(--ui-primary-muted-bgColor)}
+.jnode.locked{opacity:.55}
+.jnode.current{background:var(--ui-primary-muted-bgColor)}
+.jbody{display:flex; flex-direction:column; gap:2px; min-width:0}
+.jbody b{font-weight:500; display:flex; align-items:center; gap:8px}
+.jbody b em{font-style:normal; font-size:11px; font-weight:600; color:var(--ui-primary-fgColor)}
+.jbody small{font-size:12px; color:var(--ui-text-muted-fgColor); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.jgo{white-space:nowrap; background:var(--ui-control-bgColor); box-shadow:none}
+.jgo.primary{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor)}
+.jlock{font-size:12px; color:var(--ui-text-muted-fgColor); white-space:nowrap}
+.stars{display:inline-flex; gap:2px; font-size:16px; line-height:1}
+.stars i{font-style:normal; color:var(--ui-outline-borderColor)} .stars i.on{color:var(--ui-warning-fgColor)}   /* 金色は白の上で 2.2:1 しかなかった。文字の暖色（4.5:1 以上）にする */
+.lprog{display:inline-flex; align-items:center; gap:8px; flex:none}
+.lprog i{width:40px; height:6px; border-radius:999px; background:linear-gradient(to right, var(--ui-success-color) var(--p), var(--ui-outline-borderColor) var(--p))}
+.lprog small{font-size:11px; color:inherit; opacity:.75; font-variant-numeric:tabular-nums}
+.lprog .crown{font-size:11px; font-weight:600; color:var(--ui-success-fgColor); background:var(--ui-success-muted-bgColor); border-radius:999px; padding:2px 8px}
+.lrow.on .lprog .crown{background:rgba(255,255,255,.18); color:inherit}
+/* 解いているあいだ：自由に練習の切り替えを隠し、進み具合の帯を出す */
+.practice.running .pbar, .practice.running .psets{display:none}
+.runbar{max-width:1120px; margin:0 auto 24px; background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-shadow); padding:16px 20px; display:flex; flex-direction:column; gap:8px}
+.runbar[hidden]{display:none}
+.rbtop{display:flex; align-items:center; gap:8px 16px; flex-wrap:wrap}
+.rbtop span{font-size:13px; color:var(--ui-text-muted-fgColor)}
+.rbtop button{margin-left:auto; background:var(--ui-control-bgColor); box-shadow:none; font-size:12px}
+.rbnum{font-size:12px; color:var(--ui-text-muted-fgColor); text-align:right; font-variant-numeric:tabular-nums}
+.result{max-width:520px; margin:24px auto; background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-raised-shadow); padding:32px 24px;
+  display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center}
+.result .stars{font-size:40px; gap:8px}
+.rchapter{font-size:13px; font-weight:600; color:var(--ui-success-fgColor); background:var(--ui-success-muted-bgColor); border-radius:999px; padding:4px 16px}
+.rtitle{font-size:14px; color:var(--ui-text-muted-fgColor)}
+.rscore{font-size:48px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1; display:flex; flex-direction:column; align-items:center}
+.rscore small{font-size:13px; font-weight:400; color:var(--ui-text-muted-fgColor)}
+.rmsg{font-size:14px}
+@media (max-width:820px){ .jnode{grid-template-columns:36px minmax(0,1fr); } .jnode .stars, .jnode .jgo, .jnode .jlock{grid-column:2; justify-self:start} }
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -1030,9 +1081,9 @@ button.linkish:hover{background:none; text-decoration:underline}
       <span class="eyebrow">folder player</span>
     </div>
     <div class="modes" id="modes" hidden>
-      <button data-mode="book">教材</button>
+      <button data-mode="book">進める</button>
       <button data-mode="listen" class="on">聴く</button>
-      <button data-mode="practice">練習</button>
+      <button data-mode="practice">自由に練習</button>
       <button data-mode="overview">見渡す</button>
     </div>
     <button class="primary" id="pick">フォルダを選ぶ</button>
@@ -1150,6 +1201,7 @@ button.linkish:hover{background:none; text-decoration:underline}
   </div>
 
   <section class="practice" id="practice" hidden>
+    <div class="runbar" id="runbar" hidden></div>
     <div class="pbar">
       <select id="pdecks" aria-label="練習する組"></select>
       <div class="seg" id="pviews">
@@ -1980,6 +2032,7 @@ function setPractice(data, files){
 }
 
 function setMode(m){
+  if(m !== 'practice' && runOn){ runOn = false; q = null; $('#practice').classList.remove('running'); }
   mode = m;
   save('p:mode', m);
   document.querySelector('.app').classList.toggle('practicing', m !== 'listen');
@@ -2051,7 +2104,7 @@ function nextSet(st){
   const all = setsOf(st.deck), i = all.findIndex(x => x.id === st.id);
   return all.slice(i + 1).find(x => !setDone(x)) || all.slice(0, i).find(x => !setDone(x)) || null;
 }
-function startSet(id){ pdeck = id; save('p:deck', pdeck); q = null; paintDecks(); setMode('practice'); renderPractice(); }
+function startSet(id){ runOn = false; pdeck = id; save('p:deck', pdeck); q = null; paintDecks(); setMode('practice'); renderPractice(); }
 
 function decks(){
   if(!pdata) return [];
@@ -2101,6 +2154,7 @@ $('#pdecks').addEventListener('change', e=>{
 });
 $('#pviews').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
+  runOn = false;
   pview = b.dataset.v; save('p:view', pview); q = null; renderPractice(); b.blur();
 });
 
@@ -2149,6 +2203,7 @@ function mark(it, ok, skill, gain){
   srs[it.id] = r;
   save('srs', srs);
   emit('ans', {i: it.id, s: skill || pview, o: ok ? 1 : 0, g: gain || 1});
+  runAnswered(it, ok);
   paintStat();
   paintSets();
 }
@@ -2219,6 +2274,8 @@ function paintSets(){
 }
 function renderPractice(){
   if(!pdata || mode !== 'practice') return;
+  paintRunbar();
+  if(runOn && run && !q){ runNext(); return; }
   paintSets();
   [...$('#pviews').children].forEach(b => b.classList.toggle('on', b.dataset.v === pview));
   paintStat();
@@ -2674,6 +2731,7 @@ function nextRow(){
   return row;
 }
 function nextQ(){
+  if(runOn && run){ runNext(); return; }
   const prev = q && q.it.id;
   const it = nextItem(prev);
   if(pview === 'order'){ q = orderQ(it); renderOrder(); return; }
@@ -3162,14 +3220,14 @@ function lessonHTML(defs, last){
   const li = ld.findIndex(x => x.L.id === blesson), x = ld[li], st = steps[li];
   let h = '<div class="lwrap"><nav class="lnav" aria-label="課">' + ld.map((y, i) =>
     '<button class="lrow' + (i === li ? ' on' : '') + (steps[i].all ? ' fin' : '') + '" data-lesson="' + esc(y.L.id) + '"><span class="nm">' + esc(y.L.title) + '</span>' +
-    '<span class="dots" aria-label="' + STEP.map(([k, n]) => n + (steps[i][k] ? (steps[i][k].done ? '済' : steps[i][k].n + '/' + steps[i][k].of) : 'なし')).join('・') + '">' +
-    STEP.map(([k]) => dot(steps[i][k])).join('') + '</span></button>').join('') + '</nav><div class="lmain">';
-  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3>' + (st.all ? '<span class="pill ok">この課は済んだ</span>' : '') + '</div>';
+    (cst => '<span class="lprog" aria-label="ステージ ' + cst.cleared + ' / ' + cst.of + ' クリア">' + (cst.all ? '<b class="crown">クリア</b>' : '<i style="--p:' + (cst.of ? cst.cleared / cst.of * 100 : 0) + '%"></i><small>' + cst.cleared + '/' + cst.of + '</small>') + '</span>')(chapterState(i, defs, last)) +
+    '</button>').join('') + '</nav><div class="lmain">';
+  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + journeyHTML(li, defs, last) + '<h3 class="ovh">この章の中身<small>聴く音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
   let n = 0;
   const card = (k, name, body, sum) => {
     const s = st[k]; if(!s) return '';
     n++;
-    return '<section class="lstep' + (s.done ? ' done' : '') + '"><div class="lsh"><span class="num">' + (s.done ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>' : n) + '</span><b>' + name + '</b><span class="ct">' + sum + '</span></div>' + body + '</section>';
+    return '<section class="lstep' + (s.done ? ' done' : '') + (k === 'paper' ? ' paper-step' : '') + '"><div class="lsh"><span class="num">' + (s.done ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>' : n) + '</span><b>' + name + '</b><span class="ct">' + sum + '</span></div>' + body + '</section>';
   };
   if(st.listen) h += card('listen', '聴く', '<div class="ltracks">' + st.listen.list.map(t =>
     '<button class="lt' + (done.has(t.name) ? ' heard' : '') + '" data-t="' + esc(t.name) + '"><span>' + esc(trackLabel(t.name)) + '</span><small>' + (done.has(t.name) ? '聴いた' : '聴く') + '</small></button>').join('') + '</div>',
@@ -3632,6 +3690,185 @@ function ctxOf(text, item){
   const g = glossOf(text);
   return {text, item, ja: g ? g.ja : '', words: g ? g.words : [], notes: notesFor(text)};
 }
+
+/* ================= 進める：章をステージで進める（2026-10-03） =================
+   本人「全部自分で選ばないといけない」「体系的かつ建設的な順番で進めていけて、途中でセーブできて、途中から始められて、進捗が分かる」
+   「一つの章を達成してる感覚がない。どこまでがゴールなのか分からない。ゲーム感がない」。
+   ⭕ 章＝課。章は上から順のステージ：本文を聴く → 単語 → 基本の文 → 文法 → 問題 → 紙の問題 → 章のまとめ。
+   ⭕ ステージの中は練習の種類を自動で切り替える（易しい順）。1ステージ＝小さな組（10項目まで）。
+   ⭕ 終わると正答率と星。80% 以上でクリア。次のステージは前をクリアすると開く（本文と紙の問題はいつでも）。
+   ⭕ 途中の位置は端末に保存（「セーブしてやめる」→「続きから」）。クリアは出来事（stage）として iCloud で連動。 */
+const STEPS = {word: ['hear', 'say'], sentence: ['hear', 'order', 'cloze'], grammar: ['order', 'cloze', 'type'], drill: ['hear', 'cloze'], sound: ['hear', 'say'], other: ['hear', 'say']};
+const STEPNAME = {hear: '聞いて選ぶ', say: '見て言う', order: '並べる', cloze: '穴埋め', type: '聞いて書く'};
+const PASS = 0.8;
+let run = load('run', null);        // {book, stage, title, queue:[[項目, 練習]], i, res:[], t}
+let runOn = false;                  // いま「進める」で解いているか（自由に練習とは別）
+const starsOf = sc => sc >= 0.95 ? 3 : sc >= 0.85 ? 2 : sc >= PASS ? 1 : 0;
+const starHTML = (n, of) => '<span class="stars" aria-label="星 ' + n + '">' + [1, 2, 3].map(k => '<i class="' + (k <= n ? 'on' : '') + '">★</i>').slice(0, of || 3).join('') + '</span>';
+function itemById(id){
+  for(const d of pdata.decks) for(const it of d.items) if(it.id === id) return {...it, deck: d};
+  return null;
+}
+/* クリアの記録（出来事から。端末をまたいで一番良い星） */
+function stageBest(){
+  const best = {};
+  evOwn.concat(evOthers).forEach(e => { if(e.k === 'stage' && e.b === bookId){ const o = best[e.s]; if(!o || e.stars > o.stars) best[e.s] = {stars: e.stars, score: e.score}; } });
+  return best;
+}
+/* 章のステージを組み立てる */
+function stagesOf(li, defs, last){
+  const x = lessonData()[li], L = x.L, out = [];
+  const st = lessonSteps(li, defs, last, vocab());
+  if(st.listen) out.push({id: L.id + '|listen', kind: 'listen', title: '本文を聴く', sub: st.listen.of + '本', free: true,
+    cleared: st.listen.done, stars: st.listen.done ? 3 : 0, n: st.listen.n, of: st.listen.of});
+  if(pdata){
+    const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id));
+    const sets = ds.flatMap(d => setsOf(d));
+    CATS.forEach(([c, name]) => sets.filter(s => s.cat === c).forEach(sx => out.push({id: L.id + '|' + sx.id, kind: 'set', set: sx,
+      title: name + ' ' + sx.n, sub: sx.items.length + '項目・' + STEPS[c].map(v => STEPNAME[v]).join(' → ')})));
+  }
+  if(st.paper) out.push({id: L.id + '|paper', kind: 'paper', title: '紙の問題（本で解く）', sub: st.paper.of + '問', free: true,
+    cleared: st.paper.done, stars: st.paper.done ? starsOf(st.paper.ps.tot ? st.paper.ps.got / st.paper.ps.tot : 0) || 1 : 0, n: st.paper.n, of: st.paper.of});
+  if(pdata && x.items.length) out.push({id: L.id + '|final', kind: 'final', title: '章のまとめ', sub: Math.min(10, x.items.length) + '問・この章から混ぜて'});
+  const best = stageBest();
+  let open = true;
+  out.forEach(sg => {
+    if(sg.kind === 'set' || sg.kind === 'final'){ const b = best[sg.id]; sg.cleared = !!b; sg.stars = b ? b.stars : 0; sg.score = b ? b.score : null; }
+    sg.open = sg.free || open || sg.cleared;
+    if(!sg.free && !sg.cleared) open = false;    // 練習のステージは前をクリアすると開く
+  });
+  return out;
+}
+function chapterState(li, defs, last){
+  const sgs = stagesOf(li, defs, last);
+  const cl = sgs.filter(s => s.cleared).length;
+  return {sgs, cleared: cl, of: sgs.length, all: sgs.length > 0 && cl === sgs.length, stars: sgs.reduce((n, s) => n + (s.stars || 0), 0)};
+}
+
+/* ---- 章の道のり（教材の「課を進める」の上に出す） ---- */
+function journeyHTML(li, defs, last){
+  const cs = chapterState(li, defs, last);
+  const cur = cs.sgs.find(s => s.open && !s.cleared && !s.free) || cs.sgs.find(s => !s.cleared);
+  let h = '';
+  if(run && run.book === bookId){
+    h += '<div class="resume"><div><b>続きから</b><span>' + esc(run.title) + '　' + run.i + ' / ' + run.queue.length + ' 問</span></div><button class="primary" id="runResume">続きから始める</button></div>';
+  }
+  h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '章クリア' : 'この章のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　★ ' + cs.stars + '</span></div>' +
+    '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><ol class="jpath">';
+  cs.sgs.forEach((sg, k) => {
+    const state = sg.cleared ? 'cleared' : !sg.open ? 'locked' : sg === cur ? 'current' : 'open';
+    const icon = sg.cleared ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>'
+      : state === 'locked' ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></svg>' : (k + 1);
+    const act = state === 'locked' ? '<span class="jlock">前のステージをクリアすると開く</span>'
+      : '<button class="' + (state === 'current' ? 'primary ' : '') + 'jgo" data-stage="' + esc(sg.id) + '">' + (sg.cleared ? 'もう一度' : sg.kind === 'listen' ? '聴く' : sg.kind === 'paper' ? '本で解いて印を付ける' : 'はじめる') + '</button>';
+    h += '<li class="jnode ' + state + '"><span class="jdot">' + icon + '</span><div class="jbody"><b>' + esc(sg.title) + (state === 'current' ? '<em>いまここ</em>' : '') + '</b><small>' + esc(sg.sub) +
+      (sg.of && !sg.cleared && sg.n ? '　' + sg.n + '/' + sg.of : '') + (sg.score != null ? '　最高 ' + Math.round(sg.score * 100) + '%' : '') + '</small></div>' +
+      (sg.cleared ? starHTML(sg.stars) : '') + act + '</li>';
+  });
+  h += '</ol></section>';
+  return h;
+}
+
+/* ---- ステージを始める ---- */
+function startStage(stageId){
+  const ld = lessonData(), li = ld.findIndex(x => stageId.startsWith(x.L.id + '|'));
+  if(li < 0) return;
+  const sg = stagesOf(li, paperDefs(), paperLatest()).find(s => s.id === stageId);
+  if(!sg) return;
+  if(sg.kind === 'listen'){ const t = ld[li].tracks.find(t => !done.has(t.name)) || ld[li].tracks[0]; if(t) openTrack(t.name); return; }
+  if(sg.kind === 'paper'){ const el = document.querySelector('#book .lstep.paper-step'); if(el) el.scrollIntoView({block: 'start'}); return; }
+  const queue = [];
+  const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q2) => p[0] - q2[0]).map(v => v[1]);
+  if(sg.kind === 'set'){
+    const its = sg.set.items.map(it => ({...it, deck: sg.set.deck}));
+    STEPS[sg.set.cat].forEach(v => shuffle(its.filter(it => !FILTER[v] || FILTER[v](it))).forEach(it => queue.push([it.id, v])));
+  }else{
+    // 章のまとめ：この章から10問。種類ごとに一番難しい練習で（穴埋めにできれば穴埋め）
+    shuffle(ld[li].items).slice(0, 10).forEach(it => {
+      const c = catOf(it, it.deck), v = c === 'word' || c === 'sound' ? 'hear' : (FILTER.cloze(it) ? 'cloze' : 'hear');
+      queue.push([it.id, v]);
+    });
+  }
+  if(!queue.length) return;
+  run = {book: bookId, stage: sg.id, title: ld[li].L.title + '　' + sg.title, queue, i: 0, res: [], t: Date.now()};
+  save('run', run);
+  resumeRun();
+}
+function resumeRun(){
+  if(!run) return;
+  runOn = true; q = null;
+  setMode('practice');
+  runNext();
+}
+function stopRun(){   // セーブしてやめる（位置は run に残る）
+  runOn = false; q = null;
+  $('#practice').classList.remove('running');
+  const lid = run ? run.stage.split('|')[0] : null;
+  if(lid) goLesson(lid); else setMode('book');
+}
+function runNext(){
+  if(!run) return;
+  if(run.i >= run.queue.length){ finishRun(); return; }
+  const [id, v] = run.queue[run.i];
+  const it = itemById(id);
+  if(!it){ run.i++; save('run', run); runNext(); return; }
+  pview = v;
+  if(v === 'order') q = orderQ(it);
+  else if(v === 'cloze') q = clozeQ(it);
+  else if(v === 'type') q = {it, done: false, heard: false};
+  else q = {it, done: false, heard: false, choices: v === 'hear' ? choicesFor(it) : null};
+  q.runId = id;
+  renderPractice();
+}
+/* 答えたら1つ進める（mark から呼ぶ） */
+function runAnswered(it, ok){
+  if(!runOn || !run || !q || q.runId !== it.id) return;
+  if(run.res.length > run.i) return;          // 同じ問いで二度数えない
+  run.res.push(ok ? 1 : 0); run.i++; save('run', run);
+  paintRunbar();
+}
+function finishRun(){
+  const total = run.res.length, ok = run.res.reduce((a, b) => a + b, 0), sc = total ? ok / total : 0, stars = starsOf(sc), cleared = sc >= PASS;
+  if(cleared) emit('stage', {b: run.book, s: run.stage, score: Math.round(sc * 100) / 100, stars});
+  const done_ = run; run = null; save('run', null); runOn = false;
+  // 次のステージ
+  const ld = lessonData(), li = ld.findIndex(x => done_.stage.startsWith(x.L.id + '|'));
+  const sgs = li >= 0 ? stagesOf(li, paperDefs(), paperLatest()) : [];
+  const nxt = sgs.find(s => s.open && !s.cleared && s.kind !== 'listen' && s.kind !== 'paper' && s.id !== done_.stage);
+  const chapterClear = sgs.length && sgs.every(s => s.cleared);
+  $('#practice').classList.add('running');
+  $('#runbar').hidden = true;
+  $('#psets').hidden = true;
+  $('#pbody').innerHTML = '<div class="result' + (cleared ? ' ok' : '') + '">' +
+    (chapterClear ? '<div class="rchapter">章クリア</div>' : '') +
+    '<div class="rtitle">' + esc(done_.title) + '</div>' + starHTML(stars) +
+    '<div class="rscore">' + Math.round(sc * 100) + '%<small>' + ok + ' / ' + total + ' 問</small></div>' +
+    '<div class="rmsg">' + (cleared ? (stars === 3 ? 'クリア。完璧です。' : 'クリア。') : 'あと少し。' + Math.round(PASS * 100) + '% でクリアです。') + '</div>' +
+    '<div class="row">' + (nxt && cleared ? '<button class="primary" id="rnext" data-stage="' + esc(nxt.id) + '">次のステージへ：' + esc(nxt.title) + '</button>' : '') +
+    '<button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button><button id="rback">道のりに戻る</button></div></div>';
+  const bk = () => { $('#practice').classList.remove('running'); };
+  const nb = $('#rnext'); if(nb) nb.onclick = () => { bk(); startStage(nb.dataset.stage); };
+  $('#rretry').onclick = () => { bk(); startStage(done_.stage); };
+  $('#rback').onclick = () => { bk(); goLesson(done_.stage.split('|')[0]); };
+}
+function paintRunbar(){
+  const bar = $('#runbar'); if(!bar) return;
+  const on = runOn && run;
+  $('#practice').classList.toggle('running', !!on);
+  bar.hidden = !on;
+  if(!on) return;
+  const v = run.queue[Math.min(run.i, run.queue.length - 1)][1];
+  const steps = [...new Set(run.queue.map(x => x[1]))], si = steps.indexOf(v);
+  bar.innerHTML = '<div class="rbtop"><b>' + esc(run.title) + '</b><span>ステップ ' + (si + 1) + ' / ' + steps.length + '　' + STEPNAME[v] + '</span>' +
+    '<button id="runStop">セーブしてやめる</button></div>' +
+    '<div class="rbbar"><i style="width:' + (run.i / run.queue.length * 100) + '%"></i></div><div class="rbnum">' + run.i + ' / ' + run.queue.length + ' 問</div>';
+  $('#runStop').onclick = stopRun;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.classList.contains('jgo')) startStage(b.dataset.stage);
+  else if(b.id === 'runResume') resumeRun();
+});
 /* 操作卓の高さは画面幅で変わる。引いた語の窓が下に潜らないよう、実測して渡す。 */
 (function(){
   const dock = $('#dock');
