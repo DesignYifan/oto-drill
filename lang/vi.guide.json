@@ -17,7 +17,7 @@
     {"id": "classifiers", "title": "類別詞：数えるときの語", "keys": ["cái", "con", "quyển", "cuốn", "chiếc", "người", "tờ", "bức", "類別詞", "助数詞", "数える"],
      "body": "数・指示詞と名詞のあいだに入る（日本語の『〜本・〜匹』に近い）。cái＝物一般、con＝動物（と一部の物）、quyển／cuốn＝本、chiếc＝乗り物・片方のもの、người＝人、tờ＝紙、bức＝絵・手紙。một con chó＝1匹の犬、hai quyển sách＝2冊の本。特定のものを指すときにも使う：con mèo này＝この猫。"},
     {"id": "copula", "title": "là：名詞の文の『です』", "keys": ["là", "です", "không phải", "繋辞", "形容詞の文"],
-     "body": "A là B＝AはBです（Bが名詞のとき）。Tôi là người Nhật.＝私は日本人です。否定は không phải là：Tôi không phải là học sinh. 形容詞の文には là を付けない：Tôi mệt.＝私は疲れている（⛔ Tôi là mệt）。"},
+     "body": "A là B＝AはBです（Bが名詞のとき）。Tôi là người Nhật.＝私は日本人です。否定は không phải là：Tôi không phải là học sinh. 形容詞の文には là を付けない：Tôi mệt.＝私は疲れている（Tôi là mệt とは言わない）。"},
     {"id": "tense-aspect", "title": "時と相：đã・đang・sẽ・vừa/mới・rồi・sắp", "keys": ["đã", "đang", "sẽ", "vừa", "mới", "rồi", "sắp", "過去", "未来", "進行", "時制", "完了"],
      "body": "動詞の前に置く語で時を示すが、文脈や時の語（hôm qua＝昨日）で分かれば省く。đã＝した（過去・完了）、đang＝している、sẽ＝するつもり・だろう、vừa／mới＝したばかり、sắp＝もうすぐ、文末の rồi＝もう〜した。Tôi ăn rồi.＝もう食べました。"},
     {"id": "negation", "title": "否定：không・chưa・chẳng・đừng", "keys": ["không", "chưa", "chẳng", "đừng", "否定", "ない", "まだ"],

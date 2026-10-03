@@ -521,6 +521,16 @@ li.hidden{display:none}
 .tlesson em{font-style:normal; color:var(--ui-success-fgColor); font-size:12px}
 .thint{font-size:14px; color:var(--ui-primary-fgColor)}
 .quiz code, .thint kbd{font-size:15px}
+.flowpanel{left:auto}
+.flowkind{align-self:flex-start}
+.flowunits{display:flex; flex-direction:column; gap:4px; max-height:240px; overflow-y:auto; padding:4px 0}
+.flowunits label{display:flex; align-items:center; gap:8px; font-size:14px; padding:4px 0}
+.flowunits small{margin-left:auto; color:var(--ui-text-muted-fgColor); font-size:12px}
+.flowopts{display:flex; flex-wrap:wrap; gap:12px 16px; align-items:center; font-size:14px}
+.flowopts label{display:inline-flex; align-items:center; gap:8px}
+.flownow{font-size:24px; font-weight:500; line-height:1.5; text-align:center; padding:8px 0}
+.flowja{font-size:15px; color:var(--ui-text-muted-fgColor); text-align:center; line-height:1.6}
+.flowpanel .row{justify-content:center}
 .japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
 .choices.mean button{text-align:left; font-size:16px; line-height:1.5}
 .exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
@@ -1239,6 +1249,7 @@ button.linkish:hover{background:none; text-decoration:underline}
         <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
         <div class="setwrap">
           <span class="setsum" id="setSum"></span>
+          <button id="flowBtn" aria-haspopup="dialog" aria-controls="flowPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h5"/><path d="M11.5 9.5v4l3-2z"/></svg><span>文だけ聴く</span></button>
           <button id="settingsBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.6"/><circle cx="5" cy="11.5" r="1.6"/></svg><span>設定</span></button>
           <div class="settings" id="settings" role="dialog" aria-label="再生の設定" hidden>
             <div class="setting">
@@ -1378,6 +1389,7 @@ button.linkish:hover{background:none; text-decoration:underline}
 <g fill="#fff" stroke="none"><circle class="orb-d1" cx="32" cy="14" r="3"/><circle class="orb-d2" cx="32" cy="20" r="2.4"/><circle class="orb-d3" cx="32" cy="16" r="2"/><circle class="orb-d4" cx="32" cy="22" r="1.6"/></g></g></g>
 <circle cx="32" cy="32" r="30" fill="url(#orbShade)"/><ellipse cx="24" cy="18" rx="14" ry="9" fill="url(#orbShine)"/></svg>AI に聞く</button>
 <div class="askpanel" id="askPanel" role="dialog" aria-label="AI に聞く" hidden></div>
+<div class="askpanel flowpanel" id="flowPanel" role="dialog" aria-label="文だけ聴く" hidden></div>
 
 <div id="drop">フォルダをここに落とす</div>
 
@@ -2088,6 +2100,8 @@ function matchable(text){
   return ' ' + text.normalize('NFC').toLowerCase().replace(/[,;:"'()\[\]…—–]/g,'').replace(/\s+/g,' ').trim() + ' ';
 }
 
+/* 教材のメモに残った記号（⛔⭕）は、画面では言葉にする（2026-10-03 本人「なくしてほしいって言った絵文字がまだ所々についてる」） */
+const unmark = t => (t || '').replace(/⛔\s*/g, '注意：').replace(/⭕+\s*/g, '');
 function notesFor(text){
   const out = [];
   const flat = !notes.patterns && !notes.sentences;
@@ -3333,7 +3347,7 @@ function explainEl(it, res){
     h += '<div class="exdiff"><span class="exk">違い</span><span>選んだ <b>' + esc(x.you || '（なし）') + '</b>' + (a ? '＝' + esc(a.ja) : '') + '</span><span>正しくは <b>' + esc(x.right) + '</b>' + (b ? '＝' + esc(b.ja) : '') + '</span></div>';
   });
   const ns = it.deck && it.deck.kind === 'text' ? notesFor(it.show) : [];
-  ns.forEach(n => { h += '<div class="exnote"><span class="exk">文法</span><div><b>' + esc(n.title || '') + '</b>' + esc(n.body) + '</div></div>'; });
+  ns.forEach(n => { h += '<div class="exnote"><span class="exk">文法</span><div><b>' + esc(unmark(n.title)) + '</b>' + esc(unmark(n.body)) + '</div></div>'; });
   if(g && g.point && !ns.length) h += '<div class="exnote"><span class="exk">要点</span><div>' + esc(g.point) + '</div></div>';
   if(g) h += '<div class="exsrc">意味と要点は自動翻訳です（未確認）。文法は手で書いたメモです。</div>';
   else if(it.deck && it.deck.kind === 'text') h += '<div class="exsrc">この文の訳はまだありません。語の意味は単語の一覧から出しています。</div>';
@@ -3776,7 +3790,7 @@ function renderBook(){
           ex = '<div class="gex">' + (ss.length ? ss.map((s, i) => '<button class="gs" data-i="' + i + '">' + esc(s.seg.text) + '</button>').join('') : '<span class="pnote">本文に例がありません</span>') + '</div>';
           gexCache = ss;
         }
-        return '<div class="gram' + (open ? ' open' : '') + '"><button class="gt" data-g="' + esc(key) + '"><b>' + esc(p.title || p.match) + '</b><span>' + esc(p.body) + '</span></button>' + ex + '</div>';
+        return '<div class="gram' + (open ? ' open' : '') + '"><button class="gt" data-g="' + esc(key) + '"><b>' + esc(p.title || p.match) + '</b><span>' + esc(unmark(p.body)) + '</span></button>' + ex + '</div>';
       }).join('') + '</section>' : '';
     ld.forEach((x, li) => { html += sec(x.L.title, G.out[li]); });
     html += sec('課の分からないもの', G.rest);
@@ -4232,6 +4246,91 @@ if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
 
+
+
+/* ================= 文だけ聴く（2026-10-03） =================
+   本人「ユニットの中のメインの文章だけ聞ける感じも欲しい。メインのところだけを流しで聞きたい。その番号だけ特定して」。
+   ⭕ 課を選び、基本文（＋例文・単語）だけを続けて鳴らす。1文ごとに回数と間を決められる。訳も出せる */
+const FLOWKINDS = {sentence: ['sentence'], both: ['sentence', 'grammar'], word: ['word']};
+const FLOWNAME = {sentence: '基本文', both: '基本文＋例文', word: '単語'};
+let flow = null;
+function flowOpt(){ return Object.assign({kind: 'sentence', n: 1, gap: 2, ja: true, sel: null}, load('flow:opt', {})); }
+function flowItems(li, kind){
+  const x = lessonData()[li]; if(!x) return [];
+  return x.items.filter(it => !isSound(it) && FLOWKINDS[kind].includes(catOf(it, it.deck)) && it.end > it.start);
+}
+function openFlow(on){
+  const p = $('#flowPanel');
+  if(!on){ stopFlow(); p.hidden = true; return; }
+  $('#askPanel').hidden = true;
+  const o = flowOpt(), ld = lessonData();
+  const cur = idx >= 0 && tracks[idx] ? lessonOfTrack(tracks[idx].name) : null;
+  const sel = new Set(o.sel || (cur ? [ld[cur.li].L.id] : []));
+  const rows = ld.map((x, li) => [x, li, flowItems(li, o.kind).length]).filter(r => r[2]);
+  p.innerHTML = '<div class="aph"><b>文だけ聴く</b><button class="apclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
+    '<div class="apctx">選んだ課の文だけを、続けて鳴らします</div>' +
+    '<div class="seg wf flowkind">' + Object.keys(FLOWNAME).map(k => '<button data-k="' + k + '"' + (o.kind === k ? ' class="on"' : '') + '>' + FLOWNAME[k] + '</button>').join('') + '</div>' +
+    '<div class="flowunits">' + (rows.length ? rows.map(([x, li, n]) => '<label><input type="checkbox" value="' + esc(x.L.id) + '"' + (sel.has(x.L.id) ? ' checked' : '') + '><span>' + esc(x.L.title) + '</span><small>' + n + '</small></label>').join('')
+      : '<p class="pnote">この教材には、この種類の文がありません</p>') + '</div>' +
+    '<div class="flowopts"><label>1文を<select id="flowN">' + [1, 2, 3].map(n => '<option' + (o.n === n ? ' selected' : '') + ' value="' + n + '">' + n + '回</option>').join('') + '</select></label>' +
+    '<label>文の間<select id="flowGap">' + [1, 2, 4].map(n => '<option' + (o.gap === n ? ' selected' : '') + ' value="' + n + '">' + n + '秒</option>').join('') + '</select></label>' +
+    '<label class="opt"><input type="checkbox" id="flowJa"' + (o.ja ? ' checked' : '') + '> 訳を出す</label></div>' +
+    '<div class="row"><button class="linkish" id="flowAll">全部の課を選ぶ</button><button class="primary" id="flowGo">流す</button></div>';
+  const keep = () => { const n = flowOpt(); n.sel = [...p.querySelectorAll('.flowunits input:checked')].map(i => i.value);
+    n.n = +$('#flowN').value; n.gap = +$('#flowGap').value; n.ja = $('#flowJa').checked; save('flow:opt', n); return n; };
+  p.querySelector('.apclose').onclick = () => openFlow(false);
+  p.querySelectorAll('.flowkind button').forEach(b => b.onclick = () => { const n = keep(); n.kind = b.dataset.k; save('flow:opt', n); openFlow(true); });
+  $('#flowAll').onclick = () => { p.querySelectorAll('.flowunits input').forEach(i => i.checked = true); keep(); };
+  p.querySelectorAll('.flowunits input, .flowopts select, .flowopts input').forEach(i => i.onchange = keep);
+  $('#flowGo').onclick = () => {
+    const n = keep(), ids = new Set(n.sel);
+    const queue = ld.map((x, li) => ids.has(x.L.id) ? flowItems(li, n.kind).map(it => ({it, title: x.L.title})) : []).flat();
+    if(!queue.length){ toast('課を1つ以上選んでください'); return; }
+    audio.pause();
+    flow = {queue, i: 0, r: 0, opt: n, paused: false, timer: null}; paintFlow(); flowStep();
+  };
+  p.hidden = false;
+}
+function stopFlow(){ if(!flow) return; clearTimeout(flow.timer); clearInterval(flow.poll); clip.pause(); flow = null; }
+function flowStep(){
+  if(!flow) return;
+  if(flow.i >= flow.queue.length){ const done = flow.queue.length; stopFlow(); openFlow(true); toast(done + '文を聴き終えました'); return; }
+  const {it} = flow.queue[flow.i];
+  paintFlow();
+  let started = false, waited = 0;
+  clearInterval(flow.poll);
+  say(it);
+  flow.poll = setInterval(() => {
+    if(!flow || flow.paused) return;
+    waited += 100;
+    if(!clip.paused) started = true;
+    if((started && clip.paused) || (!started && waited > 6000)){   // 鳴り終えた（6秒たっても始まらなければ飛ばす）
+      clearInterval(flow.poll);
+      flow.timer = setTimeout(() => {
+        if(!flow) return;
+        if(++flow.r >= flow.opt.n){ flow.r = 0; flow.i++; }
+        flowStep();
+      }, flow.opt.gap * 1000);
+    }
+  }, 100);
+}
+function paintFlow(){
+  const p = $('#flowPanel'); if(!flow) return;
+  const {it, title} = flow.queue[Math.min(flow.i, flow.queue.length - 1)];
+  const ja = flow.opt.ja ? jaOf(it) : null;
+  p.innerHTML = '<div class="aph"><b>文だけ聴く</b><button class="apclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
+    '<div class="apctx">' + esc(title) + '　' + FLOWNAME[flow.opt.kind] + '　' + (flow.i + 1) + ' / ' + flow.queue.length + (flow.opt.n > 1 ? '　' + (flow.r + 1) + '回目' : '') + '</div>' +
+    '<div class="jbar"><i style="width:' + ((flow.i) / flow.queue.length * 100) + '%"></i></div>' +
+    '<div class="flownow" lang="' + LP.code + '">' + esc(it.show) + '</div>' + (ja ? '<div class="flowja" lang="ja">' + esc(ja) + '</div>' : '') +
+    '<div class="row"><button id="flowPrev">前</button><button class="primary" id="flowPause">' + (flow.paused ? '続ける' : '一時停止') + '</button><button id="flowNext">次</button></div>' +
+    '<button class="linkish" id="flowStop">やめて選び直す</button>';
+  p.querySelector('.apclose').onclick = () => openFlow(false);
+  $('#flowPause').onclick = () => { flow.paused = !flow.paused; if(flow.paused){ clip.pause(); clearTimeout(flow.timer); } else flowStep(); paintFlow(); };
+  $('#flowNext').onclick = () => { clearTimeout(flow.timer); flow.r = 0; flow.i = Math.min(flow.i + 1, flow.queue.length); flow.paused = false; flowStep(); };
+  $('#flowPrev').onclick = () => { clearTimeout(flow.timer); flow.r = 0; flow.i = Math.max(0, flow.i - 1); flow.paused = false; flowStep(); };
+  $('#flowStop').onclick = () => { stopFlow(); openFlow(true); };
+}
+$('#flowBtn').addEventListener('click', e => { e.stopPropagation(); openFlow($('#flowPanel').hidden); });
 
 /* ================= これどういうこと？と質問帳（2026-10-02） =================
    本人「その都度わからないところはあなたに聞いていって、データベースに貯めていくと、何がわからなかったところかが蓄積されていい」。
