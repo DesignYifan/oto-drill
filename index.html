@@ -504,6 +504,18 @@ li.hidden{display:none}
 .choices.mean.pics{display:grid; grid-template-columns:repeat(2, 1fr)}
 .choices.mean.pics button{display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center}
 .choices.mean.pics img{width:100%; max-width:160px; aspect-ratio:1; object-fit:cover; border-radius:12px}
+.stars i svg, .starn svg{width:1em; height:1em; fill:currentColor; vertical-align:-.12em}
+.starn{display:inline-flex; gap:2px; align-items:center}
+.typing .tkeys{display:flex; flex-wrap:wrap; gap:8px 16px; font-size:14px}
+.typing .tkeys span{display:inline-flex; align-items:center; gap:4px}
+.typing .tkeys small{color:var(--ui-text-muted-fgColor); font-size:12px; margin-left:2px}
+.typing .tl{color:var(--ui-text-fgColor); font-size:14px}
+.tlessons{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; width:100%}
+.tlesson{display:flex; flex-direction:column; align-items:flex-start; gap:4px; text-align:left; padding:16px 20px; background:var(--ui-surface-bgColor)}
+.tlesson small{color:var(--ui-text-muted-fgColor); font-size:12px; line-height:1.6}
+.tlesson em{font-style:normal; color:var(--ui-success-fgColor); font-size:12px}
+.thint{font-size:14px; color:var(--ui-primary-fgColor)}
+.quiz code, .thint kbd{font-size:15px}
 .japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
 .choices.mean button{text-align:left; font-size:16px; line-height:1.5}
 .exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
@@ -1313,10 +1325,12 @@ button.linkish:hover{background:none; text-decoration:underline}
       <select id="pdecks" aria-label="練習する組"></select>
       <div class="seg" id="pviews">
         <button data-v="table">表</button>
+        <button data-v="typing">タイピング</button>
         <button data-v="mean">聴いて意味</button>
         <button data-v="build">組み立てる</button>
         <button data-v="gap">穴を書く</button>
         <button data-v="type">聴いて書く</button>
+        <button data-v="write">日本語から書く</button>
         <button data-v="speak">日本語から言う</button>
         <button data-v="transform">書き換える</button>
         <button data-v="respond">質問に答える</button>
@@ -1419,7 +1433,7 @@ function paintList(){
   const items = $('#list').children;
   for(let i=0;i<items.length;i++){
     items[i].classList.toggle('current', i===idx);
-    items[i].querySelector('.done').textContent = done.has(tracks[i].name) ? '✓' : '';
+    items[i].querySelector('.done').innerHTML = done.has(tracks[i].name) ? '<svg class="ic" viewBox="0 0 16 16" aria-label="聴いた"><path d="M3.5 8.5l3 3 6-7"/></svg>' : '';
   }
   const shown = tracks.filter(t => done.has(t.name)).length;
   $('#tally').textContent = tracks.length ? (shown + '/' + tracks.length) : '';
@@ -1813,6 +1827,20 @@ const LANGS = {
       'lắm','quá','rất','hơi','mấy','gì','ai','đâu','nào','bao','nhiêu','phải','muốn','cần','nên','thích','cũng','và','nhưng',
       'hãy','đi','nhé','nhỉ','ạ','này','đó','kia','ấy','các','những','một','từ','đến','để','thì','nếu','vì','khi','hay','biết','thể'],
     ai: {coach: 'ベトナム語（北部標準）の先生で、言語学にも詳しいコーチ', guide: 'lang/vi.guide.json'},
+    // タイピング入門（2026-10-03 本人「ベトナム語のタイピングってどうやるのか分かってなくて、その練習がまずできるといい」）
+    typing: {
+      how: [['aa', 'â'], ['aw', 'ă'], ['ee', 'ê'], ['oo', 'ô'], ['ow', 'ơ'], ['uw', 'ư'], ['dd', 'đ']],
+      tones: [['s', 'á', '上がる'], ['f', 'à', '下がる'], ['r', 'ả', '下がって上がる'], ['x', 'ã', '途中で締める'], ['j', 'ạ', '低く短く']],
+      lessons: [
+        {id: 't1', title: '1. 記号のある字', note: '同じ字を2回、または w を続けて打つと、記号の付いた字になります',
+          items: [['â', ''], ['ă', ''], ['ê', ''], ['ô', ''], ['ơ', ''], ['ư', ''], ['đ', ''], ['ăn', '食べる'], ['cơm', 'ご飯'], ['đi', '行く'], ['bơ', 'バター'], ['ơi', '（呼びかけ）']]},
+        {id: 't2', title: '2. 声調', note: '語の最後に s f r x j を1つ打つと、声調の記号が正しい位置に付きます',
+          items: [['má', 'お母さん（南部）'], ['mà', 'でも'], ['mả', 'お墓'], ['mã', '馬（漢越語）'], ['mạ', '苗'], ['có', 'ある'], ['là', '〜です'], ['cả', 'すべて'], ['ngủ', '寝る'], ['sữa', '牛乳'], ['học', '勉強する'], ['vẫn', 'まだ']]},
+        {id: 't3', title: '3. 組み合わせ', note: '記号の字と声調を1語の中で組み合わせます。声調はいつも語の最後に打ちます',
+          items: [['người', '人'], ['Việt Nam', 'ベトナム'], ['được', 'できる'], ['trường', '学校'], ['nước', '水'], ['đẹp', 'きれい'], ['tiếng Việt', 'ベトナム語'], ['cảm ơn', 'ありがとう'], ['xin chào', 'こんにちは'], ['không', 'いいえ'], ['đường', '道'], ['phở', 'フォー']]},
+        {id: 't4', title: '4. 教材の単語', note: 'いま開いている教材の単語から10語。意味を見ながら打つと覚えやすくなります', book: true},
+      ],
+    },
   },
   // ⚠️ 骨組み（2026-10-01・未検証）。韓国語の教材を作るときに、文法の語・惜しいの判定を埋める
   ko: {
@@ -2384,7 +2412,8 @@ const FILTER = {order: orderable, cloze: clozable, type: typable,
   mean: it => !isSound(it) && !!jaOf(it),
   build: it => orderable(it) && !!jaOf(it),
   gap: it => clozable(it) && !!jaOf(it),
-  speak: it => !isSound(it) && !!jaOf(it)};
+  speak: it => !isSound(it) && !!jaOf(it),
+  write: it => !isSound(it) && !!jaOf(it) && words(it.show).length <= 12};
 const DRILLV = {transform: 'transform', respond: 'respond'};
 function drillItem(d){
   const deck = (pdata && pdata.decks.find(x => x.id === d.deck)) || {id: d.deck, kind: 'text', book: '', title: '', items: []};
@@ -2462,12 +2491,14 @@ function renderPractice(){
   // 字と音の聞き分けは、発音編が入っているときだけ。書き換える・答えるは問いがあるときだけ
   const hasSound = items().some(isSound), ds = new Set(decks().map(d => d.id));
   [...$('#pviews').children].forEach(b => { const v = b.dataset.v;
-    b.hidden = (v === 'hear' || v === 'say') ? !hasSound : DRILLV[v] ? !drillsIn(v, ds).length : false; });
+    b.hidden = (v === 'hear' || v === 'say') ? !hasSound : DRILLV[v] ? !drillsIn(v, ds).length : v === 'typing' ? !(LP.typing && LP.inputMethod === 'telex') : false; });
   if(pview === 'table') renderTable();
   else if(pview === 'order' || pview === 'build') renderOrder();
   else if(pview === 'cloze' || pview === 'gap') renderCloze();
   else if(pview === 'type') renderType();
   else if(pview === 'mean') renderMean();
+  else if(pview === 'write') renderWrite();
+  else if(pview === 'typing') renderTyping();
   else if(DRILLV[pview]) renderDrill();
   else renderQuiz();
 }
@@ -2580,10 +2611,10 @@ function writeInput(id, placeholder, onEnter, onTab){
   const inp = document.createElement('input');
   inp.id = id; inp.className = 'typein'; inp.autocomplete = 'off'; inp.spellcheck = false; inp.lang = LP.code;
   inp.setAttribute('autocapitalize', 'off'); inp.placeholder = placeholder;
-  inp.value = q.draft || '';
+  inp.value = (q && q.draft) || '';
   inp.addEventListener('input', e => {
     if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){ const v = telexLine(inp.value); if(v !== inp.value) inp.value = v; }
-    q.draft = inp.value;
+    if(q) q.draft = inp.value;
   });
   inp.addEventListener('keydown', e => {
     if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); onEnter(inp.value); }
@@ -2618,6 +2649,115 @@ function diffEl(res){
     return '<span class="w extra"><s>' + esc(r.y) + '</s><small>余り</small></span>';
   }).join(' ');
   return diff;
+}
+
+/* ---- 日本語から書く：意味を見て、ベトナム語を打つ（思い出して打つと残る） ---- */
+function renderWrite(){
+  const body = $('#pbody');
+  if(!q) q = makeQ('write', nextItem(null));
+  if(!q){ body.innerHTML = '<div class="quiz"><div class="pnote">意味の分かる項目がありません</div></div>'; return; }
+  const it = q.it;
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz';
+  box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
+    qPrompt('この意味のベトナム語を書いてください', '声調の記号まで打ちます。打ち方は「タイピング」で練習できます') +
+    (wordPic(it.show) ? '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">' : '') +
+    '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>';
+  if(!q.done){
+    const go = v => { q.g = gradeAgainst([it.show], v); q.done = true; mark(it, q.g.ok, 'write', q.g.ok ? 2 : 1); if(q.g.ok) typedOk(it); say(it); renderWrite(); };
+    const inp = writeInput('writein', 'ベトナム語で書く（Enter で答え合わせ）', go);
+    box.appendChild(inp);
+    const opt = telexOpt(inp); if(opt) box.appendChild(opt);
+    const row = document.createElement('div'); row.className = 'row';
+    const give = document.createElement('button'); give.textContent = '分からない'; give.className = 'miss';
+    give.addEventListener('click', () => go(''));
+    const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = '答え合わせ';
+    ok.addEventListener('click', () => go(inp.value));
+    row.append(give, ok); box.appendChild(row);
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 答え合わせ</div>');
+    setTimeout(() => inp.focus(), 0);
+  }else{
+    const g = q.g;
+    box.insertAdjacentHTML('beforeend', g.ok ? qResult('ok', '正解') : g.close ? qResult('near', 'おしい', '声調・記号だけ違います')
+      : qResult('ng', '不正解', '正しくは「' + esc(it.show) + '」'));
+    box.appendChild(diffEl(g.res));
+    if(LP.inputMethod === 'telex' && !g.ok) box.insertAdjacentHTML('beforeend', '<div class="pnote">打つキー：<code>' + esc(toTelex(it.show)) + '</code></div>');
+    box.appendChild(hearBtn(() => say(it)));
+    box.appendChild(explainEl(it, {ok: g.ok, close: g.close}));
+    box.appendChild(nextRow());
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 次へ</div>');
+  }
+  body.appendChild(box);
+}
+
+/* ---- タイピング入門：Telex の打ち方を、字 → 声調 → 組み合わせ → 教材の単語 の順に ---- */
+// ベトナム語の語を、Telex で打つキーの並びにする（例：người → nguwowif）
+function toTelex(text){
+  const TK = {'́': 's', '̀': 'f', '̉': 'r', '̃': 'x', '̣': 'j'};
+  const L = {'â': 'aa', 'ă': 'aw', 'ê': 'ee', 'ô': 'oo', 'ơ': 'ow', 'ư': 'uw', 'đ': 'dd'};
+  return text.split(/(\s+)/).map(w => {
+    if(/^\s+$/.test(w)) return w;
+    let tone = '';
+    const d = w.normalize('NFD').replace(/[̣́̀̉̃]/g, m => { tone = TK[m]; return ''; }).normalize('NFC');
+    return [...d].map(c => { const lo = c.toLowerCase(); const t = L[lo]; return t ? (c === lo ? t : t[0].toUpperCase() + t.slice(1)) : c; }).join('') + tone;
+  }).join('');
+}
+let tq = null;   // {lesson, items:[[vi, ja]], i, miss, hint, got}
+function typingItems(L){
+  if(!L.book) return L.items.slice();
+  const pool = items().filter(it => !isSound(it) && catOf(it, it.deck) === 'word' && jaOf(it) && words(it.show).length <= 3);
+  return pool.sort(() => Math.random() - .5).slice(0, 10).map(it => [it.show.replace(/[.。]$/, ''), jaOf(it)]);
+}
+function renderTyping(){
+  const body = $('#pbody'), T = LP.typing;
+  body.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'quiz typing';
+  if(!tq){
+    const best = load('typing:best', {});
+    box.innerHTML = '<section class="howto"><b>ベトナム語のタイピング（Telex という打ち方）</b>' +
+      '<p class="tl">ふつうのキーボードで打てます。記号の付いた字は2つ続けて打ち、声調は語の最後に1文字打ちます。</p>' +
+      '<div class="tkeys">' + T.how.map(([k, c]) => '<span><kbd>' + k + '</kbd>→<b lang="vi">' + c + '</b></span>').join('') + '</div>' +
+      '<div class="tkeys">' + T.tones.map(([k, c, n]) => '<span><kbd>' + k + '</kbd>→<b lang="vi">' + c + '</b><small>' + n + '</small></span>').join('') + '</div>' +
+      '<p class="tl">例：<kbd>nguwowif</kbd> → <b lang="vi">người</b>　<kbd>Vieejt</kbd> → <b lang="vi">Việt</b>　<kbd>ddeepj</kbd> → <b lang="vi">đẹp</b></p>' +
+      '<p>この画面の打ち方は、Mac の入力ソース「ベトナム語 Telex」と同じです。Mac の入力ソースで打つときは、下の「画面の Telex で打つ」を外してください。iPhone は、キーボードに「ベトナム語」を足して Telex を選びます。</p></section>' +
+      '<div class="tlessons">' + T.lessons.map(L => '<button class="tlesson" data-t="' + L.id + '"><b>' + esc(L.title) + '</b><small>' + esc(L.note) + '</small>' +
+        (best[L.id] != null ? '<em>最高 ' + best[L.id] + '%</em>' : '') + '</button>').join('') + '</div>';
+    box.querySelectorAll('.tlesson').forEach(b => b.addEventListener('click', () => {
+      const L = T.lessons.find(x => x.id === b.dataset.t), its = typingItems(L);
+      if(!its.length){ toast('この教材には、打てる単語がありません'); return; }
+      tq = {lesson: L, items: its, i: 0, miss: 0, wrongs: 0, hint: false}; renderTyping();
+    }));
+    body.appendChild(box); return;
+  }
+  const L = tq.lesson;
+  if(tq.i >= tq.items.length){
+    const sc = Math.round((tq.items.length - tq.wrongs) / tq.items.length * 100);
+    const best = load('typing:best', {}); if(best[L.id] == null || sc > best[L.id]){ best[L.id] = sc; save('typing:best', best); }
+    box.innerHTML = '<div class="result ok"><div class="rtitle">' + esc(L.title) + '</div><div class="rscore">' + sc + '%<small>1回目で打てた ' + (tq.items.length - tq.wrongs) + ' / ' + tq.items.length + '</small></div>' +
+      '<div class="row"><button class="primary" id="tagain">もう一度</button><button id="tback">タイピングの最初へ</button></div></div>';
+    body.appendChild(box);
+    $('#tagain').onclick = () => { tq = {lesson: L, items: typingItems(L), i: 0, miss: 0, wrongs: 0, hint: false}; renderTyping(); };
+    $('#tback').onclick = () => { tq = null; renderTyping(); };
+    return;
+  }
+  const [vi, ja] = tq.items[tq.i];
+  box.innerHTML = '<div class="from">' + esc(L.title) + '　' + (tq.i + 1) + ' / ' + tq.items.length + '</div>' +
+    qPrompt('この語を打ってください', esc(L.note)) +
+    '<div class="ask long" lang="vi">' + esc(vi) + '</div>' + (ja ? '<div class="pnote" lang="ja">' + esc(ja) + '</div>' : '') +
+    (tq.hint ? '<div class="thint">打つキー：<kbd>' + esc(toTelex(vi)) + '</kbd></div>' : '');
+  const inp = writeInput('typingin', 'ここに打つ（Enter で確かめる）', v => {
+    if(norm(v) === norm(vi)){ if(tq.miss) tq.wrongs++; tq.i++; tq.miss = 0; tq.hint = false; q = null; renderTyping(); }
+    else { tq.miss++; tq.hint = true; q = {draft: v}; renderTyping(); toast('もう一度。打つキーを見ながら打ってください'); }
+  });
+  inp.value = '';
+  box.appendChild(inp);
+  const opt = telexOpt(inp); if(opt) box.appendChild(opt);
+  const row = document.createElement('div'); row.className = 'row';
+  const h = document.createElement('button'); h.textContent = '打つキーを見る'; h.addEventListener('click', () => { tq.hint = true; renderTyping(); });
+  const quit = document.createElement('button'); quit.textContent = 'やめる'; quit.addEventListener('click', () => { tq = null; renderTyping(); });
+  row.append(quit, h); box.appendChild(row);
+  body.appendChild(box);
+  setTimeout(() => inp.focus(), 0);
 }
 
 /* ---- 文法を使う：書き換える・質問に答える（drills.json） ---- */
@@ -3110,6 +3250,7 @@ function makeQ(v, it){
   if(v === 'cloze' || v === 'gap'){ const x = clozeQ(it); if(x) x.typed = v === 'gap'; return x; }
   if(v === 'type') return {it, done: false, heard: false};
   if(v === 'mean') return {it, done: false, heard: false, choices: meanChoices(it)};
+  if(v === 'write') return {it, done: false};
   if(DRILLV[v]) return {it, done: false};
   return {it, done: false, heard: false, choices: v === 'hear' ? choicesFor(it) : null};
 }
@@ -3121,10 +3262,10 @@ function nextQ(){
 }
 
 document.addEventListener('keydown', e=>{
-  if(mode !== 'practice' || !q || pview === 'table') return;
+  if(mode !== 'practice' || !q || pview === 'table' || pview === 'typing') return;
   if(e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
-  if(pview === 'type' || pview === 'gap' || DRILLV[pview]){   // 書く欄の中では space と enter を欄に任せる
+  if(pview === 'type' || pview === 'gap' || pview === 'write' || DRILLV[pview]){   // 書く欄の中では space と enter を欄に任せる
     if(e.target.classList && e.target.classList.contains('typein')) return;
     if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
     return;
@@ -3159,7 +3300,7 @@ document.addEventListener('keydown', e=>{
 
 /* ================= 見渡す ================= */
 /* どこまで覚えたかを、項目・語・練習の3つの目で見る。数え方は README と実現方式に書いた。 */
-const SKILL = [['mean','聴いて意味'], ['build','組み立てる'], ['gap','穴を書く'], ['type','聴いて書く'], ['speak','日本語から言う'], ['transform','書き換える'], ['respond','質問に答える'], ['hear','聴いて選ぶ'], ['say','見て言う'], ['order','並べ替える'], ['cloze','穴埋め']];
+const SKILL = [['mean','聴いて意味'], ['build','組み立てる'], ['gap','穴を書く'], ['write','日本語から書く'], ['type','聴いて書く'], ['speak','日本語から言う'], ['transform','書き換える'], ['respond','質問に答える'], ['hear','聴いて選ぶ'], ['say','見て言う'], ['order','並べ替える'], ['cloze','穴埋め']];
 const dayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); };
 function level(id){ const r = rec(id); return r.box >= 3 ? 2 : (r.seen > 0 ? 1 : 0); }   // 0 未着手 1 覚えかけ 2 覚えた
 
@@ -3949,7 +4090,7 @@ function paintRecInfo(){
   if(!recDir){ el.textContent = recWait ? '前に選んだ「' + recWait.name + '」に、もう一度書き込みの許可が要ります。見出しの「同期：押して再開」を押すと、選び直さずに再開します。'
     : 'まだ同期していません。記録はこのブラウザの中だけにあります（端末名 ' + DEV + '）。'; return; }
   el.textContent = '同期中：' + recDir.name + '／この端末 ' + DEV + '／端末 ' + (recInfo.devices.length || 1) + ' 台ぶん・出来事 ' + recInfo.read + ' 件' +
-    (recInfo.wrote ? '／最後に書いた ' + new Date(recInfo.wrote).toLocaleTimeString('ja-JP') : '') + (evPend.length ? '／未送信 ' + evPend.length : '') + (recInfo.err ? '／⚠ ' + recInfo.err : '');
+    (recInfo.wrote ? '／最後に書いた ' + new Date(recInfo.wrote).toLocaleTimeString('ja-JP') : '') + (evPend.length ? '／未送信 ' + evPend.length : '') + (recInfo.err ? '／問題：' + recInfo.err : '');
 }
 $('#recPick').addEventListener('click', async ()=>{
   try{ recDir = await showDirectoryPicker({id: 'otodrill-rec', mode: 'readwrite'}); recWait = null; }catch(e){ return; }
@@ -4199,14 +4340,16 @@ function ctxOf(text, item){
    ⭕ 終わると正答率と星。80% 以上でクリア。次のステージは前をクリアすると開く（本文と紙の問題はいつでも）。
    ⭕ 途中の位置は端末に保存（「セーブしてやめる」→「続きから」）。クリアは出来事（stage）として iCloud で連動。 */
 // ⭕ 易しい順：意味が分かる → 形を作る → 思い出して書く・言う（2026-10-03 組み替え）
-const STEPS = {word: ['mean', 'speak', 'type'], sentence: ['mean', 'build', 'gap'], grammar: ['mean', 'build', 'gap'], drill: ['mean', 'gap'], sound: ['hear', 'say'], other: ['mean', 'type']};
+// ⭕ 2026-10-03 本人「内容を入力するときに打ったりすると記憶の定着が上がりそう」→ 最後は日本語から書く（打って思い出す）
+const STEPS = {word: ['mean', 'write', 'type'], sentence: ['mean', 'build', 'write'], grammar: ['mean', 'gap', 'write'], drill: ['mean', 'gap'], sound: ['hear', 'say'], other: ['mean', 'type']};
 const STEPNAME = {hear: '聴いて選ぶ', say: '見て言う', order: '並べ替える', cloze: '穴埋め', type: '聴いて書く',
-  mean: '聴いて意味を選ぶ', build: '日本語から組み立てる', gap: '穴を書く', speak: '日本語から言う', transform: '書き換える', respond: '質問に答える'};
+  mean: '聴いて意味を選ぶ', build: '日本語から組み立てる', gap: '穴を書く', speak: '日本語から言う', transform: '書き換える', respond: '質問に答える',
+  write: '日本語から書く', typing: 'タイピング'};
 const PASS = 0.8;
 let run = load('run', null);        // {book, stage, title, queue:[[項目, 練習]], i, res:[], t}
 let runOn = false;                  // いま「進める」で解いているか（自由に練習とは別）
 const starsOf = sc => sc >= 0.95 ? 3 : sc >= 0.85 ? 2 : sc >= PASS ? 1 : 0;
-const starHTML = (n, of) => '<span class="stars" aria-label="星 ' + n + '">' + [1, 2, 3].map(k => '<i class="' + (k <= n ? 'on' : '') + '">★</i>').slice(0, of || 3).join('') + '</span>';
+const starHTML = (n, of) => '<span class="stars" aria-label="星 ' + n + '">' + [1, 2, 3].map(k => '<i class="' + (k <= n ? 'on' : '') + '"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3l-3.9 2.1.9-4.3-3.3-3 4.4-.5z"/></svg></i>').slice(0, of || 3).join('') + '</span>';
 function itemById(id){
   if(id.startsWith('drill:')){ const d = drills.find(x => 'drill:' + x.id === id); return d ? drillItem(d) : null; }
   for(const d of pdata.decks) for(const it of d.items) if(it.id === id) return {...it, deck: d};
@@ -4266,7 +4409,7 @@ function journeyHTML(li, defs, last){
   }
   const hero = unitPic(lessonData()[li].L.id);
   if(hero) h += '<figure class="uhero"><img src="' + hero + '" alt=""></figure>';
-  h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '課クリア' : 'この課のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　★ ' + cs.stars + '</span></div>' +
+  h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '課クリア' : 'この課のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　<span class="starn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3l-3.9 2.1.9-4.3-3.3-3 4.4-.5z"/></svg>' + cs.stars + '</span></span></div>' +
     '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><ol class="jpath">';
   cs.sgs.forEach((sg, k) => {
     const state = sg.cleared ? 'cleared' : !sg.open ? 'locked' : sg === cur ? 'current' : 'open';
