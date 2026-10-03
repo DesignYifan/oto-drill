@@ -486,6 +486,11 @@ li.hidden{display:none}
 .howto ol{margin:0; padding:0 0 0 24px; list-style:decimal; display:flex; flex-direction:column; gap:4px}
 .howto li{margin:0; padding:0; display:list-item}
 .howto p{margin:0; color:var(--ui-text-muted-fgColor); font-size:13px}
+/* 教材を読む前の画面 */
+.empty-state{max-width:560px; margin:48px auto; padding:28px 32px; gap:12px}
+.empty-state p{font-size:14px; line-height:1.8}
+.empty-state .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; justify-content:flex-start}
+.practice.empty .pbar, .practice.empty .psets{display:none}
 .pnone{display:flex; flex-direction:column; gap:8px; margin-top:12px}
 .addother{margin-top:32px}
 .addother > summary{cursor:pointer; font-size:14px; color:var(--ui-primary-fgColor); display:flex; gap:8px; align-items:center}
@@ -2540,8 +2545,28 @@ function paintSets(){
       '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' : '') + '</div>' + setChipsHTML(ds, pdeck);
   box.querySelectorAll('.setchip, .psnext').forEach(b => b.addEventListener('click', ()=> startSet(b.dataset.set)));
 }
+/* ---- 教材を読む前の画面（2026-10-03） ----
+   本人「2の空の画面の案内も進めて」（仮想ユーザー評価の案2）。読む前の練習・ダッシュボードが真っ白で、壊れているように見えていた。
+   ⭕ そのページが何をするところかを1行目に、どうすれば中身が出るかを次に、押す所を1つ。 */
+const EMPTY = {
+  book: ['コース：教材を課ごとに進めるページです', ['音声の入ったフォルダを選びます（本文や問いのファイルが同じフォルダにあれば、それも読みます）', '課を上から順に進めます。本文を聴く → 単語 → 文の練習 → 課のまとめ', '次の日からは、頭に出る「今日の復習」から始めます']],
+  practice: ['練習：教材の問いを解くページです', '教材のフォルダを選ぶと、「聴いて意味」「日本語から書く」などの問いがここに出ます。課の順に進めたいときは「コース」から始めてください。'],
+  overview: ['ダッシュボード：どこまで覚えたかを見るページです', '練習で答えると、覚えた数・続けた日数・よく間違える問いがここに出ます。まず教材のフォルダを選んでください。']};
+function emptyHTML(k){
+  const [t, body] = EMPTY[k];
+  return '<section class="howto empty-state"><b>' + t + '</b>' +
+    (Array.isArray(body) ? '<ol>' + body.map(x => '<li>' + x + '</li>').join('') + '</ol>' : '<p>' + body + '</p>') +
+    '<div class="row"><button class="primary" data-empty-pick>フォルダを選ぶ</button>' + (k === 'practice' ? '<button data-empty-go="book">コースを開く</button>' : '') + '</div></section>';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-empty-pick],[data-empty-go]'); if(!b) return;
+  if(b.hasAttribute('data-empty-pick')) $('#pick').click(); else setMode(b.dataset.emptyGo);
+});
+
 function renderPractice(){
-  if(!pdata || mode !== 'practice') return;
+  if(mode !== 'practice') return;
+  $('#practice').classList.toggle('empty', !pdata);
+  if(!pdata){ $('#pbody').innerHTML = emptyHTML('practice'); return; }
   paintRunbar();
   if(runOn && run && !q){ runNext(); return; }
   paintSets();
@@ -3371,7 +3396,7 @@ function stackBar(counts, total){
 
 function renderOverview(){
   const box = $('#overview');
-  if(!pdata){ box.innerHTML = ''; return; }
+  if(!pdata){ box.innerHTML = emptyHTML('overview'); return; }
   // すべての項目（id で1つに）
   const all = new Map();
   pdata.decks.forEach(d => d.items.forEach(it => { if(!all.has(it.id)) all.set(it.id, {...it, deck:d}); }));
@@ -3662,7 +3687,7 @@ function renderBook(){
     Object.entries(lib).sort((a, b) => b[1].last - a[1].last).map(([id, b]) =>
       '<button class="bcard' + (id === bookId ? ' on' : '') + '" data-book="' + esc(id) + '"><b>' + esc(b.title) + '</b><small>' +
       esc(b.folder) + '　' + b.lessons + '課　' + new Date(b.last).toLocaleDateString('ja-JP') + '</small></button>').join('') + '</div>';
-  if(!tracks.length){ box.innerHTML = html + '<p class="pnote" style="text-align:left">フォルダを選ぶと、ここに教材の中身が出ます。</p>'; wireBook(box); return; }
+  if(!tracks.length){ box.innerHTML = (Object.keys(lib).length ? html : '') + emptyHTML('book'); wireBook(box); return; }   // 一覧が空なら、空の見出しは出さない
 
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers && bview !== 'paper' ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
