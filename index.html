@@ -20,6 +20,7 @@
   --ui-surface-bgColor:#FFFFFF;
   --ui-surface-muted-bgColor:#f8f9fb;
   --ui-outline-borderColor:#eef0f4;
+  --ui-scrollbar-thumb-bgColor:#d3d8e0; --ui-scrollbar-thumb-hover-bgColor:#b6bdc9;
   --ui-outline-muted-borderColor:#eef0f4;
   --ui-text-fgColor:#16181d;
   --ui-text-muted-fgColor:#656a75;
@@ -41,6 +42,7 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --ui-page-bgColor:#121418; --ui-surface-bgColor:#1b1e24; --ui-surface-muted-bgColor:#22262d; --ui-outline-borderColor:#2a2f37; --ui-outline-muted-borderColor:#2a2f37;
+    --ui-scrollbar-thumb-bgColor:#3a3f4a; --ui-scrollbar-thumb-hover-bgColor:#555b68;
     --ui-text-fgColor:#e8eaee; --ui-text-muted-fgColor:#a0a6b1; --ui-text-alt-fgColor:#6f7581;
     --ui-primary-color:#5b8af4; --ui-primary-muted-bgColor:#1f2a44; --ui-primary-onEmphasis-fgColor:#FFFFFF; --ui-primary-fgColor:#7ea3f7; --ui-primary-bgColor:#2f6bf0;
     --ui-success-color:#3cc3b8; --ui-success-fgColor:#5fd0c5; --ui-success-muted-bgColor:#173330; --ui-danger-color:#9b8cf5;
@@ -51,6 +53,7 @@
 }
 :root[data-theme="dark"]{
   --ui-page-bgColor:#121418; --ui-surface-bgColor:#1b1e24; --ui-surface-muted-bgColor:#22262d; --ui-outline-borderColor:#2a2f37; --ui-outline-muted-borderColor:#2a2f37;
+  --ui-scrollbar-thumb-bgColor:#3a3f4a; --ui-scrollbar-thumb-hover-bgColor:#555b68;
   --ui-text-fgColor:#e8eaee; --ui-text-muted-fgColor:#a0a6b1; --ui-text-alt-fgColor:#6f7581;
   --ui-primary-color:#5b8af4; --ui-primary-muted-bgColor:#1f2a44; --ui-primary-onEmphasis-fgColor:#FFFFFF; --ui-primary-fgColor:#7ea3f7; --ui-primary-bgColor:#2f6bf0;
   --ui-success-color:#3cc3b8; --ui-success-fgColor:#5fd0c5; --ui-success-muted-bgColor:#173330; --ui-danger-color:#9b8cf5;
@@ -60,6 +63,13 @@
 }
 
 *{box-sizing:border-box}
+/* スクロールバー：灰色の溝を消し、つまみだけ細く丸く（本人 2026-09-03 mindmap・2026-10-03 音声ドリル。UI の規格 20） */
+*{scrollbar-width:thin; scrollbar-color:var(--ui-scrollbar-thumb-bgColor) transparent}
+::-webkit-scrollbar{width:10px; height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--ui-scrollbar-thumb-bgColor); border-radius:999px; border:3px solid transparent; background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--ui-scrollbar-thumb-hover-bgColor); background-clip:content-box}
+::-webkit-scrollbar-corner{background:transparent}
 body{
   margin:0;
   background:var(--ui-page-bgColor);
