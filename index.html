@@ -983,7 +983,23 @@ button.linkish:hover{background:none; text-decoration:underline}
 
 /* ---- これどういうこと？（2026-10-02） ---- */
 .ask{display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--ui-outline-borderColor); padding-top:16px; margin-top:4px; text-align:left}
-.qaitem .pill{background:var(--ui-surface-bgColor)}
+.thread{display:flex; flex-direction:column; gap:12px}
+.msg{display:flex; gap:8px; align-items:flex-start}
+.msg .bub{font-size:14px; line-height:1.7; white-space:pre-wrap; padding:8px 16px; border-radius:16px; max-width:85%; overflow-wrap:anywhere}
+.msg.me{justify-content:flex-end}
+.msg.me .bub{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); border-bottom-right-radius:4px}
+.msg.ai .bwrap{display:flex; flex-direction:column; gap:4px; align-items:flex-start; min-width:0; max-width:calc(100% - 36px)}
+.msg.ai .bub{background:var(--ui-surface-muted-bgColor); color:var(--ui-text-fgColor); border-top-left-radius:4px; max-width:100%}
+.msg.wait .bub{color:var(--ui-text-muted-fgColor)}
+.btag{font-size:12px; color:var(--ui-text-muted-fgColor)}
+.btag .pill{background:var(--ui-surface-muted-bgColor)}
+.orb.mini{width:28px; height:28px; flex:none; margin-top:2px}
+.dots{display:inline-flex; gap:4px; align-items:center; height:24px}
+.dots i{width:6px; height:6px; border-radius:50%; background:var(--ui-text-muted-fgColor); animation:dotHop 1.2s ease-in-out infinite}
+.dots i:nth-child(2){animation-delay:.15s} .dots i:nth-child(3){animation-delay:.3s} .dots i:nth-child(4){animation-delay:.45s}
+@keyframes dotHop{0%,60%,100%{transform:translateY(0); opacity:.4} 30%{transform:translateY(-4px); opacity:1}}
+@media (prefers-reduced-motion: reduce){ .dots i{animation:none} }
+.asknote a{color:var(--ui-primary-fgColor)}
 .askform{display:flex; gap:8px}
 .askform input{flex:1; min-width:0; font:inherit; font-size:14px; padding:8px 16px; border:0; border-radius:999px; background:var(--ui-surface-muted-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); color:var(--ui-text-fgColor)}
 .askform input:focus-visible{outline:2px solid var(--ui-primary-color); outline-offset:1px}
@@ -3661,21 +3677,36 @@ function material(ctx){
   return lines.join('\n');
 }
 /* 考えているあいだ、右下の球の中で玉と弧が回る */
-async function aiAsk(ctx, question){
+async function aiAsk(ctx, question, history, onDelta){
   const fab = document.getElementById('askFab'); fab && fab.classList.add('thinking');
-  try{ return await aiAskRaw(ctx, question); } finally { fab && fab.classList.remove('thinking'); }
+  try{ return await aiAskRaw(ctx, question, history, onDelta); } finally { fab && fab.classList.remove('thinking'); }
 }
-async function aiAskRaw(ctx, question){
+async function aiAskRaw(ctx, question, history, onDelta){
   const system = ((LP.ai && LP.ai.instructions) || '日本語で短く答えます。') +
-    ' 必ず【材料】に沿って説明し、材料に無いことを言うときは「材料には無いが」と断ってから言う。答えは3〜6行。';
+    ' 必ず【材料】に沿って説明し、材料に無いことを言うときは「材料には無いが」と断ってから言う。答えは3〜6行。会話の続きの質問には、前のやりとりを踏まえて答える。';
   const user = '【材料】\n' + material(ctx) + '\n\n質問：' + question;
-  if(aiBackend === 'app') return {text: await window.oto.ask(system, user), model: 'groq'};
+  // 会話の続き：同じ文で前に聞いたこと（直近3往復）を渡す
+  const msgs = [{role: 'system', content: system}];
+  (history || []).slice(-3).forEach(h => { msgs.push({role: 'user', content: h.q}); if(h.a) msgs.push({role: 'assistant', content: h.a}); });
+  msgs.push({role: 'user', content: user});
+  if(aiBackend === 'app') return {text: await window.oto.ask(system, msgs.slice(1).map(m => (m.role === 'user' ? '私：' : 'あなた：') + m.content).join('\n\n')), model: 'groq'};
   if(aiBackend === 'local'){
     const r = await fetch(AI_LOCAL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
-      messages: [{role: 'system', content: system}, {role: 'user', content: user}],
-      max_tokens: 500, temperature: 0.3, chat_template_kwargs: {enable_thinking: false}})});
-    const j = await r.json();
-    return {text: (j.choices[0].message.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim(), model: 'local:Qwen3.8-27B'};
+      messages: msgs, stream: true, max_tokens: 500, temperature: 0.3, chat_template_kwargs: {enable_thinking: false}})});
+    if(!r.ok || !r.body) throw new Error('AI ' + r.status);
+    // 少しずつ届く答えを、そのまま吹き出しに足していく
+    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '', text = '';
+    for(;;){
+      const {done, value} = await rd.read(); if(done) break;
+      buf += dec.decode(value, {stream: true});
+      let i; while((i = buf.indexOf('\n')) >= 0){
+        const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+        if(!line.startsWith('data:')) continue;
+        const d = line.slice(5).trim(); if(d === '[DONE]') continue;
+        try{ const t = JSON.parse(d).choices[0].delta.content; if(t){ text += t; onDelta && onDelta(text.replace(/<think>[\s\S]*?(<\/think>|$)/g, '').trimStart()); } }catch(e){}
+      }
+    }
+    return {text: text.replace(/<think>[\s\S]*?<\/think>/g, '').trim(), model: 'local:Qwen3.8-27B'};
   }
   return null;
 }
@@ -3726,34 +3757,54 @@ function qaFor(text){
     .sort((a, b) => a.t - b.t).map(q => ({q, a: answers[q.id] || null}));
 }
 
+/* 会話の形：自分の問いは右、答えは左（球の印つき）。答えの段の札は吹き出しの上に小さく */
+const ORB_MINI = '<svg class="orb mini" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="url(#orbBase)"/><g clip-path="url(#orbClip)"><path fill="url(#orbA)" d="M6 30c6-14 20-20 30-12s8 22 22 20c2 10-10 22-24 20S0 46 6 30z"/><path fill="url(#orbB)" d="M58 22c-4 14-18 12-26 22S20 62 10 54c10-2 6-16 16-26S52 4 58 22z"/></g><ellipse cx="24" cy="18" rx="14" ry="9" fill="url(#orbShine)"/></svg>';
+function bubbleQ(text){ return '<div class="msg me"><div class="bub">' + esc(text) + '</div></div>'; }
+function bubbleA(tag, body, cls){
+  return '<div class="msg ai' + (cls ? ' ' + cls : '') + '">' + ORB_MINI + '<div class="bwrap">' + (tag ? '<div class="btag">' + tag + '</div>' : '') +
+    '<div class="bub">' + body + '</div></div></div>';
+}
 function qaItemHTML(x){
   const v = x.a && x.a.status === 'verified';
   const body = v ? x.a.answer : (x.a && x.a.answer) || x.q.ai || '';
   const tag = v ? '<span class="pill ok">確かめた答え</span>' : x.a && x.a.status === 'unverifiable' ? '<span class="pill">確かめられなかった</span>' :
-    x.q.ai ? '<span class="pill">AI の答え（未確認）</span>' : '<span class="pill">答え待ち</span>';
-  return '<div class="qaitem"><div class="qaq"><b>問</b>' + esc(x.q.q) + '</div>' +
-    (body ? '<div class="qaa">' + tag + '<div class="qatext">' + esc(body) + '</div></div>' : '<div class="qaa">' + tag + '</div>') + '</div>';
+    x.q.ai ? 'AI の答え（未確認）' : '';
+  return bubbleQ(x.q.q) + (body ? bubbleA(tag, esc(body)) :
+    bubbleA('', '答え待ちです。AI につながっていなかったので質問帳に貯めました。あとで Claude が確かめて答えます。', 'wait'));
 }
+const THINK_DOTS = '<span class="dots" aria-label="考えています"><i></i><i></i><i></i><i></i></span>';
 /* 解説・引いた語の窓の下に出す「これどういうこと？」 */
 function askEl(ctx){
   const box = document.createElement('section'); box.className = 'ask';
+  const LOCAL_URL = 'http://localhost:8790/';
+  const note = () => aiName() ? aiName() + 'が文法メモと訳を材料に答えます。答えは質問帳に貯まり、あとで Claude が確かめます。'
+    : onLocalhost ? 'いまは AI につながっていません（この Mac のモデルが止まっています。oto-drill.command を開き直すと立ちます）。聞いたことは質問帳に貯まります。'
+    : 'このページ（公開版）からは AI を呼べません。Mac では oto-drill.command を開いてから、<a href="' + LOCAL_URL + '">この Mac の AI つきで開く</a>。聞いたことは質問帳に貯まります。';
   const paint = () => {
     const past = qaFor(ctx.text);
-    box.innerHTML = (past.length ? '<div class="qalist">' + past.map(qaItemHTML).join('') + '</div>' : '') +
-      '<form class="askform"><input name="q" placeholder="これどういうこと？（例：なぜ là が無いの？）" autocomplete="off" aria-label="この文について聞く"><button class="primary">聞く</button></form>' +
-      '<div class="asknote">' + (aiName() ? aiName() + 'が文法メモと訳を材料に答えます。聞いたことは質問帳に貯まり、あとで Claude が確かめます。'
-        : (onLocalhost ? 'いまは AI につながっていません（この Mac のモデルが止まっています。oto-drill.command を開き直すと立ちます）。'
-          : 'AI は、Mac では oto-drill.command で開いたページ（localhost）でだけ使えます。') + '聞いたことは質問帳に貯まり、あとで Claude が答えます。') + '</div>';
+    box.innerHTML = '<div class="thread" aria-live="polite">' + (past.length ? past.map(qaItemHTML).join('') :
+        bubbleA('', ctx.text ? 'この文のどこが気になりますか。語の意味・文の形・言い換えなど、何でも聞いてください。' : '何でも聞いてください。練習の問いや、聴いている文を選んでから開くと、その文について答えます。')) + '</div>' +
+      '<form class="askform"><input name="q" placeholder="' + (past.length ? '続けて聞く' : 'これどういうこと？（例：なぜ là が無いの？）') + '" autocomplete="off" aria-label="AI に聞く"><button class="primary">聞く</button></form>' +
+      '<div class="asknote">' + note() + '</div>';
+    const th = box.querySelector('.thread');
+    requestAnimationFrame(() => { th.scrollTop = th.scrollHeight; const pnl = box.closest('.askpanel'); if(pnl) pnl.scrollTop = pnl.scrollHeight; });
     const f = box.querySelector('form');
     f.addEventListener('submit', async e => {
       e.preventDefault();
       const q = f.q.value.trim(); if(!q) return;
-      f.q.disabled = true; f.querySelector('button').disabled = true;
-      box.querySelector('.asknote').textContent = aiName() ? aiName() + 'が考えています…' : '質問帳に貯めました。';
+      f.q.value = ''; f.q.disabled = true; f.querySelector('button').disabled = true;
+      // 聞いたらすぐ自分の吹き出しと、考え中の吹き出しを出す
+      if(!past.length) th.innerHTML = '';
+      th.insertAdjacentHTML('beforeend', bubbleQ(q) + (aiName() ? bubbleA('', THINK_DOTS, 'pending') : ''));
+      const pend = th.querySelector('.pending .bub');
+      const scroll = () => { th.scrollTop = th.scrollHeight; const pnl = box.closest('.askpanel'); if(pnl) pnl.scrollTop = pnl.scrollHeight; };
+      scroll();
+      const history = past.map(x => ({q: x.q.q, a: (x.a && x.a.answer) || x.q.ai || ''}));
       let ai = null;
-      try{ ai = await aiAsk(ctx, q); }catch(err){ ai = null; }
+      try{ ai = await aiAsk(ctx, q, history, t => { if(pend){ pend.textContent = t; scroll(); } }); }catch(err){ ai = null; }
       qaEmit({k: 'q', book: bookId, item: ctx.item || null, text: ctx.text, ja: ctx.ja || '', q, ai: ai ? ai.text : null, model: ai ? ai.model : null});
       paint();
+      setTimeout(() => { const i = box.querySelector('input'); if(i) i.focus(); }, 0);
     });
     f.addEventListener('keydown', e => e.stopPropagation());   // 練習のキー（space・数字）に取られないように
   };
