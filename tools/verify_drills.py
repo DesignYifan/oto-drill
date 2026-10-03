@@ -49,8 +49,18 @@ def main():
     drills, traps = src["drills"], src.get("traps", [])
     if not traps:
         sys.exit("罠が無い。罠を混ぜずに判定させない（検査が生きているか分からない）")
+    # ⭕ 前に通った問い（中身が変わっていない物）はそのまま残し、残りだけ確かめ直す
+    KEY = ("deck", "kind", "base", "instr", "answer", "alts", "ja")
+    prev = {}
+    if dst.exists():
+        for r in json.loads(dst.read_text(encoding="utf-8")).get("drills", []):
+            if r.get("checked"):
+                prev[r["id"]] = r
+    kept = {it["id"] for it in drills if it["id"] in prev and all(prev[it["id"]].get(k) == it.get(k) for k in KEY)}
+    if kept:
+        print(f"前に通った {len(kept)} 問はそのまま。残り {len(drills) - len(kept)} 問を確かめる")
     random.seed(3)
-    order = drills[:]
+    order = [it for it in drills if it["id"] not in kept]
     random.shuffle(order)
     batches = [order[i:i + BATCH] for i in range(0, len(order), BATCH)]
     # 罠を束に1つずつ配る（足りなければ使い回す）
@@ -81,7 +91,7 @@ def main():
         print(f"束 {k + 1}/{len(batches)}：{ok}/{len(b)} 通過（罠は見抜いた）")
     out = []
     for it in drills:
-        v = verdict.get(it["id"])
+        v = {"ok": True} if it["id"] in kept else verdict.get(it["id"])
         row = {k: it[k] for k in ("id", "deck", "kind", "pattern", "base", "base_ja", "instr", "answer", "alts", "ja", "note")}
         row["checked"] = bool(v and v.get("ok"))
         if v and not v.get("ok"):
