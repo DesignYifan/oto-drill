@@ -537,6 +537,21 @@ li.hidden{display:none}
 .flownow{font-size:24px; font-weight:500; line-height:1.5; text-align:center; padding:8px 0}
 .flowja{font-size:15px; color:var(--ui-text-muted-fgColor); text-align:center; line-height:1.6}
 .flowpanel .row{justify-content:center}
+/* ⭕ 2026-10-03 本人「AI に聞くとき、めちゃくちゃ大きくなるのはやりにくい」：iPhone は 16px 未満の入力欄を押すと画面ごと拡大する。
+   ⭕ 指で触る端末では、入力欄はすべて 16px にする（⛔ 拡大そのものを禁じるのは使う人の自由を奪うのでしない） */
+@media (pointer: coarse){
+  input, select, textarea, .askform input, .addex input, .typein, #filter{font-size:16px}
+}
+/* ⭕ 同じ指摘：細い画面では「AI に聞く」を画面いっぱいの AI モードで開く。入力欄は下に固定 */
+@media (max-width: 640px){
+  .askpanel:not([hidden]){position:fixed; inset:0; width:auto; max-height:none; border-radius:0; z-index:60;
+    padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); box-shadow:none}
+  .askpanel .ask{flex:1; min-height:0; display:flex; flex-direction:column}
+  .askpanel .thread{flex:1; overflow-y:auto; min-height:0}
+  .askpanel .askform{position:sticky; bottom:0; background:var(--ui-surface-bgColor); padding-top:8px}
+  .askform input, .typein, input, select{font-size:16px}
+  body:has(#askPanel:not([hidden])) .askfab{display:none}
+}
 .japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
 .choices.mean button{text-align:left; font-size:16px; line-height:1.5}
 .exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
