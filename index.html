@@ -494,6 +494,13 @@ li.hidden{display:none}
 .pnrow summary span, .addmore summary{color:var(--ui-primary-fgColor); font-size:13px}
 .pnrow[open] summary{margin-bottom:12px}
 .addex label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--ui-text-muted-fgColor)}
+.uhero{margin:0 0 20px; border-radius:var(--ui-card-radius, 16px); overflow:hidden; aspect-ratio:16/9; max-height:360px; background:var(--ui-surface-muted-bgColor)}
+.uhero img{width:100%; height:100%; object-fit:cover; display:block}
+.wpic{width:120px; height:120px; object-fit:cover; border-radius:16px; display:block; margin:0 auto 12px}
+.wpic.big{width:200px; height:200px}
+.choices.mean.pics{display:grid; grid-template-columns:repeat(2, 1fr)}
+.choices.mean.pics button{display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center}
+.choices.mean.pics img{width:100%; max-width:160px; aspect-ratio:1; object-fit:cover; border-radius:12px}
 .japrompt{font-size:22px; line-height:1.6; text-align:center; font-weight:500; max-width:520px}
 .choices.mean button{text-align:left; font-size:16px; line-height:1.5}
 .exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
@@ -1832,6 +1839,17 @@ let script = null;    // { "001.mp3": {lang, segments:[{start,end,text,words}]} 
 let lex = {morphemes:{}, words:{}};
 let notes = {};       // 文（正規化した本文）→ 文法メモ
 let gloss = {};       // 文 → {ja, words:[[語, 意味]], point}（gloss.json。機械の訳・未確認）
+/* 絵（2026-10-03 本人「テキストに合わせて画像を入れたり、単語にも内容の画像を。勉強のコンセプトをビジュアルでも理解できるように」）
+   教材のフォルダの images.json：{units:{課の id: "images/units/…"}, words:{語（小文字）: "images/words/…"}}。⛔ 絵は教材と同じく公開しない */
+let pics = {units: {}, words: {}}, picFiles = new Map(), picURLs = new Map();
+const picKey = t => (t || '').normalize('NFC').toLowerCase().replace(/[.,!?;:"“”…]/g, '').replace(/\s+/g, ' ').trim();
+function picURL(rel){
+  if(!rel) return null;
+  if(!picURLs.has(rel)){ const f = picFiles.get(rel); picURLs.set(rel, f ? URL.createObjectURL(f) : null); }
+  return picURLs.get(rel);
+}
+const unitPic = id => picURL(pics.units[id]);
+const wordPic = t => picURL(pics.words[picKey(t)]);
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
 let sentEls = [];     // いま出している文の要素
@@ -1849,6 +1867,12 @@ async function loadSidecars(files){
   if(n) notes = await read(n) || {};
   const g = pick('gloss.json');
   if(g){ const d = await read(g); gloss = (d && d.sentences) || {}; }
+  pics = {units: {}, words: {}}; picFiles = new Map(); picURLs.forEach(u => u && URL.revokeObjectURL(u)); picURLs = new Map();
+  const ij = pick('images.json');
+  if(ij){
+    const d = await read(ij); if(d) pics = {units: d.units || {}, words: d.words || {}};
+    files.forEach(f => { const rel = (f._rel || f.webkitRelativePath || '').split('/').slice(1).join('/'); if(rel.startsWith('images/')) picFiles.set(rel, f); });
+  }
   const dr = pick('drills.json');
   if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
   const p = pick('practice.json');
@@ -2525,10 +2549,12 @@ function renderMean(){
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' + qPrompt('聴いて、意味を選んでください', '文字は答えたあとに出ます');
   box.appendChild(hearBtn(()=> say(it)));
   if(q.done) box.insertAdjacentHTML('beforeend', '<div class="ask long" lang="' + LP.code + '">' + esc(it.show) + '</div>');
-  const ch = document.createElement('div'); ch.className = 'choices text mean';
+  // 単語で4つとも絵があれば、絵で選ぶ（意味を絵と結ぶ）
+  const withPic = q.choices.every(c => wordPic(itemById(c.id) ? itemById(c.id).show : ''));
+  const ch = document.createElement('div'); ch.className = 'choices text mean' + (withPic ? ' pics' : '');
   q.choices.forEach((c, i) => {
     const b = document.createElement('button'); b.lang = 'ja';
-    b.innerHTML = esc(c.ja) + '<small>' + (i + 1) + '</small>';
+    b.innerHTML = (withPic ? '<img src="' + wordPic(itemById(c.id).show) + '" alt="">' : '') + esc(c.ja) + '<small>' + (i + 1) + '</small>';
     if(q.done){ if(c.id === it.id) b.classList.add('right'); else if(c.id === q.picked) b.classList.add('wrong'); }
     b.addEventListener('click', () => answerMean(c));
     ch.appendChild(b);
@@ -2700,6 +2726,7 @@ function renderQuiz(){
   }else{
     const sp = pview === 'speak';
     box.insertAdjacentHTML('beforeend', qPrompt(q.heard ? '言えましたか' : sp ? 'この意味をベトナム語で声に出して言ってから、答えを聴いてください' : '声に出して言ってから、答えを聴いてください'));
+    if(sp && wordPic(it.show)) box.insertAdjacentHTML('beforeend', '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">');
     if(sp) box.insertAdjacentHTML('beforeend', '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>');
     if(!sp || q.heard) box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
     box.insertAdjacentHTML('beforeend', '<div class="say">' + (q.heard ? esc(it.say) : '') + '</div>');
@@ -3039,7 +3066,8 @@ function explainEl(it, res){
   // res：{ok, wrong:[{you, right}] }
   const box = document.createElement('section'); box.className = 'explain';
   const g = it.deck && it.deck.kind === 'text' ? glossOf(it.show) : null;
-  let h = '<div class="exr"><span class="pill ' + (res.ok ? 'ok' : 'ng') + '">' + (res.ok ? '正解' : res.close ? 'おしい' : '不正解') + '</span>' +
+  const wp = wordPic(it.show);
+  let h = (wp ? '<img class="wpic" src="' + wp + '" alt="">' : '') + '<div class="exr"><span class="pill ' + (res.ok ? 'ok' : 'ng') + '">' + (res.ok ? '正解' : res.close ? 'おしい' : '不正解') + '</span>' +
     (res.msg ? '<span class="exmsg">' + esc(res.msg) + '</span>' : '') + '</div>';
   if(g && g.words.length){
     h += '<div class="gl" lang="' + LP.code + '">' + g.words.map(([w, ja]) => '<span class="glw"><b>' + esc(w) + '</b><small lang="ja">' + esc(ja) + '</small></span>').join('') + '</div>';
@@ -4230,6 +4258,8 @@ function journeyHTML(li, defs, last){
   if(run && run.book === bookId){
     h += '<div class="resume"><div><b>続きから</b><span>' + esc(run.title) + '　' + run.i + ' / ' + run.queue.length + ' 問</span></div><button class="primary" id="runResume">続きから始める</button></div>';
   }
+  const hero = unitPic(lessonData()[li].L.id);
+  if(hero) h += '<figure class="uhero"><img src="' + hero + '" alt=""></figure>';
   h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '課クリア' : 'この課のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　★ ' + cs.stars + '</span></div>' +
     '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><ol class="jpath">';
   cs.sgs.forEach((sg, k) => {
