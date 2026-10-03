@@ -1514,7 +1514,7 @@ function play(i, autoplay, seekTo){
   clearTimeout(gapTimer);
   if(url) URL.revokeObjectURL(url);
   idx = i;
-  url = URL.createObjectURL(tracks[i].file);
+  url = objURL(tracks[i].file);
   audio.src = url;
   audio.playbackRate = rate;
   playsLeft = Number($('#repeatN').value) || 0;
@@ -1637,7 +1637,53 @@ function idb(){
     r.onerror = ()=> rej(r.error);
   });
 }
+/* ---- iPhone のアプリ（window.oto.fs）のフォルダを、Chrome のフォルダの口と同じ形に包む（2026-10-03 段4）
+   ⭕ これで記録・質問帳・教材を読むコードは、Chrome でも iPhone でも同じものが動く。
+   ⭕ 中身はまとめて渡さない。音声と絵は otofs:// の住所で、要るときに要る分だけ読む */
+const NATIVE = !!(window.oto && window.oto.fs);
+const canFolders = !!window.showDirectoryPicker || NATIVE;
+const objURL = f => (f && f._url) || URL.createObjectURL(f);
+class NFile {
+  constructor(kind, path, name, size){ this.kind = 'file'; this._k = kind; this._p = path; this.name = name; this._size = size || 0; }
+  async getFile(){
+    const k = this._k, p = this._p, name = this.name, url = oto.fs.url(k, p);
+    let size = this._size; if(!size){ const st = await oto.fs.stat(k, p); size = (st && st.size) || 0; }
+    const type = /\.mp3$/i.test(name) ? 'audio/mpeg' : /\.m4a$/i.test(name) ? 'audio/mp4' : /\.json$/i.test(name) ? 'application/json' : '';
+    return {name, size, type, lastModified: 0, _url: url,
+      text: () => oto.fs.read(k, p), arrayBuffer: () => fetch(url).then(r => r.arrayBuffer())};
+  }
+  async createWritable(opt){
+    const k = this._k, p = this._p, keep = !!(opt && opt.keepExistingData);
+    let pos = 0, buf = '';
+    return {seek: async n => { pos = n; }, write: async d => { buf += typeof d === 'string' ? d : (d && d.data) || ''; },
+      close: async () => { if(keep && pos > 0) await oto.fs.append(k, p, buf); else await oto.fs.write(k, p, buf); }};
+  }
+  async queryPermission(){ return 'granted'; } async requestPermission(){ return 'granted'; }
+}
+class NDir {
+  constructor(kind, path, name){ this.kind = 'directory'; this._k = kind; this._p = path; this.name = name; }
+  _c(n){ return this._p ? this._p + '/' + n : n; }
+  async *entries(){
+    for(const e of await oto.fs.list(this._k, this._p)){
+      yield [e.name, e.kind === 'directory' ? new NDir(this._k, this._c(e.name), e.name) : new NFile(this._k, this._c(e.name), e.name, e.size)];
+    }
+  }
+  async getDirectoryHandle(n, opt){
+    const st = await oto.fs.stat(this._k, this._c(n));
+    if(!st){ if(opt && opt.create) await oto.fs.mkdir(this._k, this._c(n)); else throw new DOMException('無い', 'NotFoundError'); }
+    return new NDir(this._k, this._c(n), n);
+  }
+  async getFileHandle(n, opt){
+    const st = await oto.fs.stat(this._k, this._c(n));
+    if(!st){ if(opt && opt.create) await oto.fs.write(this._k, this._c(n), ''); else throw new DOMException('無い', 'NotFoundError'); }
+    return new NFile(this._k, this._c(n), n, st ? st.size : 0);
+  }
+  async removeEntry(n){ await oto.fs.remove(this._k, this._c(n)); }
+  async queryPermission(){ return 'granted'; } async requestPermission(){ return 'granted'; }
+}
+
 async function putDir(h, key){
+  if(NATIVE) return;   // アプリはフォルダの許可をアプリの側で覚える
   try{
     const db = await idb();
     await new Promise((res,rej)=>{
@@ -1684,6 +1730,11 @@ async function openDir(h, remember){
 }
 
 $('#pick').addEventListener('click', async ()=>{
+  if(NATIVE){   // iPhone：「ファイル」から教材のフォルダを選ぶ
+    const r = await oto.fs.pick('book').catch(() => null);
+    if(r) await openDir(new NDir('book', '', r.name), false);
+    return;
+  }
   if(window.showDirectoryPicker){
     let h = null;
     try{ h = await showDirectoryPicker({id:'otodrill', mode:'read'}); }
@@ -1697,6 +1748,7 @@ $('#picker').addEventListener('change', e => loadFiles([...e.target.files]));
 /* 立ち上げ直したとき：許可が残っていればそのまま開く。
    残っていなければ、1回押すだけで戻せるボタンを出す（ブラウザが許可を聞くため）。 */
 (async function(){
+  if(NATIVE){ const r = await oto.fs.info('book').catch(() => null); if(r) await openDir(new NDir('book', '', r.name), false); return; }
   const h = await getDir();
   if(!h || !h.queryPermission) return;
   const b = $('#reopen');
@@ -1877,7 +1929,7 @@ let pics = {units: {}, words: {}}, picFiles = new Map(), picURLs = new Map();
 const picKey = t => (t || '').normalize('NFC').toLowerCase().replace(/[.,!?;:"“”…]/g, '').replace(/\s+/g, ' ').trim();
 function picURL(rel){
   if(!rel) return null;
-  if(!picURLs.has(rel)){ const f = picFiles.get(rel); picURLs.set(rel, f ? URL.createObjectURL(f) : null); }
+  if(!picURLs.has(rel)){ const f = picFiles.get(rel); picURLs.set(rel, f ? objURL(f) : null); }
   return picURLs.get(rel);
 }
 const unitPic = id => picURL(pics.units[id]);
@@ -2336,7 +2388,7 @@ $('#pviews').addEventListener('click', e=>{
 /* ---- 鳴らす：start〜end だけ ---- */
 function urlFor(src){
   const f = pfiles[src] || afiles[src];
-  if(!purls[src] && f) purls[src] = URL.createObjectURL(f);
+  if(!purls[src] && f) purls[src] = objURL(f);
   return purls[src];
 }
 function say(it){
@@ -3881,6 +3933,7 @@ function wireBook(box){
   box.querySelectorAll('.bcard').forEach(b => b.addEventListener('click', async ()=>{
     const id = b.dataset.book;
     if(id === bookId && tracks.length) return;
+    if(NATIVE){ $('#pick').click(); return; }
     const h = await getDir('book:' + id);
     try{
       if(h && h.requestPermission && await h.requestPermission({mode: 'read'}) === 'granted'){ await openDir(h, true); return; }
@@ -4081,19 +4134,20 @@ function paintRecInfo(){
   // 見出しの札（どの画面からでも見える。本人 2026-10-03「右上に設定ボタンなんかなかった」）
   const chip = $('#recChip');
   if(chip){
-    chip.hidden = !window.showDirectoryPicker;
+    chip.hidden = !canFolders;
     chip.classList.toggle('ok', !!recDir && !recInfo.err);
     chip.textContent = !recDir ? (recWait ? '同期：押して再開' : '同期：オフ') : recInfo.err ? '同期：問題あり' : '同期中（' + (recInfo.devices.length || 1) + '台）';
   }
   const el = $('#recInfo'); if(!el) return;
-  if(!window.showDirectoryPicker){ el.textContent = 'このブラウザではフォルダに書き込めません。Chrome か Edge で開いてください。記録はこのブラウザの中だけにあります。'; $('#recPick').hidden = true; return; }
+  if(!canFolders){ el.textContent = 'このブラウザではフォルダに書き込めません。Chrome か Edge で開いてください。記録はこのブラウザの中だけにあります。'; $('#recPick').hidden = true; return; }
   if(!recDir){ el.textContent = recWait ? '前に選んだ「' + recWait.name + '」に、もう一度書き込みの許可が要ります。見出しの「同期：押して再開」を押すと、選び直さずに再開します。'
     : 'まだ同期していません。記録はこのブラウザの中だけにあります（端末名 ' + DEV + '）。'; return; }
   el.textContent = '同期中：' + recDir.name + '／この端末 ' + DEV + '／端末 ' + (recInfo.devices.length || 1) + ' 台ぶん・出来事 ' + recInfo.read + ' 件' +
     (recInfo.wrote ? '／最後に書いた ' + new Date(recInfo.wrote).toLocaleTimeString('ja-JP') : '') + (evPend.length ? '／未送信 ' + evPend.length : '') + (recInfo.err ? '／問題：' + recInfo.err : '');
 }
 $('#recPick').addEventListener('click', async ()=>{
-  try{ recDir = await showDirectoryPicker({id: 'otodrill-rec', mode: 'readwrite'}); recWait = null; }catch(e){ return; }
+  if(NATIVE){ const r = await oto.fs.pick('rec').catch(() => null); if(!r) return; recDir = new NDir('rec', '', r.name); recWait = null; }
+  else { try{ recDir = await showDirectoryPicker({id: 'otodrill-rec', mode: 'readwrite'}); recWait = null; }catch(e){ return; } }
   await putDir(recDir, 'records');
   evPend = evOwn.map(e => e.id); save('ev:pend', evPend);   // 選んだときに、それまでの分をまとめて書く
   try{ const dir = await recFolder(true); await dir.removeEntry(DEV + '.jsonl').catch(()=>{}); }catch(e){}
@@ -4109,6 +4163,7 @@ $('#recChip').addEventListener('click', async ()=> {
   $('#recPick').click();
 });
 (async function(){
+  if(NATIVE){ const r = await oto.fs.info('rec').catch(() => null); if(r){ recDir = new NDir('rec', '', r.name); await syncRecords(); } paintRecInfo(); return; }
   const h = await getDir('records');
   if(h && h.queryPermission){
     try{ if(await h.queryPermission({mode: 'readwrite'}) === 'granted'){ recDir = h; await syncRecords(); } else { recDir = null; recWait = h; } }catch(e){}
