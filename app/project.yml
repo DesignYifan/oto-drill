@@ -28,7 +28,7 @@ targets:
         PRODUCT_NAME: OtoDrill
         MARKETING_VERSION: "0.1"
         CURRENT_PROJECT_VERSION: "1"
-        DEVELOPMENT_TEAM: 6H33X3H2F8
+        DEVELOPMENT_TEAM: XMBCS38N25   # 個人のチーム（無料・7日で入れ直し）
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
