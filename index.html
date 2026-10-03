@@ -1084,6 +1084,10 @@ button.linkish:hover{background:none; text-decoration:underline}
 .askpanel .ask{border-top:0; padding-top:0; margin-top:0}
 @media (max-width:820px){ .askfab{right:16px} .askpanel{right:16px} }
 
+.recchip{font-size:12px; padding:4px 12px; height:28px; background:var(--ui-warning-muted-bgColor); color:var(--ui-warning-fgColor); box-shadow:none; white-space:nowrap}
+.recchip.ok{background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
+.recchip[hidden]{display:none}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important; animation:none !important}
 }
@@ -1109,6 +1113,7 @@ button.linkish:hover{background:none; text-decoration:underline}
     <div class="folder">
       <button id="toggleList" aria-controls="list" aria-expanded="true"><span class="caret"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span><span class="lbl">一覧を隠す</span></button>
       <button id="export" hidden>貯めた語を書き出す</button>
+      <button class="recchip" id="recChip" title="記録を iCloud のフォルダで Mac と iPhone に連動する">記録：連動していない</button>
       <span class="name" id="folder">未読み込み</span>
     </div>
   </header>
@@ -3558,6 +3563,13 @@ async function syncRecords(){
   paintLtag();
 }
 function paintRecInfo(){
+  // 見出しの札（どの画面からでも見える。本人 2026-10-03「右上に設定ボタンなんかなかった」）
+  const chip = $('#recChip');
+  if(chip){
+    chip.hidden = !window.showDirectoryPicker;
+    chip.classList.toggle('ok', !!recDir && !recInfo.err);
+    chip.textContent = !recDir ? '記録：連動していない' : recInfo.err ? '記録：連動に問題あり' : '記録：連動中（' + (recInfo.devices.length || 1) + '台）';
+  }
   const el = $('#recInfo'); if(!el) return;
   if(!window.showDirectoryPicker){ el.textContent = 'この閲覧ソフトではフォルダに書けません（Chrome か Edge で開いてください）。記録はこの閲覧ソフトの中だけにあります。'; $('#recPick').hidden = true; return; }
   if(!recDir){ el.textContent = 'まだ連動していません。記録はこの閲覧ソフトの中だけにあります（端末名 ' + DEV + '）。'; return; }
@@ -3572,6 +3584,7 @@ $('#recPick').addEventListener('click', async ()=>{
   await syncRecords();
 });
 $('#recSync').addEventListener('click', syncRecords);
+$('#recChip').addEventListener('click', ()=> { if(recDir) syncRecords(); else $('#recPick').click(); });
 (async function(){
   const h = await getDir('records');
   if(h && h.queryPermission){
