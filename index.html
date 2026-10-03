@@ -2320,14 +2320,24 @@ function nextItem(prevId){
   return head[Math.floor(Math.random() * head.length)];
 }
 
-/* 選択肢：取り違えやすい組から先に、足りなければ同じ本の同じ課から */
+/* 選択肢：取り違えやすい組から先に、足りなければ同じ課の同じ種類から、それでも足りなければ同じ本のほかの課の同じ種類から
+   ⭕ 2026-10-03 本人「単語のところに単語以外の音も混ざっている」：単語の問いに文の選択肢を混ぜない（形で答えが分かってしまう） */
 function choicesFor(it){
-  const d = it.deck;
+  const d = it.deck, cat = catOf(it, d);
+  const same = x => catOf(x, x.deck || d) === cat;
   const byId = Object.fromEntries(d.items.map(x => [x.id, x]));
   const near = new Set();
   (d.confusable || []).forEach(g => { if(g.includes(it.id)) g.forEach(id => { if(id !== it.id && byId[id]) near.add(id); }); });
   const pick = [...near].sort(()=> Math.random() - .5).slice(0, 3);
-  let rest = d.items.map(x => x.id).filter(id => id !== it.id && !pick.includes(id)).sort(()=> Math.random() - .5);
+  let rest = d.items.filter(x => x.id !== it.id && !pick.includes(x.id) && same(x)).map(x => x.id).sort(()=> Math.random() - .5);
+  if(pick.length + rest.length < 3 && pdata){
+    // 同じ本のほかの課から、同じ種類を借りる
+    const seen = new Set([it.id, ...pick, ...rest].map(id => norm(byId[id] ? byId[id].show : '')));
+    pdata.decks.filter(o => o !== d && o.book === d.book && o.kind === d.kind).forEach(o => o.items.forEach(x => {
+      if(catOf(x, o) === cat && !seen.has(norm(x.show))){ seen.add(norm(x.show)); byId[x.id] = Object.assign({}, x, {deck: o}); rest.push(x.id); }
+    }));
+    rest = rest.sort(()=> Math.random() - .5);
+  }
   if(d.kind === 'text'){
     // 文の組：言葉が重なるもの・長さが近いものを先に（まったく違う文だと、聞かなくても選べてしまう）
     const mine = new Set(words(it.show.toLowerCase()));
@@ -2338,7 +2348,7 @@ function choicesFor(it){
     rest = rest.slice(0, 6).sort(()=> Math.random() - .5).concat(rest.slice(6));
   }
   while(pick.length < 3 && rest.length) pick.push(rest.shift());
-  return [it.id, ...pick].sort(()=> Math.random() - .5).map(id => ({...byId[id], deck:d}));
+  return [it.id, ...pick].sort(()=> Math.random() - .5).map(id => ({...byId[id], deck: byId[id].deck || d}));
 }
 
 /* ---- 描く ---- */
