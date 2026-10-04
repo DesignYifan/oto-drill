@@ -3682,7 +3682,7 @@ function heatmap(perDay){
    ⭕ 紙の問題の記録は足していくだけ。上書きしない（やり直した回も残る）。 */
 
 let book = null, bookId = '';
-let bview = load('b:view', 'lesson');
+let bview = load('b:view', 'lesson'); if(bview === 'paper') bview = 'lesson';   // 紙の問題の画面はやめた（2026-10-04）
 let bopen = null;      // 文法で開いている型
 const PAPER = {o:['○',1], s:['△',.5], x:['×',0]};
 
@@ -3855,7 +3855,7 @@ function renderBook(){
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers && bview !== 'paper' ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
   html += reviewHTML();
-  html += '<div class="seg wf bviews">' + [['lesson','課'], ['progress','進み具合'], ['paper','紙の問題'], ['grammar','文法'], ['vocab','語彙']]
+  html += '<div class="seg wf bviews">' + [['lesson','課'], ['progress','進み具合'], ['grammar','文法'], ['vocab','語彙']]
     .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
 
   const defs = paperDefs(), last = paperLatest();
@@ -4004,7 +4004,7 @@ function lessonSteps(li, defs, last, V){
     listen: listen.length ? {n: listen.filter(t => done.has(t.name)).length, of: listen.length, list: listen} : null,
     words: words.length ? {n: words.filter(e => isKnown(e.w)).length, of: words.length, list: words, isKnown} : null,
     practice: x.items.length ? {n: x.items.filter(i => rec(i.id).box >= 1).length, of: x.items.length} : null,
-    paper: exs.length ? {n: ps.done, of: ps.tot + exs.filter(e => !exCount(e)).length, exs, ps} : null,
+    paper: null,   // 紙の問題はやめた（2026-10-04 本人「練習と同じ感じで、このドリルの中で解く」「別の練習のところで入ってるんだったら、これはなしでいい」）。教科書の練習問題は24問とも「練習」の組（問題・まとめ問題）に入っている。⭕ 付けた印の記録は消さずに残す
   };
   STEP.forEach(([k]) => { if(st[k]) st[k].done = st[k].n >= st[k].of; });
   st.all = STEP.every(([k]) => !st[k] || st[k].done);
@@ -4092,10 +4092,10 @@ function paintLtag(){
   const hit = idx >= 0 && tracks[idx] && (book || pdata) ? lessonOfTrack(tracks[idx].name) : null;
   if(!hit || hit.L.id === 'all'){ box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
-  box.classList.toggle('slim', !hit.ex);   // 問題でない音声は、カードにせず細い1行（本文に縦の幅を渡す）
+  box.classList.add('slim');   // いつも細い1行（紙の問題の印の欄はやめた・2026-10-04。問題は「練習」で解く）
   box.innerHTML = '<div class="lth"><span class="pill">' + esc(hit.L.title) + '</span><span>' + esc(hit.ex ? hit.ex.label : trackLabel(tracks[idx].name)) + '</span>' +
-    '<button class="linkish golesson" data-lesson="' + esc(hit.L.id) + '">課の画面へ<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>' +
-    (hit.ex ? exHTML(hit.L.id, hit.ex, paperLatest()).replace(/<button class="opentrack"[^]*?<\/button>/g, '') : '');
+    (hit.ex ? '<button class="linkish gopractice" data-lesson="' + esc(hit.L.id) + '">この問題を練習で解く</button>' : '') +
+    '<button class="linkish golesson" data-lesson="' + esc(hit.L.id) + '">課の画面へ<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>';
 }
 
 function openTrack(name){
@@ -4137,6 +4137,7 @@ document.addEventListener('click', e => {
     rerender();
   }
   else if(b.classList.contains('opentrack') || b.classList.contains('lt')) openTrack(b.dataset.t);
+  else if(b.classList.contains('gopractice')){ goLesson(b.dataset.lesson); setTimeout(() => { const el = [...document.querySelectorAll('#book .lstep')].find(x => (x.querySelector('.lsh b') || {}).textContent === '練習'); if(el) el.scrollIntoView({block: 'start'}); }, 50); }
   else if(b.classList.contains('exsay')){ const it = exItems.get(b.dataset.item); if(it) say(it); }
   else if(b.classList.contains('golesson') || (b.dataset.lesson && b.closest('#book'))) goLesson(b.dataset.lesson);
   else if(b.classList.contains('lwk')){
