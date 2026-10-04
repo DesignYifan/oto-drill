@@ -39,6 +39,9 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
         let ucc = cfg.userContentController
         ucc.addScriptMessageHandler(self, contentWorld: .page, name: "oto")
         ucc.addUserScript(WKUserScript(source: BRIDGE_JS, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        #if targetEnvironment(macCatalyst)
+        ucc.addUserScript(WKUserScript(source: MAC_FETCH_JS, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        #endif
         web = WKWebView(frame: view.bounds, configuration: cfg)
         web.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         web.navigationDelegate = self
@@ -78,6 +81,9 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
                 case "read":
                     let d = try await Task.detached { try F.readData(kind, path) }.value
                     replyHandler(String(decoding: d, as: UTF8.self), nil)
+                case "bytes":   // Mac：ページの fetch は otofs:// に届かない（https のページから止められる）。中身をここから渡す
+                    let d = try await Task.detached { try F.readData(kind, path) }.value
+                    replyHandler(d.base64EncodedString(), nil)
                 case "write", "append":
                     let text = b["text"] as? String ?? ""
                     try await Task.detached { try F.write(kind, path, text, append: op == "append") }.value
@@ -116,7 +122,7 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
             if(window.__oto){ window.__oto.clip.muted = true; }
             const t0 = Date.now(); document.querySelector('#play').click();
             await new Promise(res => setTimeout(res, 4000));
-            r.audio = { paused: a && a.paused, t: a && Math.round(a.currentTime * 10) / 10, src: a && a.src.slice(0, 12), ms: Date.now() - t0, err: a && a.error && a.error.code };
+            r.audio = { paused: a && a.paused, t: a && Math.round(a.currentTime * 10) / 10, src: a && a.src.slice(0, 12), ms: Date.now() - t0, err: a && a.error && a.error.code, rs: a && a.readyState, ns: a && a.networkState, d: a && a.duration };
             return JSON.stringify(r);
             """
             webView.callAsyncJavaScript(js, arguments: [:], in: nil, in: .page) { res in
@@ -148,7 +154,7 @@ final class OtoFS: NSObject, WKURLSchemeHandler {
         let id = ObjectIdentifier(task)
         let req = task.request
         DispatchQueue.global(qos: .userInitiated).async {
-            guard let url = req.url, let kind = url.host else { return }
+            guard let url = req.url, let kind = url.host else { dlog("otofs 住所が読めない \(req.url?.absoluteString ?? "")"); return }
             let path = String(url.path.dropFirst()).removingPercentEncoding ?? ""
             do {
                 let data = try Folders.shared.readData(kind, path)
@@ -162,6 +168,7 @@ final class OtoFS: NSObject, WKURLSchemeHandler {
                 let resp = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!
                 self.send(id, task) { task.didReceive(resp); task.didReceive(body); task.didFinish() }
             } catch {
+                dlog("otofs 読めない \(kind)/\(path) \(error.localizedDescription)")
                 self.send(id, task) { task.didFailWithError(error) }
             }
         }
@@ -219,6 +226,25 @@ let BRIDGE_JS = """
       remove: (kind, path) => call('remove', {kind, path}),
       url: (kind, path) => 'otofs://' + kind + '/' + path.split('/').map(encodeURIComponent).join('/')
     }
+  };
+})();
+"""
+
+/// Mac（Catalyst）だけ：https のページからの fetch('otofs://…') は WebKit が止めて、アプリまで届かない（2026-10-04 に確かめた）。
+/// ○ fetch を包み、otofs:// だけはアプリから中身を受け取って Response にする。<img>・<audio> の otofs:// はそのまま届くので触らない。
+/// × iPhone には入れない（iPhone は fetch が届いていて、そのままで動いている）
+let MAC_FETCH_JS = """
+(function(){
+  window.oto.native = 'mac';
+  const orig = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if(!url.startsWith('otofs://')) return orig(input, init);
+    const u = new URL(url), kind = u.host, path = u.pathname.slice(1).split('/').map(decodeURIComponent).join('/');
+    const b64 = await window.webkit.messageHandlers.oto.postMessage({op: 'bytes', kind, path});
+    const bin = atob(b64), buf = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return new Response(new Blob([buf]), {status: 200});
   };
 })();
 """
