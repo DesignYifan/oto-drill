@@ -523,7 +523,6 @@ li.hidden{display:none}
 .quiz code, .thint kbd{font-size:15px}
 .flowpanel{left:auto}
 .flowkind{align-self:flex-start}
-.flowhr{border:0; border-top:1px solid var(--ui-outline-borderColor); margin:4px 0; width:100%}
 .mainbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--ui-primary-muted-bgColor); color:var(--ui-text-fgColor); border-radius:12px; padding:12px 16px; margin:0 0 12px; font-size:13px}
 .mainbar[hidden]{display:none}
 .mainbar b{margin-right:12px; color:var(--ui-primary-fgColor)}
@@ -531,9 +530,6 @@ li.hidden{display:none}
 .listmode{display:flex; align-items:center; gap:12px; padding:0 0 12px; font-size:12px; color:var(--ui-text-muted-fgColor); flex-wrap:wrap}
 .listmode[hidden]{display:none}
 .listmode .seg button{font-size:13px}
-.flowstreak{display:flex; flex-direction:column; gap:8px}
-.flowstreak button{display:flex; justify-content:space-between; align-items:center; gap:8px}
-.flowstreak small{font-size:12px; opacity:.85}
 .flowunits{display:flex; flex-direction:column; gap:4px; max-height:240px; overflow-y:auto; padding:4px 0}
 .flowunits label{display:flex; align-items:center; gap:8px; font-size:14px; padding:4px 0}
 .flowunits small{margin-left:auto; color:var(--ui-text-muted-fgColor); font-size:12px}
@@ -1284,7 +1280,7 @@ html{background:var(--ui-surface-bgColor)}
         <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
         <div class="setwrap">
           <span class="setsum" id="setSum"></span>
-          <button id="flowBtn" aria-haspopup="dialog" aria-controls="flowPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h5"/><path d="M11.5 9.5v4l3-2z"/></svg><span>基本文だけ聴く</span></button>
+          <button id="flowBtn" aria-haspopup="dialog" aria-controls="flowPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h5"/><path d="M11.5 9.5v4l3-2z"/></svg><span>1文ずつ聴く</span></button>
           <button id="settingsBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.6"/><circle cx="5" cy="11.5" r="1.6"/></svg><span>設定</span></button>
           <div class="settings" id="settings" role="dialog" aria-label="再生の設定" hidden>
             <div class="setting">
@@ -1428,7 +1424,7 @@ html{background:var(--ui-surface-bgColor)}
 <g fill="#fff" stroke="none"><circle class="orb-d1" cx="32" cy="14" r="3"/><circle class="orb-d2" cx="32" cy="20" r="2.4"/><circle class="orb-d3" cx="32" cy="16" r="2"/><circle class="orb-d4" cx="32" cy="22" r="1.6"/></g></g></g>
 <circle cx="32" cy="32" r="30" fill="url(#orbShade)"/><ellipse cx="24" cy="18" rx="14" ry="9" fill="url(#orbShine)"/></svg>AI に聞く</button>
 <div class="askpanel" id="askPanel" role="dialog" aria-label="AI に聞く" hidden></div>
-<div class="askpanel flowpanel" id="flowPanel" role="dialog" aria-label="文だけ聴く" hidden></div>
+<div class="askpanel flowpanel" id="flowPanel" role="dialog" aria-label="1文ずつ聴く" hidden></div>
 
 <div id="drop">フォルダをここに落とす</div>
 
@@ -1682,11 +1678,13 @@ document.addEventListener('click', e => { if(!$('#settings').hidden && !e.target
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('#settings').hidden){ openSettings(false); $('#settingsBtn').focus(); } });
 
 function toggle(){
+  if(flow){ flowToggle(); return; }
   if(idx < 0) return;
   if(audio.paused) audio.play().catch(()=>{}); else audio.pause();
 }
 
 function step(sec){
+  if(flow){ flowGo(sec < 0 ? 0 : 1); return; }   // 1文ずつ聴いているとき：戻す＝今の文をもう一度、送る＝次の文
   if(idx>=0) audio.currentTime = Math.max(0, Math.min(audio.duration||0, audio.currentTime + sec));
 }
 
@@ -1710,7 +1708,7 @@ function setPlayLabel(on){
   $('#play .lbl').textContent = on ? '一時停止' : '再生';
 }
 audio.addEventListener('play',  ()=> setPlayLabel(true));
-audio.addEventListener('pause', ()=> setPlayLabel(false));
+audio.addEventListener('pause', ()=> setPlayLabel(!!flow && !flow.paused));   // 1文ずつ聴いているあいだは、ボタンはそちらの状態
 audio.addEventListener('loadedmetadata', ()=>{ $('#dur').textContent = fmt(audio.duration); paintSeek(); });
 
 audio.addEventListener('timeupdate', ()=>{
@@ -1892,8 +1890,8 @@ $('#picker').addEventListener('change', e => loadFiles([...e.target.files]));
 })();
 
 $('#play').addEventListener('click', e => { toggle(); e.currentTarget.blur(); });
-$('#prev').addEventListener('click', e => { const j = stepTrack(idx, -1); if(j >= 0) play(j, true); e.currentTarget.blur(); });
-$('#next').addEventListener('click', e => { goNext(true); e.currentTarget.blur(); });
+$('#prev').addEventListener('click', e => { if(flow){ flowGo(-1); e.currentTarget.blur(); return; } const j = stepTrack(idx, -1); if(j >= 0) play(j, true); e.currentTarget.blur(); });
+$('#next').addEventListener('click', e => { if(flow) flowGo(1); else goNext(true); e.currentTarget.blur(); });
 $('#back').addEventListener('click', e => { step(-5); e.currentTarget.blur(); });
 $('#fwd').addEventListener('click',  e => { step(5);  e.currentTarget.blur(); });
 $('#rateDown').addEventListener('click', e => { setRate(rate - 0.1); e.currentTarget.blur(); });
@@ -1958,6 +1956,7 @@ document.addEventListener('keydown', e=>{
   if(mode !== 'listen') return;   // 練習と見渡すのキーは、その側で受ける
   const k = e.key;
   if(k === ' '){ e.preventDefault(); toggle(); }
+  else if(flow && (k === 'ArrowLeft' || k === 'ArrowRight')){ e.preventDefault(); e.shiftKey ? flowGo(k === 'ArrowLeft' ? -1 : 1) : step(k === 'ArrowLeft' ? -5 : 5); }
   else if(k === 'ArrowLeft'){  e.preventDefault(); if(e.shiftKey){ const j = stepTrack(idx, -1); if(j >= 0) play(j, true); } else step(-5); }
   else if(k === 'ArrowRight'){ e.preventDefault(); e.shiftKey ? goNext(true)      : step(5); }
   else if(k === 'ArrowUp'){    e.preventDefault(); setRate(rate + 0.1); }
@@ -3666,6 +3665,7 @@ function setBook(data){
   lessonCache = null; shows = null; blesson = null;
   if(mode === 'book') renderBook();
   paintLtag();
+  if($('#list').children.length) applyFilter();   // 課が読めたところで「流すもの」を出す（読み込みが速いと出し忘れていた。基本文のトラックを流す入口はここ1か所・2026-10-04）
 }
 
 /* 課の並び。book.json が無いときは、サブフォルダごと（無ければ全体で1つ） */
@@ -4347,58 +4347,60 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState 
 const FLOWKINDS = {sentence: ['sentence'], both: ['sentence', 'grammar'], word: ['word']};
 const FLOWNAME = {sentence: '基本文', both: '基本文＋例文', word: '単語'};
 let flow = null;
-function flowOpt(){ return Object.assign({kind: 'sentence', n: 1, gap: 2, ja: true, sel: null, loop: false}, load('flow:opt', {})); }
+function flowOpt(){ return Object.assign({kind: 'sentence', range: 'all', n: 1, gap: 2, ja: true, sel: null, loop: false}, load('flow:opt', {})); }
 function flowItems(li, kind){
   const x = lessonData()[li]; if(!x) return [];
   return x.items.filter(it => !isSound(it) && FLOWKINDS[kind].includes(catOf(it, it.deck)) && it.end > it.start);
 }
+/* 入口は1つ（2026-10-04 本人「機能がかぶっていて、同時に2個再生された」「それでオッケー」）。
+   ⭕ 範囲は「全部の課｜課を選ぶ」の切り替え（前は「全部の課を通しで聴く」と「課を選んで流す」が別にあった）。
+   ⭕ トラックまるごとの「基本文の音声だけ」は、一覧の上の「流すもの」1か所にした。
+   ⭕ 流しているあいだの再生・前・次は、画面の下の操作卓で効く。パネルを閉じても止めない */
+const FLOWHEAD = '<div class="aph"><b>1文ずつ聴く</b><button class="apclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>';
 function openFlow(on){
   const p = $('#flowPanel');
-  if(!on){ stopFlow(); p.hidden = true; return; }
+  if(!on){ p.hidden = true; return; }
   $('#askPanel').hidden = true;
+  if(flow){ paintFlow(); p.hidden = false; return; }
   const o = flowOpt(), ld = lessonData();
   const cur = idx >= 0 && tracks[idx] ? lessonOfTrack(tracks[idx].name) : null;
   const sel = new Set(o.sel || (cur ? [ld[cur.li].L.id] : []));
   const rows = ld.map((x, li) => [x, li, flowItems(li, o.kind).length]).filter(r => r[2]);
-  p.innerHTML = '<div class="aph"><b>文だけ聴く</b><button class="apclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
-    (mainTracks().size ? '<div class="flowstreak"><button class="primary" id="flowMain">各課の基本文の音声を、UNIT 1 から通しで流す<small>' + mainTracks().size + '課</small></button></div>' +
-      '<div class="apctx">基本文の音声（トラックまるごと）だけを、課の順に流します。止めたいときは、音声の画面の上の帯から「すべての音声に戻す」</div><hr class="flowhr">' : '') +
-    '<div class="apctx">または、基本文を1文ずつ流す（回数・間・訳を選べます）</div>' +
-    (function(){ const pos = load('flow:pos', null); const all = rows.reduce((n, r) => n + r[2], 0);
-      return '<div class="flowstreak"><button class="primary" id="flowStreak">全部の課の' + FLOWNAME[o.kind] + 'を通しで聴く<small>' + all + '文</small></button>' +
-        (pos && pos.kind === o.kind && pos.all && pos.i > 0 && pos.i < all ? '<button id="flowResume">続きから（' + (pos.i + 1) + '文目）</button>' : '') + '</div>'; })() +
-    '<div class="apctx">または、課を選んで流す</div>' +
+  const all = rows.reduce((n, r) => n + r[2], 0), pos = load('flow:pos', null);
+  const canResume = o.range === 'all' && pos && pos.kind === o.kind && pos.all && pos.i > 0 && pos.i < all;
+  p.innerHTML = FLOWHEAD +
+    '<div class="seg wf flowrange">' + [['all', '全部の課'], ['pick', '課を選ぶ']].map(([k, t]) => '<button data-r="' + k + '"' + (o.range === k ? ' class="on"' : '') + '>' + t + '</button>').join('') + '</div>' +
     '<div class="seg wf flowkind">' + Object.keys(FLOWNAME).map(k => '<button data-k="' + k + '"' + (o.kind === k ? ' class="on"' : '') + '>' + FLOWNAME[k] + '</button>').join('') + '</div>' +
-    '<div class="flowunits">' + (rows.length ? rows.map(([x, li, n]) => '<label><input type="checkbox" value="' + esc(x.L.id) + '"' + (sel.has(x.L.id) ? ' checked' : '') + '><span>' + esc(x.L.title) + '</span><small>' + n + '</small></label>').join('')
-      : '<p class="pnote">この教材には、この種類の文がありません</p>') + '</div>' +
+    (!rows.length ? '<p class="pnote">この教材には、この種類の文がありません</p>'
+      : o.range === 'all' ? '<div class="apctx">全部の課の' + FLOWNAME[o.kind] + '（' + all + '文）を、最初の課から順に流します</div>'
+      : '<div class="flowunits">' + rows.map(([x, li, n]) => '<label><input type="checkbox" value="' + esc(x.L.id) + '"' + (sel.has(x.L.id) ? ' checked' : '') + '><span>' + esc(x.L.title) + '</span><small>' + n + '</small></label>').join('') + '</div>') +
     '<div class="flowopts"><label>1文を<select id="flowN">' + [1, 2, 3].map(n => '<option' + (o.n === n ? ' selected' : '') + ' value="' + n + '">' + n + '回</option>').join('') + '</select></label>' +
     '<label>文の間<select id="flowGap">' + [1, 2, 4].map(n => '<option' + (o.gap === n ? ' selected' : '') + ' value="' + n + '">' + n + '秒</option>').join('') + '</select></label>' +
     '<label class="opt"><input type="checkbox" id="flowJa"' + (o.ja ? ' checked' : '') + '> 訳を出す</label>' +
     '<label class="opt"><input type="checkbox" id="flowLoop"' + (o.loop ? ' checked' : '') + '> 最後まで行ったら最初から</label></div>' +
-    '<div class="row"><button class="linkish" id="flowAll">全部の課を選ぶ</button><button class="primary" id="flowGo">流す</button></div>';
-  const keep = () => { const n = flowOpt(); n.sel = [...p.querySelectorAll('.flowunits input:checked')].map(i => i.value);
+    '<div class="row">' + (canResume ? '<button id="flowResume">続きから（' + (pos.i + 1) + '文目）</button>' : '') + '<button class="primary" id="flowGo">流す</button></div>';
+  const keep = () => { const n = flowOpt(); const boxes = p.querySelectorAll('.flowunits input');
+    if(boxes.length) n.sel = [...boxes].filter(i => i.checked).map(i => i.value);
     n.n = +$('#flowN').value; n.gap = +$('#flowGap').value; n.ja = $('#flowJa').checked; n.loop = $('#flowLoop').checked; save('flow:opt', n); return n; };
   p.querySelector('.apclose').onclick = () => openFlow(false);
   p.querySelectorAll('.flowkind button').forEach(b => b.onclick = () => { const n = keep(); n.kind = b.dataset.k; save('flow:opt', n); openFlow(true); });
-  $('#flowAll').onclick = () => { p.querySelectorAll('.flowunits input').forEach(i => i.checked = true); keep(); };
+  p.querySelectorAll('.flowrange button').forEach(b => b.onclick = () => { const n = keep(); n.range = b.dataset.r; save('flow:opt', n); openFlow(true); });
   p.querySelectorAll('.flowunits input, .flowopts select, .flowopts input').forEach(i => i.onchange = keep);
   const go = (ids, all, from) => {
     const n = keep();
     const queue = ld.map((x, li) => (all || ids.has(x.L.id)) ? flowItems(li, n.kind).map(it => ({it, title: x.L.title})) : []).flat();
     if(!queue.length){ toast('課を1つ以上選んでください'); return; }
-    audio.pause();
+    audio.pause(); clearTimeout(gapTimer);
     flow = {queue, i: Math.min(from || 0, queue.length - 1), r: 0, opt: n, all, paused: false, timer: null}; paintFlow(); flowStep();
   };
-  $('#flowGo').onclick = () => go(new Set(keep().sel), false, 0);
-  const mb = $('#flowMain'); if(mb) mb.onclick = () => {
-    openFlow(false); listMode = 'main'; save('listmode', listMode); applyFilter(); setMode('listen');
-    const j = idx >= 0 && visibleTrack(idx) ? idx : stepTrack(-1, 1); if(j >= 0) play(j, true);
-  };
-  const sb = $('#flowStreak'); if(sb) sb.onclick = () => go(null, true, 0);
+  $('#flowGo').onclick = () => o.range === 'all' ? go(null, true, 0) : go(new Set(keep().sel || []), false, 0);
   const rb = $('#flowResume'); if(rb) rb.onclick = () => go(null, true, load('flow:pos', {}).i || 0);
   p.hidden = false;
 }
-function stopFlow(){ if(!flow) return; clearTimeout(flow.timer); clearInterval(flow.poll); clip.pause(); flow = null; }
+/* 画面の下の操作卓から：1文ずつ聴いているあいだは、再生・前・次が文単位で効く */
+function flowToggle(){ flow.paused = !flow.paused; if(flow.paused){ clip.pause(); clearTimeout(flow.timer); clearInterval(flow.poll); } else flowStep(); paintFlow(); }
+function flowGo(d){ clearTimeout(flow.timer); clearInterval(flow.poll); flow.r = 0; flow.i = Math.max(0, Math.min(flow.i + d, flow.queue.length)); flow.paused = false; flowStep(); }
+function stopFlow(){ if(!flow) return; clearTimeout(flow.timer); clearInterval(flow.poll); clip.pause(); flow = null; setPlayLabel(!audio.paused); }
 function flowStep(){
   if(!flow) return;
   if(flow.i >= flow.queue.length){
@@ -4427,18 +4429,16 @@ function flowStep(){
 }
 function paintFlow(){
   const p = $('#flowPanel'); if(!flow) return;
+  setPlayLabel(!flow.paused);
   const {it, title} = flow.queue[Math.min(flow.i, flow.queue.length - 1)];
   const ja = flow.opt.ja ? jaOf(it) : null;
-  p.innerHTML = '<div class="aph"><b>文だけ聴く</b><button class="apclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
-    '<div class="apctx">' + esc(title) + '　' + FLOWNAME[flow.opt.kind] + '　' + (flow.i + 1) + ' / ' + flow.queue.length + (flow.opt.n > 1 ? '　' + (flow.r + 1) + '回目' : '') + '</div>' +
+  p.innerHTML = FLOWHEAD +
+    '<div class="apctx">' + esc(title) + '　' + FLOWNAME[flow.opt.kind] + '　' + (flow.i + 1) + ' / ' + flow.queue.length + (flow.opt.n > 1 ? '　' + (flow.r + 1) + '回目' : '') + (flow.paused ? '　一時停止中' : '') + '</div>' +
     '<div class="jbar"><i style="width:' + ((flow.i) / flow.queue.length * 100) + '%"></i></div>' +
     '<div class="flownow" lang="' + LP.code + '">' + esc(it.show) + '</div>' + (ja ? '<div class="flowja" lang="ja">' + esc(ja) + '</div>' : '') +
-    '<div class="row"><button id="flowPrev">前</button><button class="primary" id="flowPause">' + (flow.paused ? '続ける' : '一時停止') + '</button><button id="flowNext">次</button></div>' +
+    '<div class="apctx">再生・前・次は画面の下で。5秒戻すは今の文をもう一度。閉じても流れ続けます</div>' +
     '<button class="linkish" id="flowStop">やめて選び直す</button>';
   p.querySelector('.apclose').onclick = () => openFlow(false);
-  $('#flowPause').onclick = () => { flow.paused = !flow.paused; if(flow.paused){ clip.pause(); clearTimeout(flow.timer); } else flowStep(); paintFlow(); };
-  $('#flowNext').onclick = () => { clearTimeout(flow.timer); flow.r = 0; flow.i = Math.min(flow.i + 1, flow.queue.length); flow.paused = false; flowStep(); };
-  $('#flowPrev').onclick = () => { clearTimeout(flow.timer); flow.r = 0; flow.i = Math.max(0, flow.i - 1); flow.paused = false; flowStep(); };
   $('#flowStop').onclick = () => { stopFlow(); openFlow(true); };
 }
 $('#flowBtn').addEventListener('click', e => { e.stopPropagation(); openFlow($('#flowPanel').hidden); });

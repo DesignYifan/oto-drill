@@ -148,6 +148,22 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
               a.play(); await new Promise(res => setTimeout(res, 800)); r.solo = {afterTrack: {track: !a.paused, clip: !c.paused}};
               c.play(); await new Promise(res => setTimeout(res, 800)); r.solo.afterClip = {track: !a.paused, clip: !c.paused};
               a.pause(); c.pause();
+              // 1文ずつ聴く：パネルから流し、画面の下の操作卓で止める・次へ進める
+              const lbl = () => document.querySelector('#play .lbl').textContent, pos = () => (document.querySelector('#flowPanel .apctx') || {}).textContent || '';
+              document.querySelector('#flowBtn').click(); await new Promise(res => setTimeout(res, 300));
+              const fr = document.querySelector('#flowPanel .flowrange button[data-r="all"]'); if(fr) fr.click(); await new Promise(res => setTimeout(res, 200));
+              r.flow = {range: !!fr, oldMain: !!document.querySelector('#flowMain')};
+              document.querySelector('#flowGo').click(); await new Promise(res => setTimeout(res, 1500));
+              r.flow.start = {label: lbl(), clip: !c.paused, track: !a.paused, at: pos().slice(0, 40)};
+              document.querySelector('#play').click(); await new Promise(res => setTimeout(res, 400));
+              r.flow.paused = {label: lbl(), clip: !c.paused, at: pos().slice(0, 40)};
+              document.querySelector('#next').click(); await new Promise(res => setTimeout(res, 1200));
+              r.flow.next = {label: lbl(), clip: !c.paused, at: pos().slice(0, 40)};
+              document.querySelector('#flowPanel .apclose').click(); await new Promise(res => setTimeout(res, 300));
+              r.flow.closed = {hidden: document.querySelector('#flowPanel').hidden, clip: !c.paused};
+              document.querySelector('#flowBtn').click(); await new Promise(res => setTimeout(res, 200));
+              document.querySelector('#flowStop').click(); await new Promise(res => setTimeout(res, 300));
+              r.flow.stopped = {label: lbl(), clip: !c.paused};
             }
             r.audio = { paused: a && a.paused, t: a && Math.round(a.currentTime * 10) / 10, src: a && a.src.slice(0, 12), ms: Date.now() - t0, err: a && a.error && a.error.code, rs: a && a.readyState, ns: a && a.networkState, d: a && a.duration };
             return JSON.stringify(r);
