@@ -41,6 +41,7 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
         ucc.addUserScript(WKUserScript(source: BRIDGE_JS, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         #if targetEnvironment(macCatalyst)
         ucc.addUserScript(WKUserScript(source: MAC_FETCH_JS, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        ucc.addUserScript(WKUserScript(source: MAC_AUDIO_JS, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         #endif
         web = WKWebView(frame: view.bounds, configuration: cfg)
         web.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -50,6 +51,9 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
         web.isInspectable = true          // Mac の Safari から中を見て直せるように
         web.allowsBackForwardNavigationGestures = false
         view.addSubview(web)
+        #if targetEnvironment(macCatalyst)
+        NativeAudio.shared.web = web
+        #endif
         dlog("開く \(PAGE.absoluteString)")
         web.load(URLRequest(url: PAGE, cachePolicy: .reloadRevalidatingCacheData))
     }
@@ -81,6 +85,8 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
                 case "read":
                     let d = try await Task.detached { try F.readData(kind, path) }.value
                     replyHandler(String(decoding: d, as: UTF8.self), nil)
+                case "audio":   // Mac：音はアプリ本体で鳴らす（NativeAudio.swift）
+                    replyHandler(try await NativeAudio.shared.handle(b), nil)
                 case "bytes":   // Mac：ページの fetch は otofs:// に届かない（https のページから止められる）。中身をここから渡す
                     let d = try await Task.detached { try F.readData(kind, path) }.value
                     replyHandler(d.base64EncodedString(), nil)
@@ -122,6 +128,16 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
             if(window.__oto){ window.__oto.clip.muted = true; }
             const t0 = Date.now(); document.querySelector('#play').click();
             await new Promise(res => setTimeout(res, 4000));
+            if(a && a.duration > 2){   // 最後まで鳴ったら ended が来るか（次へ進む合図）
+              let ended = false; a.addEventListener('ended', () => { ended = true; }, {once: true});
+              a.currentTime = a.duration - 0.6; await new Promise(res => setTimeout(res, 2000)); r.ended = ended;
+            }
+            const c = window.__oto && window.__oto.clip;
+            if(c){   // 区間を鳴らす：1秒目から始めて、1.5秒後の位置
+              c.muted = true; c.src = oto.fs.url('book', '002.mp3');
+              await new Promise(res => { c.addEventListener('loadedmetadata', res, {once: true}); setTimeout(res, 5000); });
+              c.currentTime = 1; c.play(); await new Promise(res => setTimeout(res, 1500)); r.clip = Math.round(c.currentTime * 10) / 10; c.pause();
+            }
             r.audio = { paused: a && a.paused, t: a && Math.round(a.currentTime * 10) / 10, src: a && a.src.slice(0, 12), ms: Date.now() - t0, err: a && a.error && a.error.code, rs: a && a.readyState, ns: a && a.networkState, d: a && a.duration };
             return JSON.stringify(r);
             """
