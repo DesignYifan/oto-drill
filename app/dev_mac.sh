@@ -4,6 +4,7 @@
 #   ./dev_mac.sh run [-selftest 1] [...]   試す版を開く（引数はそのままアプリへ。例：-page http://localhost:8793/?app=1）
 #   ./dev_mac.sh stop                      閉じて、Mac のアプリ一覧から外す
 #   ./dev_mac.sh release                   普段使いの版を作り、~/Applications/音声ドリル.app に入れ替える
+#   ./dev_mac.sh iphone                    iPhone の版を作って入れる（7日ごとの入れ直し。iPhone のロックを外してもらう）
 #
 # ⭕ 2026-10-04 本人「毎回間違えた方を開いちゃうから、あなたが立ち上げる時だけそっちを開いてほしい」。
 #   作ったものは build.noindex（Spotlight が見ない名前）に置き、開いたあとは stop で登録を外す。
@@ -34,5 +35,11 @@ case "$1" in
     ditto "$HERE/build.noindex/mac/Build/Products/Release-maccatalyst/OtoDrill.app" ~/Applications/音声ドリル.app
     for p in $(find "$HERE/build.noindex" -maxdepth 6 -name "OtoDrill.app" -type d 2>/dev/null); do "$LS" -u "$p" 2>/dev/null; done
     echo "~/Applications/音声ドリル.app を入れ替えました" ;;
-  *) sed -n 2,6p "$0" ;;
+  iphone)
+    ./make_secrets.sh >/dev/null && xcodegen generate >/dev/null
+    xcodebuild -project OtoDrill.xcodeproj -scheme OtoDrill -configuration Release -destination 'generic/platform=iOS' \
+      -derivedDataPath build.noindex/ios -allowProvisioningUpdates build 2>&1 | grep -E " error:|BUILD"
+    xcrun devicectl device install app --device 22BB3920-393A-5F45-BE14-99F1735BB8FE build.noindex/ios/Build/Products/Release-iphoneos/OtoDrill.app
+    for p in $(find "$HERE/build.noindex" -maxdepth 6 -name "OtoDrill.app" -type d 2>/dev/null); do "$LS" -u "$p" 2>/dev/null; done ;;
+  *) sed -n 2,7p "$0" ;;
 esac
