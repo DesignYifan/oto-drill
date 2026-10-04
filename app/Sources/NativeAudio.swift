@@ -1,3 +1,4 @@
+#if targetEnvironment(macCatalyst)
 import AVFoundation
 import WebKit
 
@@ -21,6 +22,8 @@ final class NativeAudio {
         var statusObs: NSKeyValueObservation?
         var playingObs: NSKeyValueObservation?
         var tmp: URL?
+        var gen = 0        // ページ側の src の世代。古い音の知らせを新しい音に混ぜないため
+        var sounding = false   // 実際に鳴り始めたか。読み込み直後の「止まっている」を、止まった知らせと取り違えないため
     }
     private var all: [Int: One] = [:]
 
@@ -34,7 +37,7 @@ final class NativeAudio {
             o.wantPlay = true
             if o.ready { o.player.playImmediately(atRate: o.rate) }
         case "pause":
-            o.wantPlay = false
+            o.wantPlay = false; o.sounding = false
             o.player.pause()
         case "seek":
             let t = b["t"] as? Double ?? 0
@@ -53,8 +56,21 @@ final class NativeAudio {
         return true
     }
 
+    /// ページを開き直したとき：全部の音を止めて片付ける（一時ファイルも消す）
+    func reset() {
+        for o in all.values { clear(o) }
+        all = [:]
+        let tmp = FileManager.default.temporaryDirectory
+        for f in (try? FileManager.default.contentsOfDirectory(atPath: tmp.path)) ?? [] where f.hasPrefix("oto-") {
+            try? FileManager.default.removeItem(at: tmp.appendingPathComponent(f))
+        }
+    }
+
     private func load(_ id: Int, _ o: One, _ b: [String: Any]) async throws {
         clear(o)
+        o.gen = b["gen"] as? Int ?? 0
+        o.sounding = false
+        let gen = o.gen
         o.ready = false; o.pendingSeek = nil; o.wantPlay = false
         o.rate = Float(b["rate"] as? Double ?? Double(o.rate))
         o.player.isMuted = b["muted"] as? Bool ?? false
@@ -79,11 +95,13 @@ final class NativeAudio {
         } else {
             throw NSError(domain: "oto", code: 4, userInfo: [NSLocalizedDescriptionKey: "音声の場所が分かりません"])
         }
+        guard o.gen == gen else { return }   // 読んでいるあいだに次の src が来た
         let item = AVPlayerItem(url: url)
+        let live = { [weak o] in o?.player.currentItem === item && o?.gen == gen }
         item.audioTimePitchAlgorithm = .spectral   // 速度を変えても音程を変えない（ページの preservesPitch と同じ）
         o.statusObs = item.observe(\.status) { [weak self] it, _ in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, live() else { return }
                 if it.status == .readyToPlay, !o.ready {
                     o.ready = true
                     if let t = o.pendingSeek { self.seek(o, t); o.pendingSeek = nil }
@@ -92,18 +110,23 @@ final class NativeAudio {
                     if o.wantPlay { o.player.playImmediately(atRate: o.rate) }
                 } else if it.status == .failed {
                     dlog("音 読めない \(it.error?.localizedDescription ?? "")")
+                    o.wantPlay = false
                     self.emit(id, "error", o)
                 }
             }
         }
         o.playingObs = o.player.observe(\.timeControlStatus) { [weak self] p, _ in
-            Task { @MainActor in if p.timeControlStatus == .playing { self?.emit(id, "playing", o) } }
+            Task { @MainActor in
+                guard live() else { return }
+                if p.timeControlStatus == .playing { o.sounding = true; self?.emit(id, "playing", o) }
+                else if p.timeControlStatus == .paused, o.sounding, !o.wantPlay { o.sounding = false; self?.emit(id, "pause", o) }   // 鳴っていたのに、ページが頼まずに止まったときだけ知らせる
+            }
         }
         o.endObs = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
-            Task { @MainActor in o.wantPlay = false; self?.emit(id, "ended", o) }
+            Task { @MainActor in guard live() else { return }; o.wantPlay = false; self?.emit(id, "ended", o) }
         }
         o.timeObs = o.player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 4), queue: .main) { [weak self] _ in
-            Task { @MainActor in if o.player.rate != 0 { self?.emit(id, "timeupdate", o) } }
+            Task { @MainActor in if live(), o.player.rate != 0 { self?.emit(id, "timeupdate", o) } }
         }
         o.player.replaceCurrentItem(with: item)
     }
@@ -121,11 +144,12 @@ final class NativeAudio {
         if let t = o.tmp { try? FileManager.default.removeItem(at: t); o.tmp = nil }
     }
 
-    /// ページへ知らせる：window.__na(id, 種類, 今の位置, 長さ, 止まっているか)
+    /// ページへ知らせる：window.__na(id, 世代, 種類, 今の位置, 長さ, 止まっているか)
     private func emit(_ id: Int, _ type: String, _ o: One) {
         let t = o.player.currentTime().seconds
         let d = o.player.currentItem?.duration.seconds ?? .nan
-        let js = "window.__na && window.__na(\(id),'\(type)',\(t.isFinite ? t : 0),\(d.isFinite ? d : -1),\(o.player.rate == 0))"
+        let js = "window.__na && window.__na(\(id),\(o.gen),'\(type)',\(t.isFinite ? t : 0),\(d.isFinite ? d : -1),\(o.player.rate == 0))"
+        if type != "timeupdate" { dlog("音 知らせ \(id) \(type) t=\(t) stopped=\(o.player.rate == 0)") }
         web?.evaluateJavaScript(js, completionHandler: nil)
     }
 }
@@ -141,6 +165,7 @@ let MAC_AUDIO_JS = """
   URL.revokeObjectURL = u => { blobs.delete(u); orv(u); };
   const toB64 = blob => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = () => rej(fr.error); fr.readAsDataURL(blob); });
   const all = new Map(); let seq = 0;
+  const MARK = '\\u0000OTOFS\\u0000';   // MAC_FETCH_JS が音声ファイルの代わりに返す目印（中身は住所だけ）
   class NAudio extends EventTarget {
     constructor(src){
       super(); this.id = ++seq; all.set(this.id, this);
@@ -154,14 +179,19 @@ let MAC_AUDIO_JS = """
     set src(u){
       u = String(u || ''); this._src = u; this._t = 0; this._d = NaN; this.paused = true; this.ended = false; this.readyState = 0; this.error = null;
       const gen = ++this._gen;
+      N.postMessage({op: 'audio', a: 'pause', id: this.id}).catch(() => {});   // 前の音はすぐ止める（次を読み終えるのを待たない）
       this._q = this._q.then(async () => {
         if(gen !== this._gen || !u) return;
         let o;
         if(u.startsWith('otofs://')){ const x = new URL(u); o = {kind: x.host, path: x.pathname.slice(1).split('/').map(decodeURIComponent).join('/')}; }
-        else if(u.startsWith('blob:') && blobs.has(u)){ const b = blobs.get(u); o = {b64: await toB64(b), ext: /mp4|m4a/.test(b.type) ? 'm4a' : /wav/.test(b.type) ? 'wav' : 'mp3'}; }
+        else if(u.startsWith('blob:') && blobs.has(u)){
+          const b = blobs.get(u), head = b.size < 4096 ? await b.text() : '';
+          if(head.startsWith(MARK)){ const x = new URL(head.slice(MARK.length)); o = {kind: x.host, path: x.pathname.slice(1).split('/').map(decodeURIComponent).join('/')}; }   // 中身を運ばず、ファイルを直接鳴らす
+          else o = {b64: await toB64(b), ext: /mp4|m4a/.test(b.type) ? 'm4a' : /wav/.test(b.type) ? 'wav' : 'mp3'};
+        }
         else o = {url: new URL(u, location.href).href};
         if(gen !== this._gen) return;
-        await N.postMessage(Object.assign({op: 'audio', a: 'load', id: this.id, rate: this._rate, muted: this._muted, vol: this._vol}, o));
+        await N.postMessage(Object.assign({op: 'audio', a: 'load', id: this.id, gen, rate: this._rate, muted: this._muted, vol: this._vol}, o));
       }).catch(e => { this.error = {code: 4, message: String(e)}; this.dispatchEvent(new Event('error')); });
     }
     get currentTime(){ return this.paused ? this._t : this._t + (performance.now() - this._stamp) / 1000 * this._rate; }
@@ -185,14 +215,17 @@ let MAC_AUDIO_JS = """
     removeAttribute(k){ if(k === 'src'){ this._gen++; this._src = ''; this._send('pause'); } }
     setAttribute(k, v){ if(k === 'src') this.src = v; }
   }
-  window.__na = (id, type, t, d, stopped) => {
-    const a = all.get(id); if(!a) return;
+  window.__na = (id, gen, type, t, d, stopped) => {
+    const a = all.get(id); if(!a || gen !== a._gen) return;   // 古い src の知らせは捨てる
     a._t = t; a._stamp = performance.now(); if(d > 0) a._d = d;
     if(type === 'loadedmetadata') a.readyState = 4;
-    if(type === 'ended'){ a.paused = true; a.ended = true; a._t = a._d > 0 ? a._d : t; a.dispatchEvent(new Event('pause')); }
-    if(type === 'error') a.error = {code: 4, message: 'アプリで読めませんでした'};
+    if(type === 'playing') a.paused = false;
+    if(type === 'pause'){ if(a.paused) return; a.paused = true; }
+    if(type === 'ended'){ a.ended = true; a._t = a._d > 0 ? a._d : t; if(!a.paused){ a.paused = true; a.dispatchEvent(new Event('pause')); } }
+    if(type === 'error'){ a.error = {code: 4, message: 'アプリで読めませんでした'}; a.paused = true; }
     a.dispatchEvent(new Event(type));
   };
   window.Audio = NAudio;
 })();
 """
+#endif

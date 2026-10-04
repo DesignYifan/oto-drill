@@ -85,11 +85,13 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
                 case "read":
                     let d = try await Task.detached { try F.readData(kind, path) }.value
                     replyHandler(String(decoding: d, as: UTF8.self), nil)
+                #if targetEnvironment(macCatalyst)
                 case "audio":   // Mac：音はアプリ本体で鳴らす（NativeAudio.swift）
                     replyHandler(try await NativeAudio.shared.handle(b), nil)
                 case "bytes":   // Mac：ページの fetch は otofs:// に届かない（https のページから止められる）。中身をここから渡す
                     let d = try await Task.detached { try F.readData(kind, path) }.value
                     replyHandler(d.base64EncodedString(), nil)
+                #endif
                 case "write", "append":
                     let text = b["text"] as? String ?? ""
                     try await Task.detached { try F.write(kind, path, text, append: op == "append") }.value
@@ -110,6 +112,11 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
     // 読めなかったときは、その理由を画面に出す（白いままにしない）
     func webView(_ webView: WKWebView, didFailProvisionalNavigation nav: WKNavigation!, withError error: Error) { showError(error) }
     func webView(_ webView: WKWebView, didFail nav: WKNavigation!, withError error: Error) { showError(error) }
+    func webView(_ webView: WKWebView, didCommit nav: WKNavigation!) {
+        #if targetEnvironment(macCatalyst)
+        NativeAudio.shared.reset()   // 開き直したら前のページの音を止めて片付ける
+        #endif
+    }
     func webView(_ webView: WKWebView, didFinish nav: WKNavigation!) {
         dlog("読み込み完了 \(webView.url?.absoluteString ?? "")")
         #if DEBUG
@@ -257,6 +264,8 @@ let MAC_FETCH_JS = """
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     if(!url.startsWith('otofs://')) return orig(input, init);
     const u = new URL(url), kind = u.host, path = u.pathname.slice(1).split('/').map(decodeURIComponent).join('/');
+    // 音声は中身を運ばず、住所だけの目印を返す。鳴らすのはアプリ本体（MAC_AUDIO_JS が目印を見てファイルを直接開く）
+    if(/\\.(mp3|m4a|m4b|aac|wav|aiff?|mp4)$/i.test(path)) return new Response(new Blob(['\\u0000OTOFS\\u0000' + url]), {status: 200});
     const b64 = await window.webkit.messageHandlers.oto.postMessage({op: 'bytes', kind, path});
     const bin = atob(b64), buf = new Uint8Array(bin.length);
     for(let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
