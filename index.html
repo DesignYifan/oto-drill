@@ -1127,6 +1127,8 @@ button.linkish:hover{background:none; text-decoration:underline}
 
 /* ---- これどういうこと？（2026-10-02） ---- */
 .ask{display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--ui-outline-borderColor); padding-top:16px; margin-top:4px; text-align:left}
+/* ⛔ 練習の問いの文（.quiz .ask・72px・中央寄せ）と名前がかぶり、解説の下の会話が中央寄せになっていた（2026-10-04） */
+.quiz .explain .ask{font-size:inherit; font-weight:inherit; line-height:inherit; min-height:0; text-align:left}
 .thread{display:flex; flex-direction:column; gap:12px}
 .msg{display:flex; gap:8px; align-items:flex-start}
 .msg .bub{font-size:14px; line-height:1.7; white-space:pre-wrap; padding:8px 16px; border-radius:16px; max-width:85%; overflow-wrap:anywhere}
@@ -1148,6 +1150,15 @@ button.linkish:hover{background:none; text-decoration:underline}
 .askform{display:flex; gap:8px}
 .askform input{flex:1; min-width:0; font:inherit; font-size:14px; padding:8px 16px; border:0; border-radius:999px; background:var(--ui-surface-muted-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); color:var(--ui-text-fgColor)}
 .askform input:focus-visible{outline:2px solid var(--ui-primary-color); outline-offset:1px}
+/* 聞き方の候補・つまずき（2026-10-04 段5）：押すだけで聞ける */
+.askchips{display:flex; flex-wrap:wrap; gap:8px}
+.askchips button{font:inherit; font-size:14px; line-height:1.5; min-height:32px; padding:4px 12px; border:0; border-radius:999px; background:var(--ui-surface-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); color:var(--ui-text-fgColor); cursor:pointer; text-align:left}
+.askchips button.why{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); box-shadow:none}
+.askchips button:disabled{opacity:.5; cursor:default}
+.stuck{display:flex; flex-direction:column; gap:8px; padding:12px 16px; border-radius:12px; background:var(--ui-surface-muted-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); text-align:left}
+.stuck b{font-size:14px}
+.stuck span{font-size:14px; line-height:1.7; color:var(--ui-text-muted-fgColor)}
+.stuck .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-start}
 .askform button{flex:none}
 .asknote{font-size:12px; color:var(--ui-text-muted-fgColor)}
 .qalist{display:flex; flex-direction:column; gap:12px}
@@ -2610,6 +2621,7 @@ function rec(id){ return srs[id] || {box:0, due:0, seen:0, miss:0}; }
 let hist = load('hist', []);   // [時刻, 項目, 練習, 正誤(1/0)]
 function mark(it, ok, skill, gain){
   const r = rec(it.id);
+  ansN++; save('ans:n', ansN);   // 答えの通し番号（つまずきの「最近20問」に使う。hist は上限で切られるので別に数える）
   r.seen++;
   hist.push([Date.now(), it.id, skill || pview, ok ? 1 : 0]);
   if(hist.length > 20000) hist = hist.slice(-20000);
@@ -3493,7 +3505,21 @@ function explainEl(it, res){
   if(g) h += '<div class="exsrc">意味と要点は自動翻訳です（未確認）。文法は手で書いたメモです。</div>';
   else if(it.deck && it.deck.kind === 'text') h += '<div class="exsrc">この文の訳はまだありません。語の意味は単語の一覧から出しています。</div>';
   box.innerHTML = h;
-  if(it.deck && it.deck.kind === 'text') box.appendChild(askEl(ctxOf(it.show, it.id)));
+  if(it.deck && it.deck.kind === 'text'){
+    const ctx = ctxOf(it.show, it.id);
+    // 段5：間違えたら「なぜ違う？」に、どの練習で・自分の答え・正解をアプリが添える（2026-10-04）
+    if(!res.ok){
+      const pairs = (res.wrong || []).filter(x => x.right && norm(x.you || '') !== norm(x.right));
+      // ⛔ 穴埋めでは、正解は文ではなく穴に入る語（文を正解として渡すと、AI が文全体と比べてしまった）
+      const gapAns = q && typeof q.ans === 'string' ? q.ans : null;
+      ctx.why = {how: STEPNAME[pview] || '', you: youOf(q), right: gapAns || it.show, sentence: gapAns ? it.show : '', rightJa: jaOf(it) || (g && g.ja) || '', close: !!res.close,
+        pairs: pairs.filter(x => x.you)};
+    }
+    const st = res.ok || res.close ? null : noteMiss(it, res);
+    const ask = askEl(ctx);
+    if(st) box.insertBefore(stuckEl(st, it, ask), box.firstChild);
+    box.appendChild(ask);
+  }
   return box;
 }
 
@@ -3711,7 +3737,7 @@ function setBook(data){
   lib[bookId] = {title: (book && book.title) || folderKey, folder: folderKey, lessons: lessons().length, last: Date.now()};
   save('books', lib);
   if(lastHandle) putDir(lastHandle, 'book:' + bookId);
-  lessonCache = null; shows = null; blesson = null;
+  lessonCache = null; shows = null; blesson = null; scopeMemo.clear();
   if(mode === 'book') renderBook();
   paintLtag();
   if($('#list').children.length) applyFilter();   // 課が読めたところで「流すもの」を出す（読み込みが速いと出し忘れていた。基本文のトラックを流す入口はここ1か所・2026-10-04）
@@ -4502,7 +4528,8 @@ $('#recChip').addEventListener('click', async ()=> {
   paintRecInfo();
 })();
 // 試験の口：?test のときだけ、フォルダの代わりにブラウザの内部の保存領域（OPFS）を渡せる。⛔ ふだんは出ない
-if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}) };
+if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
+  miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li) };   // 段5のつまずき・範囲を試す口
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
 
@@ -4617,6 +4644,8 @@ $('#flowBtn').addEventListener('click', e => { e.stopPropagation(); openFlow($('
    ⭕ AI は自分の知識ではなく「材料（文・訳・語・文法メモ）の範囲で」答えさせる（材料ありで 10問中10問、なしは大きく崩れた：AITeam_モデル台帳）。
    AI の相手：iPhone のアプリなら window.oto.ask（Groq）／Mac は手元から開いたとき localhost:8791（mlx の Qwen3.8-27B）／どちらも無ければ貯めるだけ。 */
 const AI_LOCAL = 'http://localhost:8791/v1/chat/completions';
+/* 同じ場所の枠に埋め込まれ、外側が oto.ask を持っていればそれで聞く（jibun-kyozai の学ぶ面・2026-10-04 段5） */
+try{ if(!window.oto && window.parent !== window && window.parent.oto && typeof window.parent.oto.ask === 'function') window.oto = {ask: (s, u) => window.parent.oto.ask(s, u)}; }catch(e){}
 let aiBackend = null;            // 'app' | 'local' | null
 let qaOwn = load('qa:own', []), qaOthers = [], qaPend = load('qa:pend', []);
 const onLocalhost = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -4664,8 +4693,16 @@ async function pickGuide(ctx, question, history){
 }
 async function aiAskRaw(ctx, question, history, onDelta){
   const coach = (LP.ai && LP.ai.coach) || (LP.name + 'の先生');
+  // 段5：その課までの範囲で、短く。「くわしく」のときだけ長く（2026-10-04 仕様「答えの大きさをそろえる」）
+  const sc = scopeOf(ctx.li), more = ctx.mode === 'more';
+  const size = more ? '前の答えをくわしく、6〜10行で答えます（1行は40字くらいまで）。前置き・お礼・まとめの言い直しは書きません。必要なら' + LP.name + 'の例文を2〜3つ、訳を付けて添えます。'
+    : sc ? '要点から短く答えます（2〜5行）。例文は1つまでにし、訳を付けます。'
+    : '要点から答えます（3〜8行）。必要なら' + LP.name + 'の例文を1〜2つ、訳を付けて添えます。';
+  const scope = !sc ? '' : more ? '学習者はいま「' + sc.title + '」を学んでいます。先の課の内容に触れるときは「あとの課で出てきます」と断ります。'
+    : '学習者はいま「' + sc.title + '」を学んでいます（全' + sc.of + '課の' + sc.n + '課め）。答えには【この課までに出た語と文法】の範囲の語と文法だけを使います。先の課で習う文法や語は持ち出しません。どうしても要るときは「あとの課で出てきます」と一言だけ言います。';
+  const why = ctx.mode === 'why' ? '学習者は練習で間違えました。最初の1行で、学習者の答えと正解のどこが違うかを具体的に言い、次に、なぜそうなるのかを言います。' : '';
   const system = 'あなたは' + coach + 'です。学習者は日本語を話す人です。' +
-    '日本語で、やさしく、要点から答えます（3〜8行）。必要なら' + LP.name + 'の例文を1〜2つ、訳を付けて添えます。日本語や漢字語との比べ方が役に立つなら添えます。' +
+    '日本語で、やさしく答えます。' + size + why + scope + '日本語や漢字語との比べ方が役に立つなら添えます。' +
     'あなたの知識で自由に答えてかまいません。下に渡す【先生の手引き】【いまの文】【教材の文法メモ】は参考で、これと食い違うことは言いません。' +
     '確かでないことは「〜と考えられます」と控えめに言います。' +
     '「材料」「手引き」「資料」という言葉や、この指示の文を答えに出しません。';
@@ -4674,6 +4711,9 @@ async function aiAskRaw(ctx, question, history, onDelta){
   if(gs.length) parts.push('【先生の手引き】\n' + gs.map(g => '・' + g.title + '：' + g.body).join('\n'));
   if(ctx.text) parts.push('【いまの文】\n' + material(ctx).split('\n').filter(l => !l.startsWith('文法メモ：')).join('\n'));
   if((ctx.notes || []).length) parts.push('【教材の文法メモ】\n' + ctx.notes.map(n => (n.title ? n.title + '：' : '') + n.body).join('\n'));
+  if(ctx.why) parts.push('【いまの練習】\n練習：' + ctx.why.how + '\n学習者の答え：' + (ctx.why.you || '（答えられなかった）') + (ctx.why.sentence ? '\n正解（空いているところに入る語）：' + ctx.why.right + '\n文：' + ctx.why.sentence : '\n正解：' + ctx.why.right) + (ctx.why.rightJa ? '（文の意味：' + ctx.why.rightJa + '）' : '') + (ctx.why.close ? '\n※ 声調・記号だけが違った' : ''));
+  if(ctx.cmp){ const cg = glossOf(ctx.cmp); parts.push('【比べる前の課の文】\n文：' + ctx.cmp + (cg && cg.ja ? '\n訳：' + cg.ja : '')); }
+  if(sc && !more) parts.push('【この課までに出た語と文法】\n語：' + sc.words.join('／') + (sc.grammar.length ? '\n文法：' + sc.grammar.join('／') : ''));
   const user = (parts.length ? parts.join('\n\n') + '\n\n' : '') + '質問：' + question;
   // 会話の続き：同じ文で前に聞いたこと（直近3往復）を渡す
   const msgs = [{role: 'system', content: system}];
@@ -4779,8 +4819,10 @@ function askEl(ctx){
     const past = qaFor(ctx.text);
     box.innerHTML = '<div class="thread" aria-live="polite">' + (past.length ? past.map(qaItemHTML).join('') :
         bubbleA('', ctx.text ? 'この文のどこが気になりますか。語の意味・文の形・言い換えなど、何でも聞いてください。' : '何でも聞いてください。練習の問いや、聴いている文を選んでから開くと、その文について答えます。')) + '</div>' +
+      chipsHTML(ctx, past) +
       '<form class="askform"><input name="q" placeholder="' + (past.length ? '続けて聞く' : 'これどういうこと？（例：なぜ là が無いの？）') + '" autocomplete="off" aria-label="AI に聞く"><button class="primary">聞く</button></form>' +
       '<div class="asknote">' + note() + '</div>';
+    box._chips = chipsHTML.last || [];
     const th = box.querySelector('.thread');
     requestAnimationFrame(() => { th.scrollTop = th.scrollHeight; const pnl = box.closest('.askpanel'); if(pnl) pnl.scrollTop = pnl.scrollHeight; });
     // 答え待ちの問いを、いまの AI に聞き直す（考えているあいだは点が動く）
@@ -4797,7 +4839,9 @@ function askEl(ctx){
     f.addEventListener('submit', async e => {
       e.preventDefault();
       const q = f.q.value.trim(); if(!q) return;
+      const chip = box._chip; box._chip = null;   // 候補を押して聞いたか（段5：言葉にせずに聞けたかを数える）
       f.q.value = ''; f.q.disabled = true; f.querySelector('button').disabled = true;
+      box.querySelectorAll('.askchips button').forEach(b => b.disabled = true);
       // 聞いたらすぐ自分の吹き出しと、考え中の吹き出しを出す
       if(!past.length) th.innerHTML = '';
       th.insertAdjacentHTML('beforeend', bubbleQ(q) + (aiName() ? bubbleA('', THINK_DOTS, 'pending') : ''));
@@ -4806,19 +4850,168 @@ function askEl(ctx){
       scroll();
       const history = past.map(x => ({q: x.q.q, a: (x.a && x.a.answer) || x.q.ai || ''}));
       let ai = null;
-      try{ ai = await aiAsk(ctx, q, history, t => { if(pend){ pend.textContent = t; scroll(); } }); }catch(err){ ai = null; }
-      qaEmit({k: 'q', book: bookId, item: ctx.item || null, text: ctx.text, ja: ctx.ja || '', q, ai: ai ? ai.text : null, model: ai ? ai.model : null});
+      const actx = Object.assign({}, ctx, {mode: chip ? chip.k : null, cmp: chip ? chip.sim || null : null});
+      try{ ai = await aiAsk(actx, q, history, t => { if(pend){ pend.textContent = t; scroll(); } }); }catch(err){ ai = null; }
+      qaEmit({k: 'q', book: bookId, item: ctx.item || null, text: ctx.text, ja: ctx.ja || '', q, via: chip ? chip.k : 'typed', ai: ai ? ai.text : null, model: ai ? ai.model : null});
       paint();
       setTimeout(() => { const i = box.querySelector('input'); if(i) i.focus(); }, 0);
     });
     f.addEventListener('keydown', e => e.stopPropagation());   // 練習のキー（space・数字）に取られないように
+    box.querySelectorAll('.askchips button').forEach(b => b.addEventListener('click', () => box._ask(box._chips[+b.dataset.i])));
   };
+  // 候補を押す＝その文を聞く（文はアプリが組み立てる）
+  box._ask = chip => { const f = box.querySelector('form'); if(!f || !chip || f.q.disabled) return; box._chip = chip; f.q.value = chip.q; f.requestSubmit(); };
   paint();
   return box;
 }
+/* ================= 段5：ピンポイントで助ける（2026-10-04） =================
+   jibun-kyozai の仕様「分からないことが分からない人を、その場でピンポイントで助ける」（vault 008_project/AppBuilding/specs/20261003_jibun-kyozai_仕様.md）。
+   ⭕ 質問を自分で言葉にさせない：①間違えたら「なぜ違う？」 ②聞き方の候補を押すだけ ③その課までの語と文法で短く ④同じ型で3回間違えたら先に声をかける。
+   ⭕ 候補とつまずきは AI を使わずに作る（訳・語・文法メモ・課の並び・記録から）。押して初めて AI に聞く。 */
+function lessonIdxOf(id){
+  if(!pdata || !id) return -1;
+  return lessonData().findIndex(x => x.ids.has(id));
+}
+/* その課までに出た語と文法の見出し（AI に渡す範囲）。よく出る語から、上限120語 */
+const scopeMemo = new Map();
+function scopeOf(li){
+  if(li == null || li < 0 || !pdata) return null;
+  const ld = lessonData(); if(!ld[li]) return null;
+  const key = li + ':' + Object.keys(gloss).length;
+  if(scopeMemo.has(key)) return scopeMemo.get(key);
+  // ⭕ よく出る語から先に（上限で切るので）。⛔ 出てきた順だと、発音の練習の句（hôm nay ông tạo…）で上限が埋まり、
+  //    49文に出る là が落ちた（2026-10-04・別のモデルの判定で「là は範囲外」と出て分かった）
+  const wm = new Map(), cnt = new Map();
+  const add = (w, ja, n) => { const k = norm(w || ''); if(!k || !ja) return; if(!wm.has(k)) wm.set(k, ja); cnt.set(k, (cnt.get(k) || 0) + (n || 1)); };
+  const seenT = new Set();
+  const fromText = t => { const k = norm(t || ''); if(seenT.has(k)) return; seenT.add(k); const g = glossOf(t); if(g) new Map(g.words.map(([w, ja]) => [norm(w), [w, ja]])).forEach(([w, ja]) => add(w, ja)); };
+  for(let i = li; i >= 0; i--){ ld[i].sents.forEach(s => fromText(s.seg.text)); ld[i].items.forEach(it => fromText(it.show)); }
+  const V = vocab(); for(let i = li; i >= 0; i--) V.out[i].forEach(e => add(e.w, e.ja, 0));
+  const G = grammar(), gs = []; for(let i = 0; i <= li; i++) G.out[i].forEach(p => { if(p.title) gs.push(unmark(p.title)); });
+  const sc = {title: ld[li].L.title, n: li + 1, of: ld.length, words: [...wm].sort((x, y) => cnt.get(y[0]) - cnt.get(x[0])).slice(0, 120).map(([w, ja]) => w + '＝' + ja), grammar: gs.slice(-15), known: new Set(wm.keys())};
+  scopeMemo.set(key, sc);
+  return sc;
+}
+/* 自分の答え（練習の種類ごとに持ち方が違う） */
+function youOf(q){
+  if(!q) return '';
+  if(q.choices && q.picked != null){ const c = q.choices.find(c => c.id === q.picked); if(c) return c.ja != null && pview === 'mean' ? c.ja : (c.show || c.ja || ''); }
+  if(typeof q.picked === 'string') return q.picked;
+  if(Array.isArray(q.picked) && q.tiles) return q.picked.map(i => q.tiles[i].x).join(' ');
+  const res = q.res || (q.g && q.g.res);
+  if(res) return res.filter(r => r.k !== 'miss').map(r => r.y || '').filter(Boolean).join(' ');
+  return q.typedText || '';
+}
+/* 前の課の似た文（語が2つ以上かさなり、同じではない） */
+function similarEarlier(ctx){
+  const li = ctx.li; if(li == null || li <= 0 || !ctx.text) return null;
+  const ld = lessonData(), mine = norm(ctx.text), me = new Set(mine.split(' '));
+  let best = null, bs = 0;
+  for(let i = 0; i < li; i++) for(const s of ld[i].sents){
+    if(!s.long) continue;
+    const t = norm(s.seg.text); if(t === mine) continue;
+    const ws = new Set(t.split(' ')); if(ws.size > 12) continue;
+    let k = 0; ws.forEach(w => { if(me.has(w)) k++; });
+    const v = k / Math.max(me.size, ws.size);
+    if(k >= 2 && v > bs){ bs = v; best = s.seg.text.trim(); }
+  }
+  return bs >= 0.34 ? best : null;
+}
+/* 聞き方の候補（4つまで）。⭕ AI を使わない */
+function askChips(ctx, past){
+  const out = [], w = ctx.why;
+  if(w) out.push({k: 'why', label: w.close ? 'どこが惜しい？' : 'なぜ違う？', q: (w.close ? 'どこが惜しいの？' : 'なぜ違うの？') + (w.you ? '（私の答え：「' + w.you + '」）' : '（答えられなかった）')});
+  if(w) w.pairs.slice(0, 1).forEach(p => out.push({k: 'pair', label: '「' + p.you + '」と「' + p.right + '」の違い', q: '「' + p.you + '」と「' + p.right + '」は何が違うの？'}));
+  if(ctx.text){
+    const prev = scopeOf((ctx.li == null ? -1 : ctx.li) - 1), known = prev ? prev.known : new Set();
+    (ctx.words || []).filter(([x]) => /\p{L}/u.test(x) && !known.has(norm(x))).slice(0, out.length ? 1 : 2)
+      .forEach(([x]) => out.push({k: 'word', label: '「' + x + '」の意味と使い方', q: '「' + x + '」はどういう意味で、どう使うの？'}));
+    const n = (ctx.notes || []).find(n => n.title && n.title !== 'この文');
+    out.push(n ? {k: 'form', label: '「' + unmark(n.title) + '」の形', q: 'この文の「' + unmark(n.title) + '」はどういう形？'}
+      : {k: 'form', label: 'この文の形', q: 'この文はどういう作り（語順・形）になっているの？'});
+    const sim = similarEarlier(ctx);
+    if(sim) out.push({k: 'compare', label: '前の課の「' + (sim.length > 24 ? sim.slice(0, 23) + '…' : sim) + '」と何が違う？', q: '前の課の「' + sim + '」と、この文は何が違うの？', sim});
+  }
+  const asked = new Set((past || []).map(x => x.q.q));
+  const rest = out.filter(c => !asked.has(c.q)).slice(0, 4);
+  // 答えが1つでも返っていたら、先頭に「くわしく」
+  const last = (past || []).slice(-1)[0];
+  if(last && ((last.a && last.a.answer) || last.q.ai)) rest.unshift({k: 'more', label: 'くわしく', q: 'いまの答えを、もう少しくわしく教えて'});
+  return rest.slice(0, 4);
+}
+function chipsHTML(ctx, past){
+  const cs = askChips(ctx, past);
+  // ⚠️ box は呼ぶ側で _chips を受け取る（押したときに同じ候補を使う）
+  chipsHTML.last = cs;
+  if(!cs.length) return '';
+  return '<div class="askchips" role="group" aria-label="聞き方の候補">' + cs.map((c, i) => '<button type="button" data-i="' + i + '" class="' + (c.k === 'why' ? 'why' : '') + '" lang="ja">' + esc(c.label) + '</button>').join('') + '</div>';
+}
+/* つまずき：同じ文法メモ（g:）か同じ語の取り違え（w:）で、最近20問のうち3回間違えたら声をかける（同じ型は1日1回まで） */
+let ansN = load('ans:n', 0), misses = load('miss:log', []);
+function missKeys(it, res){
+  const ks = [];
+  notesFor(it.show).forEach(n => { if(n.match) ks.push('g:' + n.match + '\t' + unmark(n.title || n.match.trim())); });
+  (res.wrong || []).forEach(x => { if(x.right && norm(x.right) !== norm(x.you || '')) ks.push('w:' + norm(x.right)); });
+  return [...new Set(ks)];
+}
+function noteMiss(it, res){
+  if(q && q._miss !== undefined) return q._miss;   // 同じ問いを描き直しても二度数えない
+  const ks = missKeys(it, res);
+  if(ks.length){ misses.push({n: ansN, keys: ks}); misses = misses.filter(m => m.n > ansN - 40).slice(-60); save('miss:log', misses); }
+  const recent = misses.filter(m => m.n > ansN - 20), shown = load('stuck:shown', {});
+  let hit = null;
+  for(const k of ks){
+    const c = recent.filter(m => m.keys.includes(k)).length;
+    if(c >= 3 && !(shown[k] > Date.now() - DAY)){ hit = {k, c, li: lessonIdxOf(it.id)}; break; }
+  }
+  if(hit){ shown[hit.k] = Date.now(); save('stuck:shown', shown); }
+  if(q) q._miss = hit;
+  return hit;
+}
+const stuckName = hit => hit.k.startsWith('g:') ? hit.k.split('\t')[1] : hit.k.slice(2);
+function focusItems(hit){
+  const ld = lessonData(), pool = ld.slice(0, hit.li >= 0 ? hit.li + 1 : ld.length).flatMap(x => x.items);
+  const isG = hit.k.startsWith('g:'), m = isG ? hit.k.slice(2).split('\t')[0] : ' ' + hit.k.slice(2) + ' ';
+  const seen = new Set();
+  return shuffled(pool.filter(it => it.deck.kind === 'text' && !seen.has(it.id) && seen.add(it.id) &&
+    (isG ? matchable(it.show).includes(m) : (' ' + norm(it.show) + ' ').includes(m)))).slice(0, 8);
+}
+function stuckEl(hit, it, ask){
+  const el = document.createElement('div'); el.className = 'stuck';
+  const isG = hit.k.startsWith('g:'), name = stuckName(hit), n = focusItems(hit).filter(x => reviewSkill(x)).length;
+  el.innerHTML = '<b>ここで止まっていませんか</b><span>' + (isG ? '文法「' + esc(name) + '」' : '「' + esc(name) + '」') + 'の入った問いで、最近 ' + hit.c + ' 回間違えています。説明を聞いてから、この型だけを少し練習すると抜けやすくなります。</span>' +
+    '<div class="row"><button type="button" class="sask">説明を聞く</button>' + (n ? '<button type="button" class="primary sgo">この型だけ練習する（' + n + '問）</button>' : '') + '</div>';
+  el.querySelector('.sask').onclick = () => { ask._ask({k: 'stuck', q: (isG ? '「' + name + '」の形' : '「' + name + '」') + 'で何度も間違えます。どこでつまずきやすいのか、この課までの言葉で教えて'}); ask.scrollIntoView({block: 'nearest'}); };
+  const go = el.querySelector('.sgo'); if(go) go.onclick = () => startFocus(hit);
+  return el;
+}
+/* この型だけ練習する：いまの組は止めずに預け、終わったら戻る */
+function startFocus(hit){
+  const queue = focusItems(hit).map(it => [it.id, reviewSkill(it)]).filter(x => x[1]);
+  if(!queue.length){ toast('この型の問いが見つかりませんでした'); return; }
+  const back = run && runOn && run.stage !== 'focus' ? run : null;
+  run = {book: bookId, stage: 'focus', title: '「' + stuckName(hit) + '」だけ練習', queue, i: 0, res: [], t: Date.now(), back};
+  save('run', run);
+  resumeRun();
+}
+function finishFocus(total, ok){
+  const back = run.back || null;
+  run = back; save('run', run); runOn = false;
+  $('#practice').classList.add('running');
+  $('#runbar').hidden = true;
+  $('#psets').hidden = true;
+  $('#pbody').innerHTML = '<div class="result' + (total && ok === total ? ' ok' : '') + '"><div class="rtitle">この型だけ練習</div>' +
+    '<div class="rscore">' + ok + ' / ' + total + '<small>問</small></div>' +
+    '<div class="rmsg">' + (ok === total ? 'この型は抜けたようです。' : '間違えた問いは、今日の復習にまた出ます。') + '</div>' +
+    '<div class="row">' + (back ? '<button class="primary" id="rback2">元の練習に戻る：' + esc(back.title) + '</button>' : '') + '<button id="rback"' + (back ? '' : ' class="primary"') + '>コースに戻る</button></div></div>';
+  const bk = () => { $('#practice').classList.remove('running'); };
+  const b2 = $('#rback2'); if(b2) b2.onclick = () => { bk(); resumeRun(); };
+  $('#rback').onclick = () => { bk(); setMode('book'); };
+}
+
 function ctxOf(text, item){
   const g = glossOf(text);
-  return {text, item, ja: g ? g.ja : '', words: g ? g.words : [], notes: notesFor(text)};
+  return {text, item, ja: g ? g.ja : '', words: g ? g.words : [], notes: notesFor(text), li: item ? lessonIdxOf(item) : -1};
 }
 
 /* ================= 進める：章をステージで進める（2026-10-03） =================
@@ -5012,6 +5205,7 @@ function resumeRun(){
 function stopRun(){   // セーブしてやめる（位置は run に残る）
   runOn = false; q = null;
   $('#practice').classList.remove('running');
+  if(run && run.stage === 'focus'){ run = run.back || null; save('run', run); }   // この型だけ練習をやめたら、預けた組に戻す
   const lid = run && run.stage !== 'review' ? run.stage.split('|')[0] : null;
   if(lid) goLesson(lid); else setMode('book');
 }
@@ -5037,6 +5231,7 @@ function runAnswered(it, ok){
 function finishRun(){
   const total = run.res.length, ok = run.res.reduce((a, b) => a + b, 0), sc = total ? ok / total : 0, stars = starsOf(sc), cleared = sc >= PASS;
   if(run.stage === 'review'){ finishReview(total, ok); return; }
+  if(run.stage === 'focus'){ finishFocus(total, ok); return; }
   if(cleared) emit('stage', {b: run.book, s: run.stage, score: Math.round(sc * 100) / 100, stars});
   const done_ = run; run = null; save('run', null); runOn = false;
   // 次のステージ
