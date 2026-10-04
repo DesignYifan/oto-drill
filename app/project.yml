@@ -16,7 +16,7 @@ targets:
     info:
       path: Info.plist
       properties:
-        CFBundleDisplayName: 音声ドリル
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [audio]
@@ -33,4 +33,11 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"   # Mac Catalyst に要る（iPad も入る）
         SUPPORTS_MACCATALYST: YES       # Mac も同じ殻で開く。手元のモデル（localhost）を立てなくてよくなる（2026-10-04）
         DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: NO
+        APP_DISPLAY_NAME: 音声ドリル
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        # Mac の試す版（Debug）は名前と id を分ける。普段使いの版と並んで開いても見分けられるように（2026-10-04 本人「どっちを開いて確認すればいいのか分からない」）
+        # × iPhone は変えない（入れてあるアプリが別物になり、選んだフォルダを選び直すことになるため）
+        Debug:
+          "APP_DISPLAY_NAME[sdk=macosx*]": 音声ドリル（試験用）
+          "PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]": com.designyifan.otodrill.dev

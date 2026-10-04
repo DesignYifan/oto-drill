@@ -980,6 +980,13 @@ select::-ms-expand{display:none}
 .lsh .ct{margin-left:auto; color:var(--ui-text-muted-fgColor); font-size:13px; font-variant-numeric:tabular-nums}
 /* 課の手引き（聴く前に・guide.json） */
 .lguide{display:flex; flex-direction:column; gap:16px}
+details.lguide{display:block}
+details.lguide > * + *{margin-top:16px}
+details.lguide > summary{list-style:none; cursor:pointer}
+details.lguide > summary::-webkit-details-marker{display:none}
+details.lguide:not([open]) > summary{margin-bottom:0}
+details.lguide .gcaret{width:14px; height:14px; margin-left:6px; vertical-align:-2px; transition:transform .15s}
+details.lguide[open] .gcaret{transform:rotate(180deg)}
 .lguide h4{margin:0 0 8px; font-size:14px}
 .lguide .ggoal{margin:0; font-size:15px; line-height:1.7}
 .lguide .gpt{padding:12px 16px; border-radius:var(--ui-control-radius); background:var(--ui-control-bgColor)}
@@ -1021,6 +1028,12 @@ select::-ms-expand{display:none}
 .excount input{width:5em; font:inherit; padding:8px 12px; border:0; border-radius:var(--ui-control-radius); background:var(--ui-surface-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor)}
 .excount button{background:var(--ui-control-bgColor); box-shadow:none; font-size:12px}
 .exnote{margin-top:8px; color:var(--ui-text-muted-fgColor); font-size:12px}
+.excountnote{margin-top:8px; color:var(--ui-text-muted-fgColor); font-size:12px}   /* × .exnote は文法メモの書式（2列のグリッド）と名前がかぶり、1文字ずつ縦に並んでいた */
+.pex > .exhead, .pex > .pcells, .pex > .excountnote, .pex > .exqs, .pex > .excount{grid-column:1 / -1}   /* 狭い列に押し込まれて1文字ずつ縦に並んでいた（2026-10-04） */
+.exqs{display:flex; flex-direction:column; gap:6px}
+.exq{display:grid; grid-template-columns:38px 1fr auto; gap:12px; align-items:center}
+.exq .qt{font-size:15px; line-height:1.5}
+.exq .exsay{padding:6px 12px; font-size:12px}
 button.linkish{background:none; box-shadow:none; padding:0; color:var(--ui-primary-fgColor); font-size:inherit; border-radius:4px; display:inline-flex; align-items:center; gap:4px}
 button.linkish:hover{background:none; text-decoration:underline}
 .ltag{background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-shadow); padding:16px 20px; margin-top:16px}
@@ -3942,6 +3955,7 @@ const STEP = [['listen', '聴く'], ['words', '単語'], ['practice', '練習'],
 const wknown = () => new Set(load('wknown:' + bookId, []));
 let blesson = null;     // いま開いている課の id
 
+const exItems = new Map();   // 紙の問題の問題文（項目 id → 項目）。押したときに鳴らすため
 function exHTML(lid, ex, last){
   const cnt = exCount(ex);
   let h = '<div class="pex"><div class="exhead"><span class="nm">' + esc(ex.label) + '</span>' +
@@ -3952,13 +3966,27 @@ function exHTML(lid, ex, last){
     h += '<div class="excount"><span>問の数を入れると、印を付けられます</span><input type="number" min="1" max="60" data-ex="' + esc(ex.id) + '" aria-label="問の数" placeholder="数"><button class="setcount" data-ex="' + esc(ex.id) + '">決める</button></div></div>';
     return h;
   }
+  /* 問題文：練習の音声の文字起こしがあれば、各問の横に出す（2026-10-04 本人「教科書の問題をそのまま引っ張ってきてくれればいい」）。
+     ⭕ 押すとその問だけ鳴る。⛔ 文字起こしなので聞き違いが混ざることがある */
+  const lx = lessonData().find(y => y.L.id === lid);
+  const qs = lx ? lx.items.filter(it => !isSound(it) && (ex.tracks || []).includes(srcOf(it)) && it.end > it.start).sort((a, b) => a.start - b.start) : [];
+  if(qs.length){
+    h += '<div class="exqs">' + Array.from({length: Math.max(cnt, qs.length)}, (_, i) => {
+      const n = i + 1, r = last[lid + '|' + ex.id + '|' + n], it = qs[i];
+      if(it) exItems.set(it.id, it);
+      return '<div class="exq">' + (n <= cnt ? '<button class="pc' + (r ? ' r' + r.r : '') + '" data-l="' + esc(lid) + '" data-ex="' + esc(ex.id) + '" data-n="' + n + '" aria-label="' + n + '問目　' + (r ? PAPER[r.r][0] : 'まだ') + '"><small>' + n + '</small>' + (r ? PAPER[r.r][0] : '') + '</button>' : '<span></span>') +
+        '<span class="qt" lang="' + LP.code + '">' + (it ? esc(it.show) : '') + '</span>' +
+        (it ? '<button class="exsay" data-item="' + esc(it.id) + '">▶ 聴く</button>' : '<span></span>') + '</div>';
+    }).join('') + '</div>' + (ex.count && !load('excount:' + bookId, {})[ex.id] ? '<div class="excountnote">問の数は音声から見積もっています。違っていたら <button class="linkish recount" data-ex="' + esc(ex.id) + '">直す</button></div>' : '') + '</div>';
+    return h;
+  }
   h += '<div class="pcells">';
   for(let n = 1; n <= cnt; n++){
     const r = last[lid + '|' + ex.id + '|' + n];
     h += '<button class="pc' + (r ? ' r' + r.r : '') + '" data-l="' + esc(lid) + '" data-ex="' + esc(ex.id) + '" data-n="' + n + '" aria-label="' + n + '問目　' + (r ? PAPER[r.r][0] : 'まだ') + '" title="' +
       (r ? new Date(r.t).toLocaleDateString('ja-JP') : 'まだ') + '"><small>' + n + '</small>' + (r ? PAPER[r.r][0] : '') + '</button>';
   }
-  return h + '</div>' + (ex.count && !load('excount:' + bookId, {})[ex.id] ? '<div class="exnote">問の数は音声の番号から見積もっています。違っていたら <button class="linkish recount" data-ex="' + esc(ex.id) + '">直す</button></div>' : '') + '</div>';
+  return h + '</div>' + (ex.count && !load('excount:' + bookId, {})[ex.id] ? '<div class="excountnote">問の数は音声の番号から見積もっています。違っていたら <button class="linkish recount" data-ex="' + esc(ex.id) + '">直す</button></div>' : '') + '</div>';
 }
 
 /* 課の4段。null はその段が無い（中身が無い） */
@@ -3996,7 +4024,7 @@ function lessonHTML(defs, last){
     '<button class="lrow' + (i === li ? ' on' : '') + (steps[i].all ? ' fin' : '') + '" data-lesson="' + esc(y.L.id) + '"><span class="nm">' + esc(y.L.title) + '</span>' +
     (cst => '<span class="lprog" aria-label="ステージ ' + cst.cleared + ' / ' + cst.of + ' クリア">' + (cst.all ? '<b class="crown">クリア</b>' : '<i style="--p:' + (cst.of ? cst.cleared / cst.of * 100 : 0) + '%"></i><small>' + cst.cleared + '/' + cst.of + '</small>') + '</span>')(chapterState(i, defs, last)) +
     '</button>').join('') + '</nav><div class="lmain">';
-  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + guideHTML(x.L.id) + journeyHTML(li, defs, last) + '<h3 class="ovh">この課の中身<small>音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
+  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + journeyHTML(li, defs, last) + '<h3 class="ovh">この課の中身<small>音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
   let n = 0;
   const card = (k, name, body, sum) => {
     const s = st[k]; if(!s) return '';
@@ -4031,15 +4059,16 @@ function guideHTML(id){
   const g = guide[id]; if(!g) return '';
   const tr = list => list && list.length ? '<div class="ltracks">' + list.map(t => '<button class="lt' + (done.has(t) ? ' heard' : '') + '" data-t="' + esc(t) + '"><span>' + esc(trackLabel(t)) + '</span><small>' + (done.has(t) ? '聴いた' : '聴く') + '</small></button>').join('') + '</div>' : '';
   const nNew = (g.words || []).filter(w => w.mark === 'new').length;
-  return '<section class="lstep lguide"><div class="lsh"><span class="num">0</span><b>聴く前に</b><span class="ct">この課の要点と進め方</span></div>' +
+  return '<details class="lstep lguide"' + (load('guide:open', false) ? ' open' : '') + '><summary class="lsh"><span class="num">0</span><b>聴く前に</b><span class="ct">この課の要点と進め方<svg class="ic gcaret" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span></summary>' +
     (g.goal ? '<p class="ggoal">' + esc(g.goal) + '</p>' : '') +
     (g.points && g.points.length ? '<div><h4>文法の要点</h4><div class="lguide">' + g.points.map(p => '<div class="gpt"><b>' + esc(p.title) + '</b><p lang="ja">' + esc(p.body) + '</p></div>').join('') + '</div></div>' : '') +
     (g.words && g.words.length ? '<div><h4>初めて出る語（' + g.words.length + '語' + (nNew ? '・★ 教科書の単語欄に無い語 ' + nNew : '') + '）</h4><div class="gwords">' +
       g.words.map(w => '<span class="gw' + (w.mark === 'new' ? ' new' : '') + '" lang="' + LP.code + '">' + (w.mark === 'new' ? '★ ' : '') + esc(w.w) + (w.ja ? '<small lang="ja">' + esc(w.ja) + '</small>' : '') + '</span>').join('') + '</div></div>' : '') +
     (g.steps && g.steps.length ? '<div><h4>進め方</h4><ol>' + g.steps.map(st => '<li>' + esc(st.text) + tr(st.tracks) + '</li>').join('') + '</ol></div>' : '') +
     (g.fixes && g.fixes.length ? '<div class="gfix"><b>文字起こしの聞き違い：</b>' + g.fixes.map(f => esc(f.heard) + ' → <b>' + esc(f.should) + '</b>（' + esc(f.note) + '）').join('　') + '</div>' : '') +
-    '</section>';
+    '</details>';
 }
+document.addEventListener('toggle', e => { if(e.target.classList && e.target.classList.contains('lguide')) save('guide:open', e.target.open); }, true);   // 開け閉めは覚えておく
 
 /* 音声の名前を、何の音声かが分かる言葉に（cơ sở のファイル名の型だけ。ほかは名前のまま） */
 function trackLabel(name){
@@ -4108,6 +4137,7 @@ document.addEventListener('click', e => {
     rerender();
   }
   else if(b.classList.contains('opentrack') || b.classList.contains('lt')) openTrack(b.dataset.t);
+  else if(b.classList.contains('exsay')){ const it = exItems.get(b.dataset.item); if(it) say(it); }
   else if(b.classList.contains('golesson') || (b.dataset.lesson && b.closest('#book'))) goLesson(b.dataset.lesson);
   else if(b.classList.contains('lwk')){
     const k = wknown(); const w = b.dataset.w;
@@ -4767,6 +4797,7 @@ function journeyHTML(li, defs, last){
   }
   const hero = unitPic(lessonData()[li].L.id);
   if(hero) h += '<figure class="uhero"><img src="' + hero + '" alt=""></figure>';
+  h += guideHTML(lessonData()[li].L.id);   // 聴く前に：絵の下に、たたんで置く（2026-10-04 本人「折りたためるといい」「最初で画像が見えてる方が見栄えがいい」）
   h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '課クリア' : 'この課のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　<span class="starn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3l-3.9 2.1.9-4.3-3.3-3 4.4-.5z"/></svg>' + cs.stars + '</span></span></div>' +
     '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><ol class="jpath">';
   cs.sgs.forEach((sg, k) => {
