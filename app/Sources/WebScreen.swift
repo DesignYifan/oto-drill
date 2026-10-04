@@ -143,7 +143,11 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
             if(c){   // 区間を鳴らす：1秒目から始めて、1.5秒後の位置
               c.muted = true; c.src = oto.fs.url('book', '002.mp3');
               await new Promise(res => { c.addEventListener('loadedmetadata', res, {once: true}); setTimeout(res, 5000); });
-              c.currentTime = 1; c.play(); await new Promise(res => setTimeout(res, 1500)); r.clip = Math.round(c.currentTime * 10) / 10; c.pause();
+              c.currentTime = 1; c.play(); await new Promise(res => setTimeout(res, 1500)); r.clip = Math.round(c.currentTime * 10) / 10;
+              // 一度に鳴るのは1つ：文を鳴らしたらトラックが止まり、トラックを鳴らしたら文が止まるか
+              a.play(); await new Promise(res => setTimeout(res, 800)); r.solo = {afterTrack: {track: !a.paused, clip: !c.paused}};
+              c.play(); await new Promise(res => setTimeout(res, 800)); r.solo.afterClip = {track: !a.paused, clip: !c.paused};
+              a.pause(); c.pause();
             }
             r.audio = { paused: a && a.paused, t: a && Math.round(a.currentTime * 10) / 10, src: a && a.src.slice(0, 12), ms: Date.now() - t0, err: a && a.error && a.error.code, rs: a && a.readyState, ns: a && a.networkState, d: a && a.duration };
             return JSON.stringify(r);

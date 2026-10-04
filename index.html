@@ -2357,6 +2357,16 @@ $('#export').addEventListener('click', ()=>{
 const clip = new Audio();
 if(NATIVE) window.__oto = {audio, clip};   // iPhone のアプリの自己試験が再生を確かめるため
 clip.preload = 'auto';
+/* 鳴らすのは一度に1つ（2026-10-04 本人「同時に2個再生されたりした」）。
+   ⭕ トラックの再生（audio）と、文ごとの再生（clip・文だけ聴く）は別の部品なので、後から鳴り始めたほうを残して、もう片方を止める */
+audio.addEventListener('play', () => {
+  if(flow){ stopFlow(); if(!$('#flowPanel').hidden) openFlow(true); }
+  if(!clip.paused) clip.pause();
+});
+clip.addEventListener('play', () => {
+  clearTimeout(gapTimer);
+  if(!audio.paused) audio.pause();
+});
 let pdata = null, pfiles = {}, purls = {};
 let pdeck = load('p:deck', 'all');
 let pview = load('p:view', 'table');
