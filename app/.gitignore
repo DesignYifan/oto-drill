@@ -1,5 +1,6 @@
 Secrets.xcconfig
 *.xcodeproj/
 build/
+build.noindex/
 DerivedData/
 Info.plist
