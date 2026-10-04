@@ -527,7 +527,7 @@ li.hidden{display:none}
 .mainbar[hidden]{display:none}
 .mainbar b{margin-right:12px; color:var(--ui-primary-fgColor)}
 .mainbar button{font-size:13px}
-.listmode{display:flex; align-items:center; gap:12px; padding:0 0 12px; font-size:12px; color:var(--ui-text-muted-fgColor); flex-wrap:wrap}
+.listmode{display:flex; align-items:center; gap:12px; padding:12px 20px; font-size:12px; color:var(--ui-text-muted-fgColor); flex-wrap:wrap}
 .listmode[hidden]{display:none}
 .listmode .seg button{font-size:13px}
 .flowunits{display:flex; flex-direction:column; gap:4px; max-height:240px; overflow-y:auto; padding:4px 0}
@@ -978,6 +978,22 @@ select::-ms-expand{display:none}
 .lstep.done .lsh .num{background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
 .lsh b{font-size:15px}
 .lsh .ct{margin-left:auto; color:var(--ui-text-muted-fgColor); font-size:13px; font-variant-numeric:tabular-nums}
+/* 課の手引き（聴く前に・guide.json） */
+.lguide{display:flex; flex-direction:column; gap:16px}
+.lguide h4{margin:0 0 8px; font-size:14px}
+.lguide .ggoal{margin:0; font-size:15px; line-height:1.7}
+.lguide .gpt{padding:12px 16px; border-radius:var(--ui-control-radius); background:var(--ui-control-bgColor)}
+.lguide .gpt b{display:block; margin-bottom:4px}
+.lguide .gpt p{margin:0; font-size:14px; line-height:1.75}
+.lguide .gwords{display:flex; flex-wrap:wrap; gap:6px}
+.lguide .gw{padding:4px 10px; border-radius:999px; background:var(--ui-control-bgColor); font-size:14px}
+.lguide .gw small{margin-left:6px; color:var(--ui-text-muted-fgColor); font-size:12px}
+.lguide .gw.new{box-shadow:inset 0 0 0 1.5px var(--ui-primary-color)}
+.lguide ol{margin:0; padding:0 0 0 22px; list-style:decimal; overflow:visible; flex:none; display:flex; flex-direction:column; gap:12px; font-size:14px; line-height:1.6}
+.lguide ol li{display:list-item; padding:0; margin:0; background:none; border:0; border-radius:0; cursor:default; min-height:0; grid-template-columns:none}
+.lguide ol li:hover{background:none}   /* 一覧（#list）の行の書式を外す */
+.lguide ol .ltracks{margin-top:6px; grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+.lguide .gfix{font-size:13px; line-height:1.6; color:var(--ui-text-muted-fgColor)}
 .ltracks{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px}
 .lt{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 16px; border-radius:var(--ui-control-radius); text-align:left; min-height:44px; background:var(--ui-control-bgColor); box-shadow:none}
 .lt:hover{background:var(--ui-control-bgColor-hover)}
@@ -2057,6 +2073,7 @@ function picURL(rel){
 }
 const unitPic = id => picURL(pics.units[id]);
 const wordPic = t => picURL(pics.words[picKey(t)]);
+let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
 let sentEls = [];     // いま出している文の要素
@@ -2080,6 +2097,8 @@ async function loadSidecars(files){
     const d = await read(ij); if(d) pics = {units: d.units || {}, words: d.words || {}};
     files.forEach(f => { const rel = (f._rel || f.webkitRelativePath || '').split('/').slice(1).join('/'); if(rel.startsWith('images/')) picFiles.set(rel, f); });
   }
+  const gj = pick('guide.json');
+  guide = {}; if(gj){ const d = await read(gj); guide = (d && d.lessons) || {}; }
   const dr = pick('drills.json');
   if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
   const p = pick('practice.json');
@@ -3977,7 +3996,7 @@ function lessonHTML(defs, last){
     '<button class="lrow' + (i === li ? ' on' : '') + (steps[i].all ? ' fin' : '') + '" data-lesson="' + esc(y.L.id) + '"><span class="nm">' + esc(y.L.title) + '</span>' +
     (cst => '<span class="lprog" aria-label="ステージ ' + cst.cleared + ' / ' + cst.of + ' クリア">' + (cst.all ? '<b class="crown">クリア</b>' : '<i style="--p:' + (cst.of ? cst.cleared / cst.of * 100 : 0) + '%"></i><small>' + cst.cleared + '/' + cst.of + '</small>') + '</span>')(chapterState(i, defs, last)) +
     '</button>').join('') + '</nav><div class="lmain">';
-  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + journeyHTML(li, defs, last) + '<h3 class="ovh">この課の中身<small>音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
+  h += '<div class="lhead"><h3>' + esc(x.L.title) + '</h3></div>' + guideHTML(x.L.id) + journeyHTML(li, defs, last) + '<h3 class="ovh">この課の中身<small>音声・単語・紙の問題を、ここから直接開くこともできます</small></h3>';
   let n = 0;
   const card = (k, name, body, sum) => {
     const s = st[k]; if(!s) return '';
@@ -4003,6 +4022,23 @@ function lessonHTML(defs, last){
   const next = ld[li + 1];
   h += '<div class="lnext">' + (next ? '<button class="' + (st.all ? 'primary' : '') + '" data-lesson="' + esc(next.L.id) + '">次の課へ：' + esc(next.L.title) + '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' : '') + '</div>';
   return h + '</div></div>';
+}
+
+/* 課の手引き：本文を聴く前に読む（2026-10-04 本人「メインの音声を聞いて練習問題をする前に、必要な文法とか単語とかの基本的な解説」
+   「どういう順番でやれば正解なのか、説明してない単語はどれなのか」）。
+   ⭕ guide.json（教材のフォルダ・公開しない）。説明は教科書の文を写さず自分の言葉で。★＝本文に出るのに教科書の単語欄に無い語 */
+function guideHTML(id){
+  const g = guide[id]; if(!g) return '';
+  const tr = list => list && list.length ? '<div class="ltracks">' + list.map(t => '<button class="lt' + (done.has(t) ? ' heard' : '') + '" data-t="' + esc(t) + '"><span>' + esc(trackLabel(t)) + '</span><small>' + (done.has(t) ? '聴いた' : '聴く') + '</small></button>').join('') + '</div>' : '';
+  const nNew = (g.words || []).filter(w => w.mark === 'new').length;
+  return '<section class="lstep lguide"><div class="lsh"><span class="num">0</span><b>聴く前に</b><span class="ct">この課の要点と進め方</span></div>' +
+    (g.goal ? '<p class="ggoal">' + esc(g.goal) + '</p>' : '') +
+    (g.points && g.points.length ? '<div><h4>文法の要点</h4><div class="lguide">' + g.points.map(p => '<div class="gpt"><b>' + esc(p.title) + '</b><p lang="ja">' + esc(p.body) + '</p></div>').join('') + '</div></div>' : '') +
+    (g.words && g.words.length ? '<div><h4>初めて出る語（' + g.words.length + '語' + (nNew ? '・★ 教科書の単語欄に無い語 ' + nNew : '') + '）</h4><div class="gwords">' +
+      g.words.map(w => '<span class="gw' + (w.mark === 'new' ? ' new' : '') + '" lang="' + LP.code + '">' + (w.mark === 'new' ? '★ ' : '') + esc(w.w) + (w.ja ? '<small lang="ja">' + esc(w.ja) + '</small>' : '') + '</span>').join('') + '</div></div>' : '') +
+    (g.steps && g.steps.length ? '<div><h4>進め方</h4><ol>' + g.steps.map(st => '<li>' + esc(st.text) + tr(st.tracks) + '</li>').join('') + '</ol></div>' : '') +
+    (g.fixes && g.fixes.length ? '<div class="gfix"><b>文字起こしの聞き違い：</b>' + g.fixes.map(f => esc(f.heard) + ' → <b>' + esc(f.should) + '</b>（' + esc(f.note) + '）').join('　') + '</div>' : '') +
+    '</section>';
 }
 
 /* 音声の名前を、何の音声かが分かる言葉に（cơ sở のファイル名の型だけ。ほかは名前のまま） */

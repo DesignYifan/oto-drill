@@ -121,6 +121,10 @@ final class WebVC: UIViewController, WKScriptMessageHandlerWithReply, WKNavigati
         dlog("読み込み完了 \(webView.url?.absoluteString ?? "")")
         #if DEBUG
         // 試すとき：-selftest 1 で、ページの中から口を全部呼んで結果を記録に書く
+        // 試すとき：-eval "<JS>" で、読み込んで3秒後にページの中で JS を流す（画面を開いて見るため。例：goLesson('zero.g07')）
+        if let js = UserDefaults.standard.string(forKey: "eval") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { webView.evaluateJavaScript(js) { _, e in dlog("eval \(e.map { "失敗 \($0)" } ?? "済")") } }
+        }
         if UserDefaults.standard.bool(forKey: "selftest") {
             let js = """
             const r = {};
