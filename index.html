@@ -502,6 +502,23 @@ li.hidden{display:none}
 .pnrow summary span, .addmore summary{color:var(--ui-primary-fgColor); font-size:13px}
 .pnrow[open] summary{margin-bottom:12px}
 .addex label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--ui-text-muted-fgColor)}
+/* 単語カード（2026-10-04） */
+.wcwrap{position:fixed; inset:0; z-index:60; background:rgba(15,18,24,.45); display:flex; align-items:center; justify-content:center; padding:16px}
+.wcwrap[hidden]{display:none}
+.wcbox{width:min(520px,100%); max-height:100%; overflow:auto; background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-shadow); padding:20px; display:flex; flex-direction:column; gap:16px}
+.wchead{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.wchead b{font-size:15px}
+.wchead .ct{margin-left:auto; font-size:12px; color:var(--ui-text-muted-fgColor)}
+.wccard{border-radius:var(--ui-card-radius); background:var(--ui-control-bgColor); min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:20px; text-align:center}
+.wccard img{width:100%; max-width:360px; aspect-ratio:4/3; object-fit:cover; border-radius:var(--ui-control-radius)}
+.wccard .wq{font-size:30px; font-weight:600; line-height:1.3}
+.wccard .wa{font-size:20px; line-height:1.4}
+.wccard .wa.vi{font-size:28px; font-weight:600}
+.wccard .wsub{font-size:13px; color:var(--ui-text-muted-fgColor)}
+.wcbtns{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
+.wcbtns button{min-width:120px}
+.wcopts{display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-size:13px}
+.wckeys{font-size:12px; color:var(--ui-text-muted-fgColor); text-align:center}
 .uhero{margin:0 0 20px; border-radius:var(--ui-card-radius, 16px); overflow:hidden; aspect-ratio:16/9; max-height:360px; background:var(--ui-surface-muted-bgColor)}
 .uhero img{width:100%; height:100%; object-fit:cover; display:block}
 .wpic{width:120px; height:120px; object-fit:cover; border-radius:16px; display:block; margin:0 auto 12px}
@@ -4037,7 +4054,8 @@ function lessonHTML(defs, last){
   if(st.words) h += card('words', '単語', '<div class="lwords">' + st.words.list.map(e =>
     '<span class="lw' + (st.words.isKnown(e.w) ? ' known' : '') + '"><button class="lwp" data-w="' + esc(e.w) + '"><b>' + esc(e.w) + '</b>' + (e.ja ? '<small>' + esc(e.ja) + '</small>' : '') + '</button>' +
     '<button class="lwk" data-w="' + esc(e.w) + '" aria-label="' + esc(e.w) + ' を覚えた" aria-pressed="' + st.words.isKnown(e.w) + '"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></button></span>').join('') + '</div>' +
-    '<p class="bfoot">語を押すと、その語を含む文が鳴ります。右の印で「覚えた」にできます。練習で覚えた語にも自動で付きます。</p>',
+    '<div class="row" style="justify-content:flex-start;margin-top:12px"><button class="primary wcopen" data-li="' + li + '">単語カードで覚える</button></div>' +
+    '<p class="bfoot">語を押すと、その語の音が鳴ります。右の印で「覚えた」にできます。練習で覚えた語にも自動で付きます。</p>',
     st.words.n + ' / ' + st.words.of + ' 語');
   if(!st.words && V.out[li].some(e => e.syl)) h += '<section class="lstep muted"><div class="lsh"><span class="num">–</span><b>単語</b><span class="ct">まだ無い</span></div>' +
     '<p class="bfoot" style="margin:0">この教材には語の一覧（lexicon.json）がまだありません。巻末の語彙表か各課の「新しい語」の頁の写真があれば、課ごとの単語をここに並べられます。</p></section>';
@@ -4051,6 +4069,90 @@ function lessonHTML(defs, last){
   h += '<div class="lnext">' + (next ? '<button class="' + (st.all ? 'primary' : '') + '" data-lesson="' + esc(next.L.id) + '">次の課へ：' + esc(next.L.title) + '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' : '') + '</div>';
   return h + '</div></div>';
 }
+
+/* ================= 単語カード（2026-10-04） =================
+   本人「日本語があって、それを隠してベトナム語が言えるとか、ベトナム語があって、それを隠して日本語が言えるとか、単語カード形式みたいな感じに」
+   「せっかく画像も作ってたから、単語のテストみたいにしたりしてほしい」。
+   ⭕ 向き：ベトナム語 → 日本語／日本語 → ベトナム語。絵は答えを明かさない側に出す（日本語→ベトナム語なら表、逆なら裏）。
+   ⭕ 「覚えた」は課の単語の印（wknown）と同じものに付く。「もう一度」は後ろに回す。
+   ⭕ 音は、単語の音声で1語ずつ切った区間を使う。無ければ端末の声 */
+function wordClip(w){
+  let hit = null;
+  for(const x of lessonData()) for(const it of x.items){
+    if(isSound(it) || !(it.end > it.start) || norm(it.show) !== w) continue;
+    if(!hit || (it.group === '単語' && hit.group !== '単語')) hit = it;
+  }
+  return hit;
+}
+function sayWord(w){ const it = wordClip(w); if(it) say(it); else speakText(w); }
+let wc = null;
+function openCards(li){
+  const list = vocab().out[li].filter(e => !e.syl && e.ja);
+  if(!list.length){ toast('この課には、訳のある語がまだありません'); return; }
+  const k = wknown(), skip = load('wc:skip', true);
+  let queue = list.filter(e => !(skip && k.has(e.w)));
+  const allKnown = !queue.length; if(allKnown) queue = list.slice();
+  const sh = a => a.map(v => [Math.random(), v]).sort((p, q2) => p[0] - q2[0]).map(v => v[1]);
+  wc = {li, list, queue: sh(queue), i: 0, flipped: false, got: 0, again: 0, allKnown};
+  let box = $('#wcard');
+  if(!box){ box = document.createElement('div'); box.id = 'wcard'; box.className = 'wcwrap'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', '単語カード'); document.body.appendChild(box);
+    box.addEventListener('click', e => { if(e.target === box) closeCards(); }); }
+  box.hidden = false; paintCards();
+}
+function closeCards(){ const box = $('#wcard'); if(box) box.hidden = true; wc = null; clip.pause(); rerender(); }
+function paintCards(){
+  const box = $('#wcard'); if(!box || !wc) return;
+  const dir = load('wc:dir', 'vi'), L = lessonData()[wc.li].L;
+  const head = '<div class="wchead"><b>単語カード　' + esc(L.title) + '</b><span class="ct">' + Math.min(wc.i + 1, wc.queue.length) + ' / ' + wc.queue.length + '</span><button class="apclose wcclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
+    '<div class="wcopts"><div class="seg">' + [['vi', 'ベトナム語 → 日本語'], ['ja', '日本語 → ベトナム語']].map(([k2, t]) => '<button class="wcdir' + (dir === k2 ? ' on' : '') + '" data-d="' + k2 + '">' + t + '</button>').join('') + '</div>' +
+    '<label class="opt"><input type="checkbox" class="wcskip"' + (load('wc:skip', true) ? ' checked' : '') + '> 覚えた語は出さない</label></div>';
+  if(wc.i >= wc.queue.length){
+    box.innerHTML = '<div class="wcbox">' + head + '<div class="wccard"><div class="wq">おわり</div><div class="wsub">覚えた ' + wc.got + ' 語・もう一度 ' + wc.again + ' 回</div></div>' +
+      '<div class="wcbtns"><button class="wcredo">もう一度はじめから</button><button class="primary wcclose">閉じる</button></div></div>';
+    return;
+  }
+  const e = wc.queue[wc.i], pic = wordPic(e.w);
+  const img = pic ? '<img src="' + pic + '" alt="">' : '';
+  const vi = '<div class="' + (dir === 'vi' ? 'wq' : 'wa vi') + '" lang="' + LP.code + '">' + esc(e.w) + '</div>';
+  // 日本語を表に出すときは、答えのベトナム語が混ざらないように：最初の意味だけ・ローマ字の入ったかっこは外す（例「日；時の名詞（mỗi ngày）」→「日」）
+  const jaShort = e.ja.split(/[；;]/)[0].replace(/[（(][^）)]*[A-Za-zÀ-ỹ][^）)]*[）)]/g, '').trim() || e.ja;
+  const ja = '<div class="' + (dir === 'ja' ? 'wq' : 'wa') + '" lang="ja">' + esc(dir === 'ja' ? jaShort : e.ja) + '</div>';
+  const front = dir === 'vi' ? vi : (img + ja);
+  const back = dir === 'vi' ? (img + ja) : vi;
+  box.innerHTML = '<div class="wcbox">' + head +
+    '<div class="wccard">' + front + (wc.flipped ? back : '<div class="wsub">' + (dir === 'vi' ? '日本語で言ってから、めくる' : 'ベトナム語で言ってから、めくる') + '</div>') + '</div>' +
+    '<div class="wcbtns">' + (wc.flipped
+      ? '<button class="wcagain">もう一度</button><button class="primary wcgot">覚えた</button><button class="wcplay">▶ 音</button>'
+      : '<button class="primary wcflip">めくる</button>' + (dir === 'vi' ? '<button class="wcplay">▶ 音</button>' : '')) + '</div>' +
+    '<div class="wckeys">space：めくる　→：覚えた　←：もう一度　esc：閉じる</div></div>';
+  if(dir === 'vi' && !wc.flipped && wc.autoplay !== wc.i){ wc.autoplay = wc.i; sayWord(e.w); }   // ベトナム語の向きは、表を出したときに音も鳴らす
+}
+function cardAct(a){
+  if(!wc) return;
+  const e = wc.queue[wc.i];
+  if(a === 'flip'){ if(wc.i >= wc.queue.length) return; wc.flipped = true; if(load('wc:dir', 'vi') === 'ja') sayWord(e.w); }
+  else if(a === 'got' && wc.flipped){ const k = wknown(); if(!k.has(e.w)){ k.add(e.w); save('wknown:' + bookId, [...k]); emit('wk', {b: bookId, w: e.w, on: true}); } wc.got++; wc.i++; wc.flipped = false; }
+  else if(a === 'again' && wc.flipped){ wc.queue.push(e); wc.again++; wc.i++; wc.flipped = false; }
+  paintCards();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#wcard button, #wcard input'); if(!b || !wc) return;
+  if(b.classList.contains('wcclose')) closeCards();
+  else if(b.classList.contains('wcflip')) cardAct('flip');
+  else if(b.classList.contains('wcgot')) cardAct('got');
+  else if(b.classList.contains('wcagain')) cardAct('again');
+  else if(b.classList.contains('wcplay')) sayWord(wc.queue[wc.i].w);
+  else if(b.classList.contains('wcdir')){ save('wc:dir', b.dataset.d); wc.flipped = false; wc.autoplay = -1; paintCards(); }
+  else if(b.classList.contains('wcredo')) openCards(wc.li);
+  else if(b.classList.contains('wcskip')){ save('wc:skip', b.checked); openCards(wc.li); }
+});
+document.addEventListener('keydown', e => {
+  if(!wc || $('#wcard').hidden) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeCards(); }
+  else if(e.key === ' '){ e.preventDefault(); e.stopPropagation(); wc.flipped ? sayWord(wc.queue[wc.i].w) : cardAct('flip'); }
+  else if(e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); cardAct('got'); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); cardAct('again'); }
+}, true);
 
 /* 課の手引き：本文を聴く前に読む（2026-10-04 本人「メインの音声を聞いて練習問題をする前に、必要な文法とか単語とかの基本的な解説」
    「どういう順番でやれば正解なのか、説明してない単語はどれなのか」）。
@@ -4147,10 +4249,8 @@ document.addEventListener('click', e => {
     emit('wk', {b: bookId, w, on: k.has(w)});
     rerender();
   }
-  else if(b.classList.contains('lwp')){
-    const s = sentsWith(' ' + b.dataset.w + ' ', lessonData().findIndex(x => x.L.id === blesson), 'n')[0];
-    if(s) playSent(s);
-  }
+  else if(b.classList.contains('lwp')) sayWord(b.dataset.w);   // 語そのものの区間を鳴らす（前は語を含む文を探して鳴らし、関係ない所が鳴っていた・2026-10-04）
+  else if(b.classList.contains('wcopen')) openCards(Number(b.dataset.li));
   else if(b.classList.contains('setchip') && b.closest('#book')) startSet(b.dataset.set);
   else if(b.id === 'lpractice'){
     pdeck = 'lesson:' + blesson; save('p:deck', pdeck); q = null; paintDecks(); setMode('practice');
