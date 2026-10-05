@@ -2074,6 +2074,18 @@ const LANGS = {
       ],
     },
   },
+  // 2026-10-05 本人「いろんな言語で対応する前提」。jibun-kyozai の取り込み（langs/id.json）と同じ言語。
+  // ⭕ 空白で語が分かれる。声調も記号も無いので「惜しい」は無し。手引きは lang/id.guide.json（34項目・別のモデルが罠つきで検品）
+  id: {
+    code: 'id', name: 'インドネシア語',
+    font: null,
+    segment: 'space', inputMethod: 'none', nearMiss: null,
+    functionWords: ['yang','dan','di','ke','dari','ini','itu','tidak','bukan','belum','sudah','akan','sedang','pernah','ada','dengan','untuk',
+      'pada','kepada','oleh','atau','tetapi','tapi','karena','jadi','kalau','juga','saja','lagi','sangat','lebih','paling','apa','siapa','mana',
+      'kapan','berapa','bagaimana','mengapa','kenapa','saya','aku','kamu','anda','dia','kami','kita','mereka','nya','mau','bisa','boleh','harus',
+      'sih','dong','deh','kok','kan','ya','nggak','udah','aja','banget'],
+    ai: {coach: 'インドネシア語（標準語と、よく聞く話し言葉）の先生で、言語学にも詳しいコーチ', guide: 'lang/id.guide.json'},
+  },
   // ⚠️ 骨組み（2026-10-01・未検証）。韓国語の教材を作るときに、文法の語・惜しいの判定を埋める
   ko: {
     code: 'ko', name: '韓国語',
@@ -3018,7 +3030,7 @@ function renderTyping(){
   const [vi, ja] = tq.items[tq.i];
   box.innerHTML = '<div class="from">' + esc(L.title) + '　' + (tq.i + 1) + ' / ' + tq.items.length + '</div>' +
     qPrompt('この語を打ってください', esc(L.note)) +
-    '<div class="ask long" lang="vi">' + esc(vi) + '</div>' + (ja ? '<div class="pnote" lang="ja">' + esc(ja) + '</div>' : '') +
+    '<div class="ask long" lang="' + LP.code + '">' + esc(vi) + '</div>' + (ja ? '<div class="pnote" lang="ja">' + esc(ja) + '</div>' : '') +
     (tq.hint ? '<div class="thint">打つキー：<kbd>' + esc(toTelex(vi)) + '</kbd></div>' : '');
   const inp = writeInput('typingin', 'ここに打つ（Enter で確かめる）', v => {
     if(norm(v) === norm(vi)){ if(tq.miss) tq.wrongs++; tq.i++; tq.miss = 0; tq.hint = false; q = null; renderTyping(); }
@@ -4130,7 +4142,7 @@ function paintCards(){
   const box = $('#wcard'); if(!box || !wc) return;
   const dir = load('wc:dir', 'vi'), L = lessonData()[wc.li].L;
   const head = '<div class="wchead"><b>単語カード　' + esc(L.title) + '</b><span class="ct">' + Math.min(wc.i + 1, wc.queue.length) + ' / ' + wc.queue.length + '</span><button class="apclose wcclose" aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>' +
-    '<div class="wcopts"><div class="seg">' + [['vi', 'ベトナム語 → 日本語'], ['ja', '日本語 → ベトナム語']].map(([k2, t]) => '<button class="wcdir' + (dir === k2 ? ' on' : '') + '" data-d="' + k2 + '">' + t + '</button>').join('') + '</div>' +
+    '<div class="wcopts"><div class="seg">' + [['vi', LP.name + ' → 日本語'], ['ja', '日本語 → ' + LP.name]]   /* 'vi' は『学ぶ言語が表』の意味の印（言語ではない） */.map(([k2, t]) => '<button class="wcdir' + (dir === k2 ? ' on' : '') + '" data-d="' + k2 + '">' + t + '</button>').join('') + '</div>' +
     '<label class="opt"><input type="checkbox" class="wcskip"' + (load('wc:skip', true) ? ' checked' : '') + '> 覚えた語は出さない</label></div>';
   if(wc.i >= wc.queue.length){
     box.innerHTML = '<div class="wcbox">' + head + '<div class="wccard"><div class="wq">おわり</div><div class="wsub">覚えた ' + wc.got + ' 語・もう一度 ' + wc.again + ' 回</div></div>' +
@@ -4146,7 +4158,7 @@ function paintCards(){
   const front = dir === 'vi' ? vi : (img + ja);
   const back = dir === 'vi' ? (img + ja) : vi;
   box.innerHTML = '<div class="wcbox">' + head +
-    '<div class="wccard">' + front + (wc.flipped ? back : '<div class="wsub">' + (dir === 'vi' ? '日本語で言ってから、めくる' : 'ベトナム語で言ってから、めくる') + '</div>') + '</div>' +
+    '<div class="wccard">' + front + (wc.flipped ? back : '<div class="wsub">' + (dir === 'vi' ? '日本語で言ってから、めくる' : LP.name + 'で言ってから、めくる') + '</div>') + '</div>' +
     '<div class="wcbtns">' + (wc.flipped
       ? '<button class="wcagain">もう一度</button><button class="primary wcgot">覚えた</button><button class="wcplay">▶ 音</button>'
       : '<button class="primary wcflip">めくる</button>' + (dir === 'vi' ? '<button class="wcplay">▶ 音</button>' : '')) + '</div>' +

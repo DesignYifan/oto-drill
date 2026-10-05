@@ -1,0 +1,557 @@
+{
+ "_説明": "AI に聞くときに渡すインドネシア語の手引き（標準語と、よく聞く話し言葉・日本語話者向け）。質問と文に出る語で関係する項目を選んで渡す。教材の中身は入れない（公開してよい）。Claude が 2026-10-05 に書いた。項目の選び方は東京外大 言語モジュール（文法22課）と BIPA（Sahabatku Indonesia）の章立てを参考にし、説明と例文は書き下ろし（写していない）。間違いを見つけたら直す。",
+ "lang": "id",
+ "entries": [
+  {
+   "id": "basics",
+   "title": "インドネシア語の基本の仕組み",
+   "keys": [
+    "言語学",
+    "仕組み",
+    "活用",
+    "時制",
+    "なぜ",
+    "文法",
+    "語形"
+   ],
+   "body": "語の形は人称・時制で変わらない（活用・格変化が無い）。過去や未来は sudah・akan などの語や時の言葉で表す。主語―動詞―目的語（SVO）。語を作る仕組みは接辞（ber-・meN-・di-・-kan・-i など）と重ね（anak-anak）。声調は無く、ほぼ綴りどおりに読む。"
+  },
+  {
+   "id": "word-order",
+   "title": "語順：説明は後ろから",
+   "keys": [
+    "語順",
+    "順番",
+    "修飾",
+    "後ろ",
+    "形容詞",
+    "の"
+   ],
+   "body": "名詞を説明する語は後ろに置く（日本語と逆）。rumah besar＝大きい家、buku saya＝私の本、orang Jepang＝日本人。ini（この）・itu（その・あの）は最後：buku baru itu＝その新しい本。数は前：dua buku＝2冊の本。"
+  },
+  {
+   "id": "pronouns",
+   "title": "人称と呼びかけ",
+   "keys": [
+    "saya",
+    "aku",
+    "Anda",
+    "kamu",
+    "dia",
+    "ia",
+    "kami",
+    "kita",
+    "mereka",
+    "Bapak",
+    "Ibu",
+    "Mas",
+    "Mbak",
+    "Kak",
+    "人称",
+    "呼び方",
+    "代名詞",
+    "敬語",
+    "目上"
+   ],
+   "body": "saya＝私（丁寧・中立）、aku＝おれ・わたし（親しい間）。Anda＝あなた（改まった書き言葉的）、kamu＝きみ（親しい相手・年下）。dia／ia＝彼・彼女（男女同じ）。kami＝私たち（聞き手を含まない）、kita＝私たち（聞き手を含む）。mereka＝彼ら。目上には名前の前に Bapak（Pak）・Ibu（Bu）を付け、『あなた』の代わりにも使う。"
+  },
+  {
+   "id": "possessive",
+   "title": "持ち主の -ku・-mu・-nya",
+   "keys": [
+    "-ku",
+    "-mu",
+    "-nya",
+    "所有",
+    "の",
+    "私の"
+   ],
+   "body": "代名詞を名詞のあとに付けて持ち主を表す：bukuku＝私の本、rumahmu＝きみの家、namanya＝彼（彼女）の名前。丁寧に言うときは付けずに後ろに置く：buku saya＝私の本、nama Bapak＝あなた（男性）のお名前。"
+  },
+  {
+   "id": "copula",
+   "title": "『〜です』：adalah はふつう要らない",
+   "keys": [
+    "adalah",
+    "です",
+    "である",
+    "名詞文",
+    "ini",
+    "itu"
+   ],
+   "body": "名詞を並べるだけで『〜は…です』になる：Saya mahasiswa.＝私は学生です。Ini buku.＝これは本です。主語が長いときや書き言葉では adalah を入れる：Ibu kota Indonesia adalah Jakarta.＝インドネシアの首都はジャカルタです。形容詞も並べるだけ：Kamar ini bersih.＝この部屋はきれいだ。"
+  },
+  {
+   "id": "negation",
+   "title": "否定：tidak・bukan・belum・jangan",
+   "keys": [
+    "tidak",
+    "bukan",
+    "belum",
+    "jangan",
+    "nggak",
+    "否定",
+    "ない",
+    "まだ",
+    "違う"
+   ],
+   "body": "tidak＋動詞・形容詞＝〜ない：Saya tidak makan daging.＝肉を食べない。bukan＋名詞＝〜ではない：Dia bukan guru.＝彼は先生ではない。belum＝まだ〜していない：Saya belum makan.＝まだ食べていない。jangan＝〜しないで。話し言葉では tidak の代わりに nggak・enggak。"
+  },
+  {
+   "id": "questions",
+   "title": "疑問の作り方",
+   "keys": [
+    "apakah",
+    "apa",
+    "siapa",
+    "di mana",
+    "ke mana",
+    "dari mana",
+    "kapan",
+    "mengapa",
+    "kenapa",
+    "bagaimana",
+    "berapa",
+    "yang mana",
+    "ya",
+    "kan",
+    "疑問",
+    "質問",
+    "か？"
+   ],
+   "body": "はい／いいえ：文末を上げるか、文頭に apakah（書き言葉）：Apakah Anda orang Jepang?＝日本人ですか。答えは Ya／Tidak（名詞なら Bukan）。疑問詞：apa＝何、siapa＝誰、di mana＝どこで、ke mana＝どこへ、dari mana＝どこから、kapan＝いつ、mengapa／kenapa＝なぜ、bagaimana＝どう、berapa＝いくつ・いくら。…, kan?＝〜ですよね。"
+  },
+  {
+   "id": "existence",
+   "title": "ある・いる：ada",
+   "keys": [
+    "ada",
+    "ある",
+    "いる",
+    "存在",
+    "持っている"
+   ],
+   "body": "ada＝ある・いる。Ada kopi?＝コーヒーはありますか。Di sini ada bank.＝ここに銀行がある。Saya ada di rumah.＝私は家にいる。『持っている』は punya：Saya punya mobil.＝車を持っている。否定は tidak ada＝無い・いない。"
+  },
+  {
+   "id": "place",
+   "title": "場所と方向：di・ke・dari",
+   "keys": [
+    "di",
+    "ke",
+    "dari",
+    "場所",
+    "方向",
+    "から",
+    "へ",
+    "で"
+   ],
+   "body": "di＝〜で・〜に（場所）、ke＝〜へ（行き先）、dari＝〜から：Saya tinggal di Tokyo.＝東京に住んでいる。Kami pergi ke pasar.＝市場へ行く。Dia datang dari Bali.＝バリから来た。場所の語：atas＝上、bawah＝下、depan＝前、belakang＝後ろ、dalam＝中（di atas meja＝机の上に）。⚠️ 前置詞の di は離して書き、受け身の di- は語に付けて書く。"
+  },
+  {
+   "id": "tense-aspect",
+   "title": "時の表し方：sudah・belum・sedang・akan・pernah",
+   "keys": [
+    "sudah",
+    "belum",
+    "sedang",
+    "lagi",
+    "akan",
+    "pernah",
+    "baru",
+    "masih",
+    "過去",
+    "未来",
+    "時制",
+    "もう",
+    "まだ",
+    "している"
+   ],
+   "body": "動詞は変わらず、前に語を置く。sudah＝もう〜した、belum＝まだ〜ない、sedang（話し言葉 lagi）＝〜している最中、akan＝〜する予定、pernah＝〜したことがある、baru＝〜したばかり、masih＝まだ〜している。時の語（kemarin＝昨日、besok＝明日）があれば何も付けなくてよい。"
+  },
+  {
+   "id": "modals",
+   "title": "できる・したい・しなければ",
+   "keys": [
+    "bisa",
+    "dapat",
+    "boleh",
+    "harus",
+    "mau",
+    "ingin",
+    "perlu",
+    "mungkin",
+    "できる",
+    "したい",
+    "べき",
+    "いい",
+    "かもしれない"
+   ],
+   "body": "bisa／dapat＝できる、boleh＝してよい（Boleh saya masuk?＝入ってもいいですか）、harus＝しなければならない、mau＝〜したい・〜するつもり（話し言葉）、ingin＝〜したい（やや丁寧）、perlu＝〜する必要がある、mungkin＝たぶん。すべて動詞の前に置く。"
+  },
+  {
+   "id": "numbers",
+   "title": "数",
+   "keys": [
+    "satu",
+    "dua",
+    "tiga",
+    "belas",
+    "puluh",
+    "ratus",
+    "ribu",
+    "juta",
+    "se-",
+    "数",
+    "いくつ",
+    "値段",
+    "ke-"
+   ],
+   "body": "1 satu・2 dua・3 tiga・4 empat・5 lima・6 enam・7 tujuh・8 delapan・9 sembilan・10 sepuluh。11〜19は -belas（sebelas＝11、dua belas＝12）、10の位は puluh（dua puluh＝20）、百 ratus、千 ribu、百万 juta。『1』の付く位は se-（seratus＝100、seribu＝1000）。順番は ke-：kedua＝2番目（『1番目』は pertama）。"
+  },
+  {
+   "id": "classifiers",
+   "title": "数える言葉",
+   "keys": [
+    "orang",
+    "buah",
+    "ekor",
+    "lembar",
+    "biji",
+    "助数詞",
+    "数え方",
+    "匹",
+    "枚"
+   ],
+   "body": "数と名詞の間に入れることがある：dua orang guru＝2人の先生、tiga ekor kucing＝3匹の猫、lima lembar kertas＝5枚の紙、sebuah rumah＝1軒の家（buah はものに広く使う）。話し言葉では省くことも多い（dua buku）。"
+  },
+  {
+   "id": "plural",
+   "title": "複数",
+   "keys": [
+    "複数",
+    "たくさん",
+    "anak-anak",
+    "banyak",
+    "beberapa",
+    "semua",
+    "para"
+   ],
+   "body": "複数の印は無い。buku は『本』でも『本（複数）』でもよい。複数をはっきりさせるなら重ねる（buku-buku）か、量の語を前に置く：banyak＝たくさんの、beberapa＝いくつかの、semua＝すべての、para＝（人の）〜たち。数や量の語があるときは重ねない（banyak buku）。"
+  },
+  {
+   "id": "comparison",
+   "title": "比べる",
+   "keys": [
+    "lebih",
+    "daripada",
+    "dari",
+    "paling",
+    "ter-",
+    "sama",
+    "se-",
+    "比較",
+    "より",
+    "一番",
+    "同じ"
+   ],
+   "body": "lebih＋形容詞＋daripada（話し言葉 dari）＝〜より…：Jakarta lebih besar daripada Bandung.＝ジャカルタはバンドンより大きい。paling＋形容詞＝一番…（書き言葉では ter-：terbesar）。sama＋形容詞＋dengan＝〜と同じくらい、se＋形容詞：setinggi saya＝私と同じくらい高い。"
+  },
+  {
+   "id": "imperative",
+   "title": "頼む・すすめる・禁止",
+   "keys": [
+    "tolong",
+    "silakan",
+    "mari",
+    "ayo",
+    "jangan",
+    "-lah",
+    "coba",
+    "命令",
+    "お願い",
+    "どうぞ",
+    "しないで"
+   ],
+   "body": "動詞だけで命令になる（Duduk!＝座れ）。丁寧に頼む：Tolong＋動詞＝〜してください（相手にしてもらう）。すすめる：Silakan＋動詞＝どうぞ〜してください。誘う：Mari／Ayo＝〜しよう。禁止：Jangan＝〜しないで。-lah を付けると口調がやわらぐ（Makanlah.＝食べなさい）。coba＝ちょっと〜してみて。"
+  },
+  {
+   "id": "nya",
+   "title": "-nya のいろいろ",
+   "keys": [
+    "-nya",
+    "その",
+    "彼の",
+    "の",
+    "nya"
+   ],
+   "body": "①彼・彼女の：rumahnya＝彼の家。②『その・例の』（話題にのぼったもの）：Harganya berapa?＝（それの）値段はいくら？ ③動詞・形容詞を名詞にする：Besarnya…＝大きさは…。④副詞を作る：rupanya＝どうやら、biasanya＝ふだんは。⑤動詞の目的語『それを・彼を』：Saya membelinya.＝それを買った。"
+  },
+  {
+   "id": "yang",
+   "title": "yang：〜するもの・〜な人",
+   "keys": [
+    "yang",
+    "関係",
+    "もの",
+    "人",
+    "という"
+   ],
+   "body": "名詞を後ろから文で説明するときの『つなぎ』：orang yang tinggal di sana＝そこに住んでいる人、buku yang saya beli＝私が買った本。形容詞を強調・区別する：rumah yang besar＝（ほかでなく）大きい家。名詞を省いて『〜なほう』：yang merah＝赤いの。Yang mana?＝どれ？"
+  },
+  {
+   "id": "ber",
+   "title": "接頭辞 ber-",
+   "keys": [
+    "ber-",
+    "ber",
+    "接頭辞",
+    "自動詞",
+    "持つ"
+   ],
+   "body": "ふつう目的語をとらない動詞を作る：bekerja＝働く（kerja）、berjalan＝歩く（jalan）、berbicara＝話す（bicara）。名詞に付けて『〜を持つ・〜を身につける・〜に乗る』：bermobil＝車を持つ、berbaju merah＝赤い服を着た、bersepeda＝自転車に乗る。r で始まる語の前などでは be-（bekerja）、ajar には bel-（belajar＝学ぶ）。"
+  },
+  {
+   "id": "men",
+   "title": "接頭辞 meN-（他動詞）と音の変わり方",
+   "keys": [
+    "meN-",
+    "me-",
+    "mem-",
+    "men-",
+    "meng-",
+    "meny-",
+    "接頭辞",
+    "他動詞",
+    "音の変化"
+   ],
+   "body": "目的語をとる動詞を作ることが多い：membeli＝買う（beli）、membaca＝読む（baca）、menulis＝書く（tulis）、mengambil＝取る（ambil）、menyapu＝掃く（sapu）。元の語の頭の音で形が変わる：p→mem（pakai→memakai）、t→men（tulis→menulis）、k→meng（kirim→mengirim）、s→meny（sapu→menyapu）、母音→meng（ambil→mengambil）。辞書は元の語（beli）で引く。"
+  },
+  {
+   "id": "kan-i",
+   "title": "接尾辞 -kan・-i",
+   "keys": [
+    "-kan",
+    "-i",
+    "接尾辞",
+    "させる",
+    "してあげる"
+   ],
+   "body": "-kan：①させる・〜にする（membersihkan＝きれいにする）②〜してあげる（membelikan＝買ってあげる）③ものを動かす（mengirimkan＝送る）。-i：場所や相手に向けて繰り返し・全体に行う（menanami＝〜に植える、mendatangi＝〜を訪ねる、menulisi＝〜に書き込む）。どちらも meN- とよくいっしょに使う。"
+  },
+  {
+   "id": "passive",
+   "title": "受け身 di- と『私が〜する』の形",
+   "keys": [
+    "di-",
+    "受け身",
+    "された",
+    "oleh",
+    "目的語"
+   ],
+   "body": "di＋動詞の元の語＝〜される：Buku itu dibeli oleh Ani.＝その本はアニに買われた（oleh＝〜によって、省いてよい）。インドネシア語は『もの』を話題にしたいとき受け身をよく使い、日本語では能動に訳すと自然なことが多い（Rumahnya dijual.＝家を売りに出している）。行う人が私・あなたのときは di- を使わず『目的語＋人＋元の語』：Buku itu saya beli.＝その本は私が買った。"
+  },
+  {
+   "id": "ter",
+   "title": "接頭辞 ter-",
+   "keys": [
+    "ter-",
+    "ter",
+    "うっかり",
+    "できる",
+    "一番",
+    "状態"
+   ],
+   "body": "①うっかり・思わず：tertidur＝寝てしまう、terbawa＝つい持ってきてしまう。②〜されている状態：tertutup＝閉まっている、tertulis＝書かれている。③できる（否定でよく使う）：tidak terbaca＝読めない。④一番（形容詞に）：terbesar＝一番大きい。"
+  },
+  {
+   "id": "ke-an",
+   "title": "ke-…-an",
+   "keys": [
+    "ke-an",
+    "ke",
+    "an",
+    "名詞",
+    "被害",
+    "すぎる"
+   ],
+   "body": "①形容詞・動詞を抽象名詞にする：kebersihan＝清潔さ（bersih）、kedatangan＝到着（datang）、kebudayaan＝文化。②被害を受ける：kehujanan＝雨に降られる、kecopetan＝すりにあう、ketinggalan＝乗り遅れる・置き忘れる。③話し言葉で『〜すぎる』：kebesaran＝大きすぎる。"
+  },
+  {
+   "id": "pe",
+   "title": "名詞を作る pe-・pe-an・per-an・-an",
+   "keys": [
+    "pe-",
+    "peN-",
+    "pe-an",
+    "per-an",
+    "-an",
+    "名詞",
+    "人",
+    "こと",
+    "場所"
+   ],
+   "body": "peN-＝〜する人・道具：pembeli＝買い手（beli）、penulis＝作家（tulis）、pelajar＝学習者。peN-an＝〜すること：pembelian＝購入、pendidikan＝教育。per-an：perumahan＝住宅地、perjalanan＝旅。-an＝結果・もの：makanan＝食べ物（makan）、minuman＝飲み物、tulisan＝書いたもの。peN- の音の変わり方は meN- と同じ。"
+  },
+  {
+   "id": "se",
+   "title": "se- のいろいろ",
+   "keys": [
+    "se-",
+    "se",
+    "一つ",
+    "同じ",
+    "すぐ",
+    "ごとに"
+   ],
+   "body": "①1：seorang＝1人、sebuah＝1個、sehari＝1日。②同じ：serumah＝同じ家の、sekelas＝同じクラス。③〜と同じくらい：setinggi＝同じくらい高い。④〜したらすぐ・〜の後：sesudah／setelah＝〜の後、sebelum＝〜の前、sesampai＝着いたら。"
+  },
+  {
+   "id": "reduplication",
+   "title": "重ねる言葉",
+   "keys": [
+    "重ね",
+    "重複",
+    "anak-anak",
+    "jalan-jalan",
+    "-",
+    "複数"
+   ],
+   "body": "①複数・いろいろ：anak-anak＝子どもたち、buah-buahan＝果物類。②動作をのんびり・あれこれ：jalan-jalan＝散歩する、duduk-duduk＝座ってくつろぐ。③副詞：pelan-pelan＝ゆっくり、cepat-cepat＝急いで。④似たもの：kura-kura＝亀（重ねて1語の語もある）。書くときはハイフンでつなぐ。"
+  },
+  {
+   "id": "conjunctions",
+   "title": "つなぐ言葉",
+   "keys": [
+    "dan",
+    "atau",
+    "tetapi",
+    "tapi",
+    "karena",
+    "jadi",
+    "kalau",
+    "jika",
+    "supaya",
+    "agar",
+    "waktu",
+    "ketika",
+    "sambil",
+    "接続詞",
+    "から",
+    "でも",
+    "もし"
+   ],
+   "body": "dan＝と・そして、atau＝または、tetapi（話し言葉 tapi）＝しかし、karena＝〜なので、jadi＝だから、kalau／jika＝もし〜なら、supaya／agar＝〜するように、waktu／ketika＝〜するとき、sambil＝〜しながら。Kalau hujan, saya tidak pergi.＝雨なら行かない。"
+  },
+  {
+   "id": "prepositions",
+   "title": "前置詞いろいろ",
+   "keys": [
+    "untuk",
+    "dengan",
+    "kepada",
+    "pada",
+    "tentang",
+    "oleh",
+    "sampai",
+    "前置詞",
+    "ために",
+    "と",
+    "に"
+   ],
+   "body": "untuk＝〜のために・〜用に、dengan＝〜と一緒に・〜で（手段）（naik bus＝バスで、dengan cepat＝速く）、kepada＝（人）に（書き言葉）、pada＝（時・人）に、tentang＝〜について、oleh＝〜によって、sampai＝〜まで。話し言葉では kepada の代わりに sama・ke もよく使う。"
+  },
+  {
+   "id": "colloquial",
+   "title": "話し言葉（くだけた言い方）",
+   "keys": [
+    "nggak",
+    "enggak",
+    "udah",
+    "aja",
+    "banget",
+    "gimana",
+    "gue",
+    "lo",
+    "-in",
+    "bahasa gaul",
+    "くだけた",
+    "話し言葉",
+    "スラング",
+    "若者"
+   ],
+   "body": "会話・動画では標準と違う形がよく出る：nggak／enggak＝tidak、udah＝sudah、aja＝saja（〜だけ）、banget＝sangat（とても、形容詞の後ろ）、gimana＝bagaimana、kayak＝seperti（〜のような）、bikin＝membuat（作る）。ジャカルタの若者言葉：gue＝私、lo＝きみ。動詞の -kan は -in になる（kasih tahu→kasih tau、bersihkan→bersihin）。"
+  },
+  {
+   "id": "particles",
+   "title": "気持ちを足す語：kok・sih・dong・deh・lho・ya",
+   "keys": [
+    "kok",
+    "sih",
+    "dong",
+    "deh",
+    "lho",
+    "ya",
+    "kan",
+    "nih",
+    "tuh",
+    "終助詞",
+    "ニュアンス"
+   ],
+   "body": "話し言葉で文に気持ちを足す。kok＝なんで？（意外）、sih＝いったい・〜けどね（Siapa sih?＝いったい誰？）、dong＝〜してよ・もちろん（Ayo dong!）、deh＝じゃあ〜しよう・〜だね（Ya deh.＝わかったよ）、lho＝〜なんだよ（知らせる）、ya＝〜ね（同意を求める）、kan＝〜でしょ。"
+  },
+  {
+   "id": "greetings",
+   "title": "あいさつと丁寧さ",
+   "keys": [
+    "selamat",
+    "terima kasih",
+    "sama-sama",
+    "permisi",
+    "maaf",
+    "apa kabar",
+    "あいさつ",
+    "ありがとう",
+    "すみません",
+    "おはよう"
+   ],
+   "body": "Selamat pagi（朝〜11時ごろ）・siang（昼）・sore（夕方）・malam（夜）。Apa kabar?＝お元気ですか → Baik.＝元気です。Terima kasih＝ありがとう → Sama-sama＝どういたしまして。Permisi＝失礼します・すみません（通るとき・声をかけるとき）、Maaf＝ごめんなさい。目上には Pak・Bu を付けて呼ぶ（Terima kasih, Bu.）。"
+  },
+  {
+   "id": "pronunciation",
+   "title": "発音と綴り",
+   "keys": [
+    "発音",
+    "読み方",
+    "綴り",
+    "c",
+    "e",
+    "ng",
+    "ny",
+    "アクセント",
+    "声調"
+   ],
+   "body": "ほぼ綴りどおり。c＝チャ行（cari＝チャリ）、j＝ジャ行、y＝ヤ行、ny＝ニャ行、ng＝鼻にかかるン（ngomong）、kh＝喉のハ。e は2つの音：弱いあいまいな『ウ』に近い音（besar）と『エ』（enak）。綴りでは区別しないので音声で覚える。r は巻き舌。語末の k は詰まる音（tidak＝ティダッ）。声調は無く、強弱もはっきりしない。"
+  },
+  {
+   "id": "time",
+   "title": "時刻・日付・曜日",
+   "keys": [
+    "jam",
+    "pukul",
+    "setengah",
+    "lewat",
+    "kurang",
+    "hari",
+    "tanggal",
+    "bulan",
+    "tahun",
+    "時刻",
+    "何時",
+    "曜日",
+    "日付"
+   ],
+   "body": "jam／pukul＋数＝〜時：jam tiga＝3時。lewat＝過ぎ（jam tiga lewat sepuluh＝3時10分）、kurang＝前（jam empat kurang lima＝4時5分前）、setengah＋次の時＝半（setengah empat＝3時半 ⚠️）。曜日：Senin・Selasa・Rabu・Kamis・Jumat・Sabtu・Minggu。日付は日・月・年の順：tanggal 5 Oktober 2026。"
+  }
+ ]
+}
