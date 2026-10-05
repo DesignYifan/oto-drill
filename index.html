@@ -2255,6 +2255,13 @@ function matchable(text){
 
 /* 教材のメモに残った記号（⛔⭕）は、画面では言葉にする（2026-10-03 本人「なくしてほしいって言った絵文字がまだ所々についてる」） */
 const unmark = t => (t || '').replace(/⛔\s*/g, '注意：').replace(/⭕+\s*/g, '');
+/* 文法の型の目印：ふつうは前後の空白まで含めた語（' sudah '）。「re:」で始まれば正規表現（接辞 meN- のように1語で書けない型）。2026-10-05 インドネシア語 */
+const patReCache = new Map();
+function patHit(match, t){
+  if(!match.startsWith('re:')) return t.includes(match);
+  if(!patReCache.has(match)){ let re = null; try{ re = new RegExp(match.slice(3), 'u'); }catch(e){} patReCache.set(match, re); }
+  const re = patReCache.get(match); return !!re && re.test(t);
+}
 function notesFor(text){
   const out = [];
   const flat = !notes.patterns && !notes.sentences;
@@ -2265,7 +2272,7 @@ function notesFor(text){
     // p.not がある型は、その語を含む文では出さない
     // （例：có phải là の文に「phải＝しなければならない」を出さない）
     (notes.patterns || []).forEach(p => {
-      if(t.includes(p.match) && !(p.not && t.includes(p.not))) out.push(p);
+      if(patHit(p.match, t) && !(p.not && t.includes(p.not))) out.push(p);
     });
   }
   return out.slice(0, 3);
@@ -3796,11 +3803,11 @@ function firstLesson(text, given){
   const ld = lessonData();
   if(given){ const i = ld.findIndex(x => x.L.id === given); if(i >= 0) return i; }
   // 文法の型は前後の空白まで含めて書いてある（matchable と突き合わせる）。語は記号を落とした本文と突き合わせる
-  const isPat = text.startsWith(' ');
+  const isPat = text.startsWith(' ') || text.startsWith('re:');
   const m = isPat ? text : ' ' + norm(text) + ' ';
   // ⛔ 発音の練習の1語だけの区間（「Đã」など）で課を決めない。3語以上の文で探し、無ければ何でも
   // book.json で assign:false の課（発音の練習など）は、ほかに無いときだけ使う
-  const f = s => (isPat ? s.m : s.n).includes(m);
+  const f = s => isPat ? patHit(m, s.m) : s.n.includes(m);
   for(const ok of [x => x.L.assign !== false && x.sents.some(s => s.long && f(s)), x => x.sents.some(s => s.long && f(s)), x => x.sents.some(f)]){
     const i = ld.findIndex(ok); if(i >= 0) return i;
   }
@@ -3810,7 +3817,7 @@ function sentsWith(m, li, field){
   field = field || 'm';
   const ld = lessonData();
   const pool = li >= 0 ? ld[li].sents.concat(...ld.filter((_, i) => i !== li).map(x => x.sents)) : ld.flatMap(x => x.sents);
-  const hit = pool.filter(s => s[field].includes(m));
+  const hit = pool.filter(s => field === 'm' ? patHit(m, s.m) : s[field].includes(m));
   return hit.filter(s => s.long).concat(hit.filter(s => !s.long));
 }
 function playSent(s){ say({src: s.file, start: s.seg.start, end: s.seg.end, deck: {}}); }
@@ -4986,7 +4993,7 @@ function focusItems(hit){
   const isG = hit.k.startsWith('g:'), m = isG ? hit.k.slice(2).split('\t')[0] : ' ' + hit.k.slice(2) + ' ';
   const seen = new Set();
   return shuffled(pool.filter(it => it.deck.kind === 'text' && !seen.has(it.id) && seen.add(it.id) &&
-    (isG ? matchable(it.show).includes(m) : (' ' + norm(it.show) + ' ').includes(m)))).slice(0, 8);
+    (isG ? patHit(m, matchable(it.show)) : (' ' + norm(it.show) + ' ').includes(m)))).slice(0, 8);
 }
 function stuckEl(hit, it, ask){
   const el = document.createElement('div'); el.className = 'stuck';
