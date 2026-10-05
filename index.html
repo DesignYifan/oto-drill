@@ -2947,7 +2947,7 @@ function renderWrite(){
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
-    qPrompt('この意味のベトナム語を書いてください', '声調の記号まで打ちます。打ち方は「タイピング」で練習できます') +
+    qPrompt('この意味の' + LP.name + 'を書いてください', LP.nearMiss ? LP.nearMiss.label.replace('だけ違う', '') + 'の記号まで打ちます。' + (LP.typing ? '打ち方は「タイピング」で練習できます' : '') : '綴りのとおりに打ちます') +
     (wordPic(it.show) ? '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">' : '') +
     '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>';
   if(!q.done){
@@ -3071,7 +3071,7 @@ function renderDrill(){
   body.innerHTML = '';
   const box = document.createElement('div'); box.className = 'quiz';
   box.innerHTML = '<div class="from">' + esc((it.deck.book || '') + '　' + (it.deck.title || '')) + (d.pattern ? '　' + esc(d.pattern) : '') + '</div>' +
-    qPrompt(resp ? '質問に、ベトナム語で答えてください' : esc(d.instr), resp ? esc(d.instr || '') : '');
+    qPrompt(resp ? '質問に、' + LP.name + 'で答えてください' : esc(d.instr), resp ? esc(d.instr || '') : '');
   box.insertAdjacentHTML('beforeend', '<div class="ask long" lang="' + LP.code + '">' + esc(d.base) + '</div>' +
     (d.base_ja ? '<div class="baseja pnote" lang="ja">' + esc(d.base_ja) + '</div>' : ''));
   if(findVoice()) box.appendChild(hearBtn(() => speakText(d.base)));
@@ -3156,7 +3156,7 @@ function renderQuiz(){
     if(!q.heard){ q.heard = true; setTimeout(()=> say(it), 150); }
   }else{
     const sp = pview === 'speak';
-    box.insertAdjacentHTML('beforeend', qPrompt(q.heard ? '言えましたか' : sp ? 'この意味をベトナム語で声に出して言ってから、答えを聴いてください' : '声に出して言ってから、答えを聴いてください'));
+    box.insertAdjacentHTML('beforeend', qPrompt(q.heard ? '言えましたか' : sp ? 'この意味を' + LP.name + 'で声に出して言ってから、答えを聴いてください' : '声に出して言ってから、答えを聴いてください'));
     if(sp && wordPic(it.show)) box.insertAdjacentHTML('beforeend', '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">');
     if(sp) box.insertAdjacentHTML('beforeend', '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>');
     if(!sp || q.heard) box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
@@ -3979,7 +3979,7 @@ function renderBook(){
     const V = vocab();
     const vf = load('b:vf', '');
     html += '<input class="bfilter" id="vfilter" placeholder="語か意味でしぼる" value="' + esc(vf) + '" autocomplete="off">';
-    if(V.out.some(a => a.some(e => e.syl))) html += '<p class="bfoot" style="margin-top:0">この教材には単語の一覧（lexicon.json）が無いので、本文に出た音節を最初に出た課に並べています。押すと、その語を含む最初の文が鳴ります。</p>';
+    if(V.out.some(a => a.some(e => e.syl))) html += '<p class="bfoot" style="margin-top:0">この教材には単語の一覧（lexicon.json）が無いので、本文に出た' + (LP.segment === 'syllable+lexicon' ? '音節' : '語') + 'を最初に出た課に並べています。押すと、その語を含む最初の文が鳴ります。</p>';
     const q = vf.toLowerCase();
     const sec = (name, list) => {
       const l2 = q ? list.filter(e => e.w.includes(q) || (e.ja || '').toLowerCase().includes(q)) : list;
@@ -5240,6 +5240,13 @@ function runAnswered(it, ok){
   run.res.push(ok ? 1 : 0); run.i++; save('run', run);
   paintRunbar();
 }
+/* クリアに届かなかったときの言葉は、正答率で言い分ける（2026-10-05 仮想ユーザー評価「6% でもあと少しと出て虚しい」） */
+function notYetMsg(sc){
+  const pass = Math.round(PASS * 100) + '%';
+  if(sc >= 0.6) return 'あと少し。' + pass + ' でクリアです。';
+  if(sc >= 0.3) return 'まだ半分ほど。間違えた問いの「なぜ違う？」を見てから、もう一度。' + pass + ' でクリアです。';
+  return 'この段はまだ難しいようです。先に「本文を聴く」で音に慣れてから、もう一度やってみてください。';
+}
 function finishRun(){
   const total = run.res.length, ok = run.res.reduce((a, b) => a + b, 0), sc = total ? ok / total : 0, stars = starsOf(sc), cleared = sc >= PASS;
   if(run.stage === 'review'){ finishReview(total, ok); return; }
@@ -5258,7 +5265,7 @@ function finishRun(){
     (chapterClear ? '<div class="rchapter">課クリア</div>' : '') +
     '<div class="rtitle">' + esc(done_.title) + '</div>' + starHTML(stars) +
     '<div class="rscore">' + Math.round(sc * 100) + '%<small>' + ok + ' / ' + total + ' 問</small></div>' +
-    '<div class="rmsg">' + (cleared ? (stars === 3 ? 'クリア。完璧です。' : 'クリア。') : 'あと少し。' + Math.round(PASS * 100) + '% でクリアです。') + '</div>' +
+    '<div class="rmsg">' + (cleared ? (stars === 3 ? 'クリア。完璧です。' : 'クリア。') : notYetMsg(sc)) + '</div>' +
     '<div class="row">' + (nxt && cleared ? '<button class="primary" id="rnext" data-stage="' + esc(nxt.id) + '">次のステージへ：' + esc(nxt.title) + '</button>' : '') +
     '<button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button><button id="rback">コースに戻る</button></div></div>';
   const bk = () => { $('#practice').classList.remove('running'); };
