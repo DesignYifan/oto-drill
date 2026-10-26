@@ -1298,6 +1298,62 @@ header{padding-top:calc(16px + env(safe-area-inset-top, 0px)) !important;
 .dock{background:color-mix(in srgb, var(--ui-surface-bgColor) 86%, transparent) !important;
   -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px)}
 html{background:var(--ui-surface-bgColor)}
+
+/* ---- 書く（音声の画面で、練習の文を打つ）：右の列を一覧から書く欄に入れ替える ---- */
+#noteBtn{display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px; white-space:nowrap; flex:none}
+.setwrap{flex-wrap:wrap}
+#flowBtn, #settingsBtn{white-space:nowrap; flex:none}
+#noteBtn.on{background:var(--ui-text-fgColor); color:var(--ui-surface-bgColor)}
+.app.writing aside > :not(.notepad){display:none !important}
+@media (min-width:821px){
+  .app.writing main, .app.writing.list-off main{grid-template-columns:minmax(0,1fr) minmax(352px,44%)}
+  .app.writing.list-off aside{display:flex}
+}
+@media (max-width:820px){ .app.writing main, .app.writing.list-off main{grid-template-rows:minmax(0,.8fr) minmax(0,1.4fr)} }
+.notepad{display:flex; flex-direction:column; flex:1; min-height:0}
+.notepad[hidden]{display:none}
+.nphead{display:flex; align-items:center; gap:8px; padding:16px 20px 8px; flex-wrap:wrap}
+.nphead select{font:inherit; font-size:14px; font-weight:600; padding:4px 8px}
+.npcount{margin-left:auto; font-size:12px; color:var(--ui-text-muted-fgColor); font-variant-numeric:tabular-nums}
+.npscroll{flex:1; min-height:0; overflow-y:auto; padding:4px 20px 40px}
+.nptitle{display:block; width:100%; border:0 !important; box-shadow:none !important; background:transparent !important; outline:0; padding:4px 0 12px;
+  font:inherit; font-size:24px; font-weight:700; color:var(--ui-text-fgColor)}
+.npdoc{min-height:60%; cursor:text; counter-reset:ol; font-size:16px; line-height:1.7}
+.blk{counter-increment:none}
+.bkids{counter-reset:ol; padding-left:24px}
+.nprow{display:flex; align-items:flex-start; gap:6px; border-radius:4px}
+.bmark{flex:none; width:0; display:inline-flex; align-items:center; justify-content:center; user-select:none; color:var(--ui-text-muted-fgColor); height:1.7em}
+.btxt{flex:1; min-width:0; outline:0; white-space:pre-wrap; word-break:break-word; padding:3px 2px; cursor:text}
+.btxt:empty::before{content:attr(data-ph); color:var(--ui-text-muted-fgColor); opacity:0; pointer-events:none}
+.btxt:focus:empty::before, .npdoc > .blk:only-child > .nprow > .btxt:empty::before{opacity:.7}
+.blk[data-t="h1"] > .nprow .btxt{font-size:26px; font-weight:700; line-height:1.3; padding-top:16px}
+.blk[data-t="h2"] > .nprow .btxt{font-size:21px; font-weight:700; line-height:1.35; padding-top:12px}
+.blk[data-t="h3"] > .nprow .btxt{font-size:18px; font-weight:600; line-height:1.4; padding-top:8px}
+.blk[data-t="ul"] > .nprow .bmark, .blk[data-t="ol"] > .nprow .bmark, .blk[data-t="todo"] > .nprow .bmark, .blk[data-t="toggle"] > .nprow .bmark{width:20px}
+.blk[data-t="ul"] > .nprow .bmark::before{content:'•'; font-size:20px; color:var(--ui-text-fgColor)}
+.blk[data-t="ol"]{counter-increment:ol}
+.blk:not([data-t="ol"]) + .blk[data-t="ol"]{counter-reset:ol}
+.blk[data-t="ol"] > .nprow .bmark::before{content:counter(ol) '.'; color:var(--ui-text-fgColor); font-variant-numeric:tabular-nums}
+.blk[data-t="todo"] .bmark input{margin:0; width:15px; height:15px; cursor:pointer}
+.blk.done > .nprow .btxt{text-decoration:line-through; color:var(--ui-text-muted-fgColor)}
+.blk[data-t="toggle"] > .nprow .bmark{cursor:pointer; border-radius:4px}
+.blk[data-t="toggle"] > .nprow .bmark:hover{background:var(--ui-surface-muted-bgColor)}
+.blk[data-t="toggle"] > .nprow .bmark .ic{width:14px; height:14px; transition:transform .12s}
+.blk[data-t="toggle"].open > .nprow .bmark .ic{transform:rotate(90deg)}
+.blk[data-t="toggle"]:not(.open) > .bkids{display:none}
+.blk[data-t="toggle"] > .bkids{padding-left:26px}
+.blk[data-t="toggle"].open > .bkids:empty::before{content:'空のトグル。中で打つには、見出しの行で Enter'; display:block; color:var(--ui-text-muted-fgColor); font-size:14px; padding:3px 2px}
+.blk[data-t="quote"] > .nprow{border-left:3px solid var(--ui-text-fgColor); padding-left:12px; margin:4px 0}
+.blk[data-t="callout"] > .nprow{background:var(--ui-surface-muted-bgColor); padding:12px 16px; border-radius:var(--ui-control-radius, 8px); margin:4px 0; gap:10px}
+.blk[data-t="callout"] > .nprow .bmark{width:20px}
+.npslash{position:fixed; z-index:60; width:184px; max-height:260px; overflow-y:auto; display:flex; flex-direction:column; padding:4px;
+  background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius, 12px); box-shadow:var(--ui-card-shadow, 0 4px 16px rgba(0,0,0,.12))}
+.npslash button{border:0; box-shadow:none; background:transparent; text-align:left; padding:6px 10px; font-size:13px; border-radius:6px; color:var(--ui-text-fgColor)}
+.npslash button.on, .npslash button:hover{background:var(--ui-surface-muted-bgColor)}
+.npfoot{display:flex; align-items:center; gap:8px 16px; flex-wrap:wrap; padding:8px 20px 12px; font-size:12px; color:var(--ui-text-muted-fgColor);
+  border-top:1px solid var(--ui-outline-muted-borderColor)}
+.npfoot .opt{font-size:12px}
+.npstate{margin-left:auto}
 </style>
 </head>
 <body>
@@ -1337,6 +1393,7 @@ html{background:var(--ui-surface-bgColor)}
         <div class="fname blank" id="fname">フォルダを選ぶと、中の音声が番号順に並びます</div>
         <div class="setwrap">
           <span class="setsum" id="setSum"></span>
+          <button id="noteBtn" aria-pressed="false" aria-controls="notepad"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3-7.5 7.5H3v-3z"/><path d="M9 4l3 3"/></svg><span>書く</span></button>
           <button id="flowBtn" aria-haspopup="dialog" aria-controls="flowPanel"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h5"/><path d="M11.5 9.5v4l3-2z"/></svg><span>1文ずつ聴く</span></button>
           <button id="settingsBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7"/><circle cx="11" cy="4.5" r="1.6"/><circle cx="5" cy="11.5" r="1.6"/></svg><span>設定</span></button>
           <div class="settings" id="settings" role="dialog" aria-label="再生の設定" hidden>
@@ -1404,6 +1461,20 @@ html{background:var(--ui-surface-bgColor)}
       <div class="ledger-empty" id="ledgerEmpty">
         まだ何も読み込まれていません。<br>
         「フォルダを選ぶ」を押すか、Finderからフォルダをこの画面に落としてください。
+      </div>
+      <div class="notepad" id="notepad" hidden>
+        <div class="nphead">
+          <select id="npPage" aria-label="開くページ"></select>
+          <span class="npcount" id="npCount"></span>
+        </div>
+        <div class="npscroll">
+          <input id="npTitle" class="nptitle" aria-label="ページの名前" autocomplete="off" spellcheck="false">
+          <div class="npdoc" id="npDoc"></div>
+        </div>
+        <div class="npfoot">
+          <label class="opt" id="npTelex"><input type="checkbox"> 画面の Telex で打つ（aa→â　dd→đ　s f r x j で声調）</label>
+          <span class="npstate" id="npState"></span>
+        </div>
       </div>
     </aside>
   </main>
@@ -4551,6 +4622,370 @@ if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir
   miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li) };   // 段5のつまずき・範囲を試す口
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
+
+/* ---- 書く（2026-10-27） ----
+   本人「音声のところにテキストを打ち込む機能が欲しい」「わざわざ Notion を開いてやってるから、この音声ドリルの中でやりたい」（タイピングの練習）。
+   Notion では「1回目」「2回目」…のトグルの中に、聴いた文を1行ずつ打っている。
+   本人「Notion でできる基本的なやつ、トグルとか見出しとか、コールアウトとか、そういう基本のやつができれば」。
+   ○ 1行＝1ブロック。行の頭にマークダウンを打つと形が変わる（# 見出し・- 箇条書き・1. 番号・[] チェック・> トグル・" 引用）。「/」で種類を選ぶ（コールアウトはここから）。
+     Tab で1段下げる・⇧Tab で戻す。空の行で Enter／行頭で ⌫ で、ふつうの文に戻る。
+   ○ 画面の Telex は、いま打っている語にだけ当てる（日本語を混ぜても、前の行は触らない）。
+   ○ 先にこの端末の中（localStorage）に置く。記録の同期がオンなら 音声ドリル/書いた/<言語>/<ページ名>.md にも書く → vault の git に入り、Obsidian でも読める。
+     トグルは Obsidian の折りたためるコールアウト（> [!toggle]-）、コールアウトは > [!note] で書く。
+   ○ 別の端末で同じページを書き換えていて、こちらも書き換えていたら、向こうの分を「<ページ名> 別の端末.md」に残す（消さない）。
+   実現方式：vault 008_project/AppBuilding/specs/20261001_oto-drill-app_実現方式.md 「書く」 */
+const NOTE_DIR = '書いた', NOTE_FIRST = 'タイピング';
+const BTYPES = [['p', '本文', 'text'], ['h1', '見出し1', 'h1 heading'], ['h2', '見出し2', 'h2 heading'], ['h3', '見出し3', 'h3 heading'],
+  ['ul', '箇条書き', 'bullet list'], ['ol', '番号つき', 'number list'], ['todo', 'チェック', 'todo check'], ['toggle', 'トグル', 'toggle'],
+  ['quote', '引用', 'quote'], ['callout', 'コールアウト', 'callout memo']];
+let note = {lang: '', title: '', base: null}, noteT = 0, noteBusy = false;   // base＝最後にフォルダと揃えた中身
+const npDoc = $('#npDoc'), npTitle = $('#npTitle');
+const noteKey = (lang, title) => 'note:' + lang + ':' + title;
+const fileSafe = s => s.replace(/[\/\\:*?"<>|#^\[\]]/g, '').trim();
+
+/* md ⇄ ブロック */
+function mdOut(bs, pre){
+  pre = pre || '';
+  const out = [];
+  bs.forEach(b => {
+    const kids = b.kids && b.kids.length ? b.kids : null;
+    if(b.t === 'toggle' || b.t === 'callout' || b.t === 'quote'){
+      const head = b.t === 'toggle' ? '[!toggle]' + (b.open ? '+' : '-') + ' ' : b.t === 'callout' ? '[!note] ' : '';
+      const ls = (head + b.text).split('\n');
+      if(kids) ls.push(...mdOut(kids, '').split('\n'));
+      if(out.length && out[out.length-1] !== '') out.push('');
+      ls.forEach(l => out.push(pre + '> ' + l));
+      out.push('');
+      return;
+    }
+    const mk = {h1: '# ', h2: '## ', h3: '### ', ul: '- ', ol: '1. ', todo: b.done ? '- [x] ' : '- [ ] '}[b.t] || '';
+    out.push(pre + mk + (!mk && /^(#{1,3} |[-*] |\d+\. |>|\\)/.test(b.text) ? '\\' : '') + b.text);   // 記法に見える文は頭に \ を付けて、読み直しても文のまま
+    if(kids) out.push(mdOut(kids, pre + '\t'));
+  });
+  while(out.length && out[out.length-1] === '') out.pop();
+  return out.join('\n');
+}
+function mdIn(md){
+  const ls = md.replace(/\r/g, '').split('\n'), bs = [];
+  for(let i = 0; i < ls.length; i++){
+    const l = ls[i];
+    if(!l.trim()) continue;
+    if(/^>/.test(l)){
+      const q = [];
+      while(i < ls.length && /^>/.test(ls[i])) q.push(ls[i++].replace(/^> ?/, ''));
+      i--;
+      const m = q[0].match(/^\[!(\w+)\]([+-]?)\s?(.*)$/);
+      if(m && m[1].toLowerCase() === 'toggle') bs.push({t: 'toggle', text: m[3], open: m[2] === '+', kids: mdIn(q.slice(1).join('\n'))});
+      else if(m) bs.push({t: 'callout', text: [m[3], ...q.slice(1)].join('\n')});
+      else bs.push({t: 'quote', text: q.join('\n')});
+      continue;
+    }
+    const sub = [];
+    while(i + 1 < ls.length && /^\t/.test(ls[i+1])) sub.push(ls[++i].slice(1));
+    let m, b;
+    if((m = l.match(/^(#{1,3}) (.*)$/))) b = {t: 'h' + m[1].length, text: m[2]};
+    else if((m = l.match(/^- \[([ xX])\] (.*)$/))) b = {t: 'todo', text: m[2], done: m[1] !== ' '};
+    else if((m = l.match(/^[-*] (.*)$/))) b = {t: 'ul', text: m[1]};
+    else if((m = l.match(/^\d+\. (.*)$/))) b = {t: 'ol', text: m[1]};
+    else b = {t: 'p', text: l.replace(/^\\/, '')};
+    if(sub.length) b.kids = mdIn(sub.join('\n'));
+    bs.push(b);
+  }
+  return bs;
+}
+
+/* ブロックの DOM：.blk[data-t] > .bmark + .btxt（1行ぶんの編集欄） + .bkids */
+function mkBlock(b){
+  const el = document.createElement('div'); el.className = 'blk';
+  el.innerHTML = '<div class="nprow"><span class="bmark" contenteditable="false"></span><div class="btxt" spellcheck="false"></div></div><div class="bkids"></div>';
+  const tx = el.querySelector('.btxt');
+  try{ tx.contentEditable = 'plaintext-only'; }catch(e){ tx.contentEditable = 'true'; }
+  if(tx.contentEditable !== 'plaintext-only') tx.contentEditable = 'true';
+  tx.lang = note.lang || LP.code;
+  tx.textContent = b.text || '';
+  (b.kids || []).forEach(k => el.querySelector('.bkids').appendChild(mkBlock(k)));
+  setBType(el, b.t || 'p', b);
+  return el;
+}
+function setBType(el, t, b){
+  el.dataset.t = t;
+  const mk = el.querySelector('.bmark');
+  mk.innerHTML = t === 'toggle' ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg>'
+    : t === 'todo' ? '<input type="checkbox" tabindex="-1">' : t === 'callout' ? '💡' : '';
+  if(t === 'todo') mk.querySelector('input').checked = el.classList.toggle('done', !!(b && b.done));
+  else el.classList.remove('done');
+  if(t === 'toggle') el.classList.toggle('open', b ? b.open !== false : true); else el.classList.remove('open');
+  el.querySelector('.btxt').dataset.ph = {h1: '見出し1', h2: '見出し2', h3: '見出し3', toggle: 'トグル', callout: 'コールアウト', quote: '引用', ul: 'リスト', ol: 'リスト', todo: 'やること'}[t] || '「/」で種類を選ぶ・# - 1. [] > で形が変わる';
+}
+function domBlocks(box){
+  return [...box.children].filter(c => c.classList.contains('blk')).map(el => {
+    const b = {t: el.dataset.t, text: el.querySelector(':scope > .nprow > .btxt').textContent.replace(/ /g, ' ')};
+    if(b.t !== 'callout' && b.t !== 'quote') b.text = b.text.replace(/\n/g, ' ');
+    if(b.t === 'todo') b.done = el.classList.contains('done');
+    if(b.t === 'toggle') b.open = el.classList.contains('open');
+    const k = domBlocks(el.querySelector(':scope > .bkids')); if(k.length) b.kids = k;
+    return b;
+  });
+}
+function docMd(){
+  const strip = bs => bs.filter(b => b.text.trim() || (b.kids && b.kids.length) || b.t !== 'p').map(b => b.kids ? Object.assign({}, b, {kids: strip(b.kids)}) : b);
+  return mdOut(strip(domBlocks(npDoc)));
+}
+function paintDoc(md){
+  npDoc.innerHTML = '';
+  const bs = mdIn(md || ''); if(!bs.length) bs.push({t: 'p', text: ''});
+  bs.forEach(b => npDoc.appendChild(mkBlock(b)));
+}
+const blkOf = n => n && (n.nodeType === 1 ? n : n.parentElement).closest('.blk');
+const txOf = el => el.querySelector(':scope > .nprow > .btxt');
+function caretOff(tx){
+  const s = getSelection(); if(!s.rangeCount || !tx.contains(s.anchorNode)) return 0;
+  const r = document.createRange(); r.selectNodeContents(tx); r.setEnd(s.anchorNode, s.anchorOffset); return r.toString().length;
+}
+function setCaret(tx, off){
+  tx.focus();
+  const r = document.createRange(), w = document.createTreeWalker(tx, NodeFilter.SHOW_TEXT);
+  let n, left = off == null ? Infinity : off, done = false;
+  while((n = w.nextNode())){ if(left <= n.length){ r.setStart(n, left); done = true; break; } left -= n.length; }
+  if(!done){ r.selectNodeContents(tx); r.collapse(false); } else r.collapse(true);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+// 画面に見えている編集欄を上から順に（閉じたトグルの中は飛ばす）
+const visTx = () => [...npDoc.querySelectorAll('.btxt')].filter(t => !t.closest('.blk:not(.open)[data-t="toggle"] > .bkids'));
+function moveTx(tx, d, end){ const a = visTx(), j = a.indexOf(tx) + d; if(a[j]){ setCaret(a[j], end ? null : 0); return true; } return false; }
+
+/* 「/」で選ぶ小窓 */
+let slash = null;   // {el, i, list}
+function paintSlash(el){
+  const tx = txOf(el), f = tx.textContent.slice(1).toLowerCase();
+  const has = (w, q) => { let j = 0; for(const c of w) if(c === q[j]) j++; return j === q.length; };   // 飛び飛びでも順に入っていれば（co → callout）
+  const list = BTYPES.filter(t => !f || has(t[1], f) || t[2].split(' ').some(w => has(w, f)));
+  let m = $('#npSlash');
+  if(!list.length){ closeSlash(); return; }
+  if(!m){ m = document.createElement('div'); m.id = 'npSlash'; m.className = 'npslash'; m.addEventListener('mousedown', e => {
+    const b = e.target.closest('button'); if(b && slash){ e.preventDefault(); slash.i = +b.dataset.i; pickSlash(); } }); document.body.appendChild(m); }
+  slash = {el, i: Math.min(slash && slash.el === el ? slash.i : 0, list.length - 1), list};
+  m.innerHTML = list.map((t, i) => '<button data-i="' + i + '"' + (i === slash.i ? ' class="on"' : '') + '>' + t[1] + '</button>').join('');
+  const rc = tx.getBoundingClientRect();
+  m.style.left = Math.min(rc.left, innerWidth - 200) + 'px';
+  m.style.top = (rc.bottom + 4 + 260 > innerHeight ? Math.max(8, rc.top - 4 - Math.min(260, list.length * 34 + 8)) : rc.bottom + 4) + 'px';
+}
+function closeSlash(){ slash = null; const m = $('#npSlash'); if(m) m.remove(); }
+function pickSlash(){
+  const {el, list, i} = slash; closeSlash();
+  const tx = txOf(el); tx.textContent = '';
+  setBType(el, list[i][0]); setCaret(tx, 0); noteDirty();
+}
+
+/* 打つ */
+let telexing = false;
+npDoc.addEventListener('input', e => {
+  const el = blkOf(e.target); if(!el || telexing) return;
+  const tx = txOf(el);
+  if(tx.innerHTML.includes('<')) { const off = caretOff(tx); tx.textContent = tx.innerText.replace(/\n$/, ''); setCaret(tx, off); }   // plaintext-only の無い環境で書式が入ったとき
+  const v = tx.textContent, off = caretOff(tx);
+  // 行頭のマークダウン
+  const m = el.dataset.t === 'p' && v.slice(0, off).match(/^(#{1,3}|[-*]|1\.|\[ ?\]|>|")[  ]$/);
+  if(m){
+    const k = m[1], t = k[0] === '#' ? 'h' + k.length : k === '-' || k === '*' ? 'ul' : k === '1.' ? 'ol' : k[0] === '[' ? 'todo' : k === '>' ? 'toggle' : 'quote';
+    tx.textContent = v.slice(off); setBType(el, t); setCaret(tx, 0); noteDirty(); return;
+  }
+  if(v[0] === '/' && el.dataset.t === 'p') paintSlash(el); else if(slash) closeSlash();
+  // Telex：いま打っている語だけ
+  if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){
+    const s = getSelection();
+    if(s.isCollapsed && s.anchorNode && s.anchorNode.nodeType === 3){
+      const n = s.anchorNode, p = s.anchorOffset, w0 = n.data.slice(0, p).match(/\p{Script=Latin}+$/u);
+      const w = w0 && telexWord(w0[0]);
+      if(w0 && w !== w0[0]){   // 取り消し（⌘Z）で戻せるよう、入力として差し替える
+        telexing = true;
+        const r = document.createRange(); r.setStart(n, p - w0[0].length); r.setEnd(n, p); s.removeAllRanges(); s.addRange(r);
+        if(!document.execCommand('insertText', false, w)){ n.data = n.data.slice(0, p - w0[0].length) + w + n.data.slice(p); setCaret(tx, off - w0[0].length + w.length); }
+        telexing = false;
+      }
+    }
+  }
+  noteDirty();
+});
+npDoc.addEventListener('keydown', e => {
+  e.stopPropagation();   // 音声のキー（space で再生など）に取られないように
+  const el = blkOf(e.target); if(!el || e.isComposing) return;
+  const tx = txOf(el), t = el.dataset.t, v = tx.textContent, off = caretOff(tx), sel = getSelection();
+  if(slash && slash.el === el){
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); slash.i = (slash.i + (e.key === 'ArrowDown' ? 1 : -1) + slash.list.length) % slash.list.length; paintSlash(el); return; }
+    if(e.key === 'Enter'){ e.preventDefault(); pickSlash(); return; }
+    if(e.key === 'Escape'){ e.preventDefault(); closeSlash(); return; }
+  }
+  if(e.key === 'Enter'){
+    if(e.shiftKey && (t === 'callout' || t === 'quote')) return;   // 枠の中で改行
+    e.preventDefault();
+    if(!v.trim() && t !== 'p'){ setBType(el, 'p'); noteDirty(); return; }   // 空の項目で Enter → ふつうの文に
+    const after = sel.isCollapsed ? v.slice(off) : '';
+    tx.textContent = v.slice(0, off);
+    const nt = t === 'ul' || t === 'ol' || t === 'todo' ? t : 'p';
+    const nb = mkBlock({t: nt, text: after});
+    if(t === 'toggle' && el.classList.contains('open')) el.querySelector(':scope > .bkids').prepend(nb);
+    else el.after(nb);
+    setCaret(txOf(nb), 0); noteDirty(); return;
+  }
+  if(e.key === 'Backspace' && sel.isCollapsed && off === 0){
+    e.preventDefault();
+    if(t !== 'p'){ setBType(el, 'p'); noteDirty(); return; }
+    const par = el.parentElement.closest('.blk');
+    if(par && !el.nextElementSibling){ par.after(el); setCaret(tx, 0); noteDirty(); return; }   // 下げた最後の行 → 1段戻す
+    const a = visTx(), prev = a[a.indexOf(tx) - 1];
+    if(!prev) return;
+    const pl = prev.textContent.length;
+    prev.textContent += v;
+    const kids = [...el.querySelector(':scope > .bkids').children];
+    kids.reverse().forEach(k => el.after(k));
+    el.remove(); setCaret(prev, pl); noteDirty(); return;
+  }
+  if(e.key === 'Tab'){
+    e.preventDefault();
+    if(e.shiftKey){ const par = el.parentElement.closest('.blk'); if(!par) return;
+      const rest = []; let n = el.nextElementSibling; while(n){ rest.push(n); n = n.nextElementSibling; }
+      rest.forEach(r => el.querySelector(':scope > .bkids').appendChild(r)); par.after(el); }
+    else { const prev = el.previousElementSibling; if(!prev) return; prev.querySelector(':scope > .bkids').appendChild(el);
+      if(prev.dataset.t === 'toggle') prev.classList.add('open'); }
+    setCaret(tx, off); noteDirty(); return;
+  }
+  if(e.key === 'ArrowUp' && off === 0 && sel.isCollapsed){ if(moveTx(tx, -1, true)) e.preventDefault(); return; }
+  if(e.key === 'ArrowDown' && off === v.length && sel.isCollapsed){ if(moveTx(tx, 1, false)) e.preventDefault(); return; }
+});
+npDoc.addEventListener('paste', e => {
+  const el = blkOf(e.target); if(!el) return;
+  e.preventDefault();
+  const s = (e.clipboardData.getData('text/plain') || '').replace(/\r/g, '');
+  if(!s.includes('\n')){ document.execCommand('insertText', false, s); return; }
+  const bs = mdIn(s); let at = el;
+  bs.forEach(b => { const nb = mkBlock(b); at.after(nb); at = nb; });
+  if(!txOf(el).textContent.trim() && el.dataset.t === 'p' && !el.querySelector('.bkids').children.length) el.remove();
+  setCaret(txOf(at), null); noteDirty();
+});
+npDoc.addEventListener('mousedown', e => {
+  const mk = e.target.closest('.bmark'); if(!mk) return;
+  const el = mk.closest('.blk');
+  if(el.dataset.t === 'toggle'){ e.preventDefault(); el.classList.toggle('open'); noteDirty(); }
+  else if(el.dataset.t === 'todo'){ e.preventDefault(); mk.querySelector('input').checked = el.classList.toggle('done'); noteDirty(); }
+});
+npDoc.addEventListener('click', e => {   // 下の余白を押したら、最後の行へ（最後が空でなければ新しい行）
+  if(e.target !== npDoc) return;
+  const last = npDoc.lastElementChild;
+  if(last && last.dataset.t === 'p' && !txOf(last).textContent && !last.querySelector('.bkids').children.length) return setCaret(txOf(last), 0);
+  const nb = mkBlock({t: 'p', text: ''}); npDoc.appendChild(nb); setCaret(txOf(nb), 0);
+});
+npDoc.addEventListener('focusout', () => setTimeout(() => { if(!npDoc.contains(document.activeElement)){ closeSlash(); noteFlush(); } }, 0));
+
+/* 保存 */
+async function noteFolder(lang, create){
+  if(!recDir) return null;
+  try{ return await (await recDir.getDirectoryHandle(NOTE_DIR, {create})).getDirectoryHandle(lang, {create}); }catch(e){ return null; }
+}
+async function noteRead(lang, title){
+  const d = await noteFolder(lang, false); if(!d) return null;
+  try{ return await (await (await d.getFileHandle(title + '.md')).getFile()).text(); }catch(e){ return null; }
+}
+async function noteWrite(lang, name, text){
+  const d = await noteFolder(lang, true); if(!d) return false;
+  try{ const w = await (await d.getFileHandle(name + '.md', {create: true})).createWritable(); await w.write(text); await w.close(); return true; }catch(e){ return false; }
+}
+async function notePages(lang){
+  const s = new Set(), pre = 'otodrill:note:' + lang + ':';
+  try{ for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i) || ''; if(k.startsWith(pre)) s.add(k.slice(pre.length)); } }catch(e){}
+  const d = await noteFolder(lang, false);
+  if(d) try{ for await (const [name] of d.entries()){ const m = name.match(/^(.+)\.md$/); if(m && !/ 別の端末$/.test(m[1])) s.add(m[1]); } }catch(e){}
+  return [...s].sort((a, b) => a.localeCompare(b, 'ja'));
+}
+function paintNoteCount(){
+  const tx = [...npDoc.querySelectorAll('.btxt')].map(t => t.textContent);
+  $('#npCount').textContent = tx.filter(s => s.trim()).length + ' 行・' + tx.join('').replace(/\s/g, '').length + ' 字';
+}
+function paintNoteState(t){
+  $('#npState').textContent = t || (!recDir ? 'この端末に保存（同期をオンにすると iCloud にも）'
+    : docMd() === note.base ? '保存済み：' + NOTE_DIR + '/' + note.lang + '/' + note.title + '.md' : '保存中');
+}
+async function paintNotePages(){
+  const ps = await notePages(note.lang); if(!ps.includes(note.title)) ps.push(note.title);
+  $('#npPage').innerHTML = ps.map(p => '<option' + (p === note.title ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '<option value="">＋ 新しいページ</option>';
+}
+function noteDirty(){
+  if(!note.title) return;
+  save(noteKey(note.lang, note.title), {text: docMd(), base: note.base});
+  paintNoteCount(); paintNoteState(recDir ? '保存中' : '');
+  clearTimeout(noteT); noteT = setTimeout(noteFlush, 1000);
+}
+async function noteFlush(){
+  clearTimeout(noteT); noteT = 0;
+  if(!note.title) return;
+  const {lang, title} = note, text = docMd();
+  save(noteKey(lang, title), {text, base: note.base});
+  if(!recDir || text === note.base || (note.base === null && !text)) return paintNoteState();
+  noteBusy = true;
+  const remote = await noteRead(lang, title);   // 書く前に、ほかの端末が同じページを書き換えていないか見る。書き換えていたら向こうの分を残す
+  if(remote !== null && remote !== note.base && remote !== text) await noteWrite(lang, title + ' 別の端末', remote);
+  if(await noteWrite(lang, title, text) && note.lang === lang && note.title === title){ note.base = text; save(noteKey(lang, title), {text: docMd(), base: text}); }
+  noteBusy = false; paintNoteState();
+}
+async function openNote(title){
+  await noteFlush();
+  const lang = LP.code;
+  const loc = load(noteKey(lang, title), null) || {text: '', base: null};
+  let text = loc.text, base = loc.base;
+  const remote = await noteRead(lang, title);
+  if(remote !== null && remote !== base){
+    const mine = base === null ? text !== '' : text !== base;   // こちらで書き換えたか
+    if(!mine) text = remote;
+    else if(remote !== text) await noteWrite(lang, title + ' 別の端末', remote);
+    base = remote;
+  }
+  note = {lang, title, base};
+  npTitle.value = title; save(noteKey(lang, title), {text, base}); save('note:last:' + lang, title);
+  paintDoc(text); paintNoteCount(); paintNoteState(); paintNotePages();
+  if(text !== base) noteFlush();
+}
+async function renameNote(to){
+  to = fileSafe(to);
+  if(!to || to === note.title) { npTitle.value = note.title; return; }
+  if((await notePages(note.lang)).includes(to)){ toast('「' + esc(to) + '」というページはもうあります'); npTitle.value = note.title; return; }
+  await noteFlush();
+  const {lang, title} = note, text = docMd();
+  save(noteKey(lang, to), {text, base: null});
+  if(recDir && await noteWrite(lang, to, text)){
+    save(noteKey(lang, to), {text, base: text});
+    try{ (await noteFolder(lang, false)).removeEntry(title + '.md'); }catch(e){}   // 名前を変えただけ（中身は新しい名前のほうにある。前の版は git に残る）
+  }
+  try{ localStorage.removeItem('otodrill:' + noteKey(lang, title)); }catch(e){}
+  note.title = ''; await openNote(to);
+}
+async function setWriting(on, quiet){
+  document.querySelector('.app').classList.toggle('writing', on);
+  $('#notepad').hidden = !on;
+  $('#noteBtn').classList.toggle('on', on); $('#noteBtn').setAttribute('aria-pressed', String(on));
+  save('writing', on);
+  if(!on){ closeSlash(); noteFlush(); return; }
+  $('#npTelex').hidden = LP.inputMethod !== 'telex';
+  $('#npTelex input').checked = load('telex', true);
+  const t = note.lang === LP.code && note.title ? note.title : load('note:last:' + LP.code, '') || (await notePages(LP.code))[0] || NOTE_FIRST;
+  await openNote(t);
+  const a = visTx(); if(a.length && !quiet) setCaret(a[a.length - 1], null);
+}
+$('#noteBtn').addEventListener('click', e => { setWriting($('#notepad').hidden); e.currentTarget.blur(); });
+$('#npPage').addEventListener('change', async e => {
+  let t = e.target.value;
+  if(!t){ const ps = await notePages(note.lang); let i = 1; t = '新しいページ'; while(ps.includes(t)) t = '新しいページ ' + (++i); }
+  await openNote(t); if(!e.target.value) { npTitle.focus(); npTitle.select(); } else { const a = visTx(); setCaret(a[a.length - 1], null); }
+});
+npTitle.addEventListener('keydown', e => { e.stopPropagation(); if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); const a = visTx(); if(a[0]) setCaret(a[0], 0); } });
+npTitle.addEventListener('change', () => renameNote(npTitle.value));
+$('#npTelex input').addEventListener('change', e => { save('telex', e.target.checked); });
+document.addEventListener('visibilitychange', () => {
+  if($('#notepad').hidden || !note.title || noteBusy) return;
+  if(document.visibilityState === 'hidden') noteFlush();
+  else if(!npDoc.contains(document.activeElement)) openNote(note.title);   // ほかの端末で書いた分を読み直す（打っている最中は動かさない）
+});
+if(load('writing', false)) setWriting(true, true);   // 前に開いていたら、開いたまま始める（打つ欄には入らない）
+window.addEventListener('pagehide', () => { if(note.title) save(noteKey(note.lang, note.title), {text: docMd(), base: note.base}); });
 
 
 
