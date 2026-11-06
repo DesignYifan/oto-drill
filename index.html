@@ -1298,6 +1298,8 @@ header{padding-top:calc(16px + env(safe-area-inset-top, 0px)) !important;
 .dock{background:color-mix(in srgb, var(--ui-surface-bgColor) 86%, transparent) !important;
   -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px)}
 html{background:var(--ui-surface-bgColor)}
+/* 文字を一段大きく（設定の「文字」）。px で決めた大きさを全部まとめて上げるので zoom を使う */
+html.big-text body{zoom:1.125}
 
 /* ---- 書く（音声の画面で、練習の文を打つ）：右の列を一覧から書く欄に入れ替える ---- */
 #noteBtn{display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px; white-space:nowrap; flex:none}
@@ -1429,6 +1431,11 @@ html{background:var(--ui-surface-bgColor)}
           </select>
         </label>
         <label class="opt"><input type="checkbox" id="loopAll"> 最後まで行ったら最初へ</label>
+            </div>
+
+            <div class="setting">
+        <span class="eyebrow">文字</span>
+        <label class="opt"><input type="checkbox" id="bigText"> 一段大きくする</label>
             </div>
 
             <div class="recsync">
@@ -1806,6 +1813,13 @@ function openSettings(on){
   $('#settingsBtn').setAttribute('aria-expanded', String(on));
   $('#settingsBtn').classList.toggle('on', on);
 }
+/* 文字を一段大きく：選んだ状態は覚える（otodrill:bigText） */
+(function(){
+  const box = $('#bigText');
+  const apply = on => { document.documentElement.classList.toggle('big-text', on); box.checked = on; };
+  apply(!!load('bigText', false));
+  box.addEventListener('change', () => { save('bigText', box.checked); apply(box.checked); });
+})();
 $('#settingsBtn').addEventListener('click', e => { e.stopPropagation(); openSettings($('#settings').hidden); });
 document.addEventListener('click', e => { if(!$('#settings').hidden && !e.target.closest('#settings')) openSettings(false); });
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('#settings').hidden){ openSettings(false); $('#settingsBtn').focus(); } });
