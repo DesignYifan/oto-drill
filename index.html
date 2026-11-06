@@ -1157,6 +1157,8 @@ button.linkish:hover{background:none; text-decoration:underline}
 .askchips button:disabled{opacity:.5; cursor:default}
 .stuck{display:flex; flex-direction:column; gap:8px; padding:12px 16px; border-radius:12px; background:var(--ui-surface-muted-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); text-align:left}
 .stuck b{font-size:14px}
+.myrec.on{box-shadow:inset 0 0 0 2px var(--ui-danger-fgColor, #d33)}
+.grate{font-weight:400; color:var(--ui-text-muted-fgColor); font-variant-numeric:tabular-nums}
 .stuck span{font-size:14px; line-height:1.7; color:var(--ui-text-muted-fgColor)}
 .stuck .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-start}
 .askform button{flex:none}
@@ -3259,13 +3261,15 @@ function renderQuiz(){
     if(!sp || q.heard) box.insertAdjacentHTML('beforeend', '<div class="ask' + (it.show.length > 8 ? ' long' : '') + '">' + esc(it.show) + '</div>');
     box.insertAdjacentHTML('beforeend', '<div class="say">' + (q.heard ? esc(it.say) : '') + '</div>');
     if(!q.heard){
+      if(sp) box.appendChild(recBtn());
       const b = document.createElement('button'); b.className = 'primary hear'; b.textContent = '声に出してから、答えを聴く';
-      b.addEventListener('click', ()=>{ q.heard = true; say(it); renderQuiz(); });
+      b.addEventListener('click', ()=>{ stopRec(); q.heard = true; say(it); renderQuiz(); });
       box.appendChild(b);
       box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>space</kbd> 答えを聴く</div>');
     }else if(!q.done){
       if(it.deck.kind === 'text') box.appendChild(explainEl(it, {ok: true, msg: '答えの文'}));
       box.appendChild(hearBtn(()=> say(it)));
+      if(sp && q.myRec){ const mb = document.createElement('button'); mb.className = 'myrec'; mb.textContent = '自分の声を聴く'; mb.addEventListener('click', ()=> playMyRec()); box.appendChild(mb); }
       const row = document.createElement('div'); row.className = 'row';
       const ng = document.createElement('button'); ng.className = 'miss'; ng.textContent = '言えなかった';
       const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = '言えた';
@@ -3277,6 +3281,30 @@ function renderQuiz(){
   }
   body.appendChild(box);
 }
+/* ---- 日本語から言う：自分の声を録って、正解と聞き比べる（仮想ユーザー評価の案4・2026-11-07 段1） ----
+   ○ 録った声はその問いの間だけ持つ（保存しない・送らない）。マイクの許可はブラウザが本人に聞く
+   × 録音中に正解を流さない（混ざる）。「答えを聴く」を押したら先に止める */
+let recState = null;
+function recBtn(){
+  const b = document.createElement('button'); b.className = 'myrec';
+  const label = () => { b.textContent = recState && recState.on ? '録音を止める' : (q.myRec ? '録り直す' : '録音して言う'); b.classList.toggle('on', !!(recState && recState.on)); };
+  label();
+  if(!(navigator.mediaDevices && window.MediaRecorder)){ b.disabled = true; b.textContent = 'この環境では録音できません'; return b; }
+  b.addEventListener('click', async () => {
+    if(recState && recState.on){ stopRec(); label(); return; }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+      const mr = new MediaRecorder(stream), chunks = [], qq = q;
+      recState = {on: true, mr, stream};
+      mr.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); if(qq.myRec) URL.revokeObjectURL(qq.myRec); qq.myRec = chunks.length ? URL.createObjectURL(new Blob(chunks, {type: mr.mimeType})) : null; if(qq === q) renderQuiz(); };
+      mr.start(); label();
+    }catch(e){ recState = null; b.textContent = 'マイクを使えませんでした'; }
+  });
+  return b;
+}
+function stopRec(){ if(recState && recState.on){ recState.on = false; try{ recState.mr.stop(); }catch(e){} } }
+function playMyRec(){ if(!q || !q.myRec) return; const a = new Audio(q.myRec); a.play().catch(()=>{}); }
 /* ---- 穴埋め：1語だけ抜く。文法の語を優先して抜く ---- */
 const FUNC = { includes: w => LP.functionWords.includes(w), get list(){ return LP.functionWords; } };   // 文法の語は言語パックから
 function clozeQ(it){
@@ -3652,7 +3680,7 @@ function makeQ(v, it){
   if(DRILLV[v]) return {it, done: false};
   return {it, done: false, heard: false, choices: v === 'hear' ? choicesFor(it) : null};
 }
-function nextQ(){
+function nextQ(){ stopRec();
   if(runOn && run){ runNext(); return; }
   const prev = q && q.it.id;
   q = makeQ(pview, nextItem(prev));
@@ -3903,6 +3931,34 @@ function firstLesson(text, given){
   }
   return -1;
 }
+/* 文法の型ごとの正答率（弱い型を狙う・段1：まず測って見せる）。hist の答えを、項目の文が型に当たるかで数える。
+   ○ 同じ答えの列なら数え直さない。× 5問未満の型は「弱い」と言わない（たまたまの1問で決めない） */
+let gramStatsMemo = null;
+function gramStats(){
+  const items = pdata ? pdata.decks.flatMap(d => d.items) : [];
+  const key = hist.length + ':' + items.length + ':' + ((notes && notes.patterns) || []).length;
+  if(gramStatsMemo && gramStatsMemo.key === key) return gramStatsMemo.m;
+  const byId = new Map(items.map(it => [it.id, it]));
+  const pats = ((notes && notes.patterns) || []).filter(p => p.match);
+  const m = new Map(), tcache = new Map();
+  hist.forEach(h => {
+    const it = byId.get(h[1]); if(!it || !it.show) return;
+    let t = tcache.get(it.id); if(t === undefined){ t = matchable(it.show); tcache.set(it.id, t); }
+    pats.forEach(p => {
+      if(!patHit(p.match, t) || (p.not && t.includes(p.not))) return;
+      const o = m.get(p.match) || {n: 0, ok: 0}; o.n++; o.ok += h[3] ? 1 : 0; m.set(p.match, o);
+    });
+  });
+  gramStatsMemo = {key, m};
+  return m;
+}
+const GRAM_MIN = 5;
+function weakGrams(k){
+  const st = gramStats(), pats = ((notes && notes.patterns) || []).filter(p => p.match);
+  return pats.map(p => ({p, s: st.get(p.match)})).filter(x => x.s && x.s.n >= GRAM_MIN && x.s.ok / x.s.n < 0.8)
+    .sort((a, b) => a.s.ok / a.s.n - b.s.ok / b.s.n).slice(0, k || 5);
+}
+const gramRate = s => s ? Math.round(s.ok / s.n * 100) + '%・' + s.n + '問' : '';
 function sentsWith(m, li, field){
   field = field || 'm';
   const ld = lessonData();
@@ -4057,6 +4113,9 @@ function renderBook(){
     const G = grammar();
     const any = G.out.some(a => a.length) || G.rest.length;
     if(!any) html += '<p class="pnote" style="text-align:left">この教材には文法メモ（notes.json）がまだありません。</p>';
+    const GS = gramStats(), weak = weakGrams(5);
+    if(weak.length) html += '<section class="bsec"><h3 class="ovh">弱い型<small>正答率の低い順・' + GRAM_MIN + '問以上</small></h3>' +
+      weak.map(x => '<div class="gram"><button class="gt" data-g="' + esc(x.p.match) + '"><b>' + esc(unmark(x.p.title || x.p.match)) + '</b><span>' + gramRate(x.s) + '</span></button></div>').join('') + '</section>';
     const sec = (name, list) => list.length ? '<section class="bsec"><h3 class="ovh">' + esc(name) + '<small>' + list.length + '</small></h3>' +
       list.map(p => {
         const key = p.match;
@@ -4067,7 +4126,8 @@ function renderBook(){
           ex = '<div class="gex">' + (ss.length ? ss.map((s, i) => '<button class="gs" data-i="' + i + '">' + esc(s.seg.text) + '</button>').join('') : '<span class="pnote">本文に例がありません</span>') + '</div>';
           gexCache = ss;
         }
-        return '<div class="gram' + (open ? ' open' : '') + '"><button class="gt" data-g="' + esc(key) + '"><b>' + esc(p.title || p.match) + '</b><span>' + esc(unmark(p.body)) + '</span></button>' + ex + '</div>';
+        const rate = GS.get(p.match);
+        return '<div class="gram' + (open ? ' open' : '') + '"><button class="gt" data-g="' + esc(key) + '"><b>' + esc(p.title || p.match) + (rate ? ' <small class="grate">' + gramRate(rate) + '</small>' : '') + '</b><span>' + esc(unmark(p.body)) + '</span></button>' + ex + '</div>';
       }).join('') + '</section>' : '';
     ld.forEach((x, li) => { html += sec(x.L.title, G.out[li]); });
     html += sec('課の分からないもの', G.rest);
