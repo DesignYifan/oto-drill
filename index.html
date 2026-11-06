@@ -1158,6 +1158,12 @@ button.linkish:hover{background:none; text-decoration:underline}
 .stuck{display:flex; flex-direction:column; gap:8px; padding:12px 16px; border-radius:12px; background:var(--ui-surface-muted-bgColor); box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); text-align:left}
 .stuck b{font-size:14px}
 .myrec.on{box-shadow:inset 0 0 0 2px var(--ui-danger-fgColor, #d33)}
+.gmrow{display:flex; gap:8px; align-items:flex-start; padding:4px 0}
+.gmun{flex:none; width:9em; font-size:12px; color:var(--ui-text-muted-fgColor)}
+.gmchips{display:flex; flex-wrap:wrap; gap:4px}
+.gmc{font-size:12px; padding:2px 8px; border-radius:999px; box-shadow:inset 0 0 0 1px var(--ui-outline-borderColor); color:var(--ui-text-muted-fgColor)}
+.gmc.some{background:var(--ui-surface-muted-bgColor); color:var(--ui-text-fgColor)}
+.gmc.done{background:var(--ui-text-fgColor); color:var(--ui-surface-bgColor); box-shadow:none}
 .grate{font-weight:400; color:var(--ui-text-muted-fgColor); font-variant-numeric:tabular-nums}
 .stuck span{font-size:14px; line-height:1.7; color:var(--ui-text-muted-fgColor)}
 .stuck .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-start}
@@ -3958,6 +3964,40 @@ function weakGrams(k){
   return pats.map(p => ({p, s: st.get(p.match)})).filter(x => x.s && x.s.n >= GRAM_MIN && x.s.ok / x.s.n < 0.8)
     .sort((a, b) => a.s.ok / a.s.n - b.s.ok / b.s.n).slice(0, k || 5);
 }
+/* 弱い型に当たる項目（段2：練習の組に多めに混ぜる）。k＝上から何個の弱い型を見るか */
+function hitsWeak(items, k){
+  const ws = weakGrams(k || 3).map(x => x.p);
+  if(!ws.length) return [];
+  return items.filter(it => {
+    if(!it || !it.show || isSound(it)) return false;
+    const t = matchable(it.show);
+    return ws.some(p => patHit(p.match, t) && !(p.not && t.includes(p.not)));
+  });
+}
+const WEAK_EXTRA = 4;
+/* 声調ごとの正答率（段3・ベトナム語）。音の項目と、1〜2音節の語の答えを、音節の声調で数える。
+   ○ 声調は母音の上下の記号で決まる（なし＝ngang・`＝huyền・´＝sắc・̉＝hỏi・~＝ngã・̣＝nặng） */
+const TONES = [['ngang', '平らな声（記号なし）'], ['huyen', '下がる声（huyền）'], ['sac', '上がる声（sắc）'], ['hoi', '下がって上がる声（hỏi）'], ['nga', '折れて上がる声（ngã）'], ['nang', '短く沈む声（nặng）']];
+const TONE_MARK = {'\u0300': 'huyen', '\u0301': 'sac', '\u0309': 'hoi', '\u0303': 'nga', '\u0323': 'nang'};
+function toneOf(syl){
+  for(const ch of syl.normalize('NFD')) if(TONE_MARK[ch]) return TONE_MARK[ch];
+  return /[a-zđ]/i.test(syl.normalize('NFD')) ? 'ngang' : null;
+}
+let toneMemo = null;
+function toneStats(){
+  const items = pdata ? pdata.decks.flatMap(d => d.items.map(it => ({...it, deck: d}))) : [];
+  const key = hist.length + ':' + items.length;
+  if(toneMemo && toneMemo.key === key) return toneMemo.m;
+  const byId = new Map(items.map(it => [it.id, it])), m = new Map();
+  hist.forEach(h => {
+    const it = byId.get(h[1]); if(!it || !it.show) return;
+    const syls = it.show.toLowerCase().replace(/[.,!?;:"'()…]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    if(!(isSound(it) || syls.length <= 2)) return;
+    new Set(syls.map(toneOf).filter(Boolean)).forEach(t => { const o = m.get(t) || {n: 0, ok: 0}; o.n++; o.ok += h[3] ? 1 : 0; m.set(t, o); });
+  });
+  toneMemo = {key, m};
+  return m;
+}   // 今日の復習に、期限前でも足す弱い型の問いの数
 const gramRate = s => s ? Math.round(s.ok / s.n * 100) + '%・' + s.n + '問' : '';
 function sentsWith(m, li, field){
   field = field || 'm';
@@ -4114,6 +4154,22 @@ function renderBook(){
     const any = G.out.some(a => a.length) || G.rest.length;
     if(!any) html += '<p class="pnote" style="text-align:left">この教材には文法メモ（notes.json）がまだありません。</p>';
     const GS = gramStats(), weak = weakGrams(5);
+    if(LP.code === 'vi'){
+      const TS = toneStats();
+      if(TS.size) html += '<section class="bsec"><h3 class="ovh">声調<small>音の問いと短い語の正答率</small></h3>' +
+        TONES.filter(([k]) => TS.get(k)).map(([k, name]) => { const x = TS.get(k), weakT = x.n >= GRAM_MIN && x.ok / x.n < 0.8;
+          return '<div class="gram"><button class="gt" disabled><b>' + esc(name) + (weakT ? '　弱い' : '') + '</b><span>' + gramRate(x) + '</span></button></div>'; }).join('') + '</section>';
+    }
+    // できるようになった地図（2026-11-07）：課ごとに型を並べ、5問以上・80%以上で「できた」、答えた型は「途中」、まだの型は「まだ」
+    { const pats = ld.map((x, li) => [x, G.out[li].filter(p => p.match)]).filter(r => r[1].length);
+      const stOf = p => { const x = GS.get(p.match); return !x ? 'none' : x.n >= GRAM_MIN && x.ok / x.n >= 0.8 ? 'done' : 'some'; };
+      const allP = pats.flatMap(r => r[1]), nDone = allP.filter(p => stOf(p) === 'done').length;
+      if(allP.length) html += '<section class="bsec gmap"><h3 class="ovh">できるようになった型<small>' + nDone + ' / ' + allP.length + '</small></h3>' +
+        pats.map(([x, ps]) => '<div class="gmrow"><span class="gmun">' + esc(x.L.title) + '</span><span class="gmchips">' +
+          ps.map(p => { const st = stOf(p), r = GS.get(p.match);
+            return '<span class="gmc ' + st + '" title="' + esc(unmark(p.title || p.match)) + (r ? '　' + gramRate(r) : '　まだ答えていない') + '">' + esc(unmark(p.title || p.match.trim())) + '</span>'; }).join('') + '</span></div>').join('') +
+        '<p class="pnote" style="text-align:left">濃い色＝できた（5問以上・正答率80%以上）、薄い色＝答えている途中、枠だけ＝まだ</p></section>';
+    }
     if(weak.length) html += '<section class="bsec"><h3 class="ovh">弱い型<small>正答率の低い順・' + GRAM_MIN + '問以上</small></h3>' +
       weak.map(x => '<div class="gram"><button class="gt" data-g="' + esc(x.p.match) + '"><b>' + esc(unmark(x.p.title || x.p.match)) + '</b><span>' + gramRate(x.s) + '</span></button></div>').join('') + '</section>';
     const sec = (name, list) => list.length ? '<section class="bsec"><h3 class="ovh">' + esc(name) + '<small>' + list.length + '</small></h3>' +
@@ -4697,7 +4753,7 @@ $('#recChip').addEventListener('click', async ()=> {
   paintRecInfo();
 })();
 // 試験の口：?test のときだけ、フォルダの代わりにブラウザの内部の保存領域（OPFS）を渡せる。⛔ ふだんは出ない
-if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
+if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, loadFiles, emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
   miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li) };   // 段5のつまずき・範囲を試す口
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
@@ -5074,7 +5130,20 @@ window.addEventListener('pagehide', () => { if(note.title) save(noteKey(note.lan
 const FLOWKINDS = {sentence: ['sentence'], both: ['sentence', 'grammar'], word: ['word']};
 const FLOWNAME = {sentence: '基本文', both: '基本文＋例文', word: '単語'};
 let flow = null;
-function flowOpt(){ return Object.assign({kind: 'sentence', range: 'all', n: 1, gap: 2, ja: true, sel: null, loop: false}, load('flow:opt', {})); }
+function flowOpt(){ return Object.assign({kind: 'sentence', range: 'all', n: 1, gap: 2, ja: true, sel: null, loop: false, recall: false}, load('flow:opt', {})); }
+/* 耳だけで進む練習（仮想ユーザー評価の案5・2026-11-07）：「訳を読み上げる → 自分で言う間 → 正解の音声」を流し続ける。
+   ○ 訳の読み上げは端末の声（speechSynthesis・日本語）。○ 間は文の長さに合わせる（2秒＋1音節0.5秒、上限8秒）。
+   × 訳の無い文は、ふつうの流しと同じく正解だけ鳴らす。○ まず Mac で。iPhone の画面ロック中は次の段 */
+const recallGapMs = it => Math.min(8000, 2000 + 500 * (it.show || '').trim().split(/\s+/).length);
+function speakJa(text, done){
+  const ss = window.speechSynthesis;
+  if(!ss || !window.SpeechSynthesisUtterance || !text){ done(); return; }
+  const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 1;
+  let fin = false; const end = () => { if(!fin){ fin = true; done(); } };
+  u.onend = end; u.onerror = end;
+  ss.cancel(); ss.speak(u);
+  setTimeout(end, 4000 + 300 * text.length);   // onend が来ない端末のための逃げ道
+}
 function flowItems(li, kind){
   const x = lessonData()[li]; if(!x) return [];
   return x.items.filter(it => !isSound(it) && FLOWKINDS[kind].includes(catOf(it, it.deck)) && it.end > it.start);
@@ -5104,11 +5173,12 @@ function openFlow(on){
     '<div class="flowopts"><label>1文を<select id="flowN">' + [1, 2, 3].map(n => '<option' + (o.n === n ? ' selected' : '') + ' value="' + n + '">' + n + '回</option>').join('') + '</select></label>' +
     '<label>文の間<select id="flowGap">' + [1, 2, 4].map(n => '<option' + (o.gap === n ? ' selected' : '') + ' value="' + n + '">' + n + '秒</option>').join('') + '</select></label>' +
     '<label class="opt"><input type="checkbox" id="flowJa"' + (o.ja ? ' checked' : '') + '> 訳を出す</label>' +
-    '<label class="opt"><input type="checkbox" id="flowLoop"' + (o.loop ? ' checked' : '') + '> 最後まで行ったら最初から</label></div>' +
+    '<label class="opt"><input type="checkbox" id="flowLoop"' + (o.loop ? ' checked' : '') + '> 最後まで行ったら最初から</label>' +
+    '<label class="opt"><input type="checkbox" id="flowRecall"' + (o.recall ? ' checked' : '') + '> 耳だけで言う練習（訳 → 自分で言う間 → 正解）</label></div>' +
     '<div class="row">' + (canResume ? '<button id="flowResume">続きから（' + (pos.i + 1) + '文目）</button>' : '') + '<button class="primary" id="flowGo">流す</button></div>';
   const keep = () => { const n = flowOpt(); const boxes = p.querySelectorAll('.flowunits input');
     if(boxes.length) n.sel = [...boxes].filter(i => i.checked).map(i => i.value);
-    n.n = +$('#flowN').value; n.gap = +$('#flowGap').value; n.ja = $('#flowJa').checked; n.loop = $('#flowLoop').checked; save('flow:opt', n); return n; };
+    n.n = +$('#flowN').value; n.gap = +$('#flowGap').value; n.ja = $('#flowJa').checked; n.loop = $('#flowLoop').checked; n.recall = $('#flowRecall').checked; save('flow:opt', n); return n; };
   p.querySelector('.apclose').onclick = () => openFlow(false);
   p.querySelectorAll('.flowkind button').forEach(b => b.onclick = () => { const n = keep(); n.kind = b.dataset.k; save('flow:opt', n); openFlow(true); });
   p.querySelectorAll('.flowrange button').forEach(b => b.onclick = () => { const n = keep(); n.range = b.dataset.r; save('flow:opt', n); openFlow(true); });
@@ -5125,9 +5195,9 @@ function openFlow(on){
   p.hidden = false;
 }
 /* 画面の下の操作卓から：1文ずつ聴いているあいだは、再生・前・次が文単位で効く */
-function flowToggle(){ flow.paused = !flow.paused; if(flow.paused){ clip.pause(); clearTimeout(flow.timer); clearInterval(flow.poll); } else flowStep(); paintFlow(); }
-function flowGo(d){ clearTimeout(flow.timer); clearInterval(flow.poll); flow.r = 0; flow.i = Math.max(0, Math.min(flow.i + d, flow.queue.length)); flow.paused = false; flowStep(); }
-function stopFlow(){ if(!flow) return; clearTimeout(flow.timer); clearInterval(flow.poll); clip.pause(); flow = null; setPlayLabel(!audio.paused); }
+function flowToggle(){ flow.paused = !flow.paused; if(flow.paused){ clip.pause(); clearTimeout(flow.timer); clearInterval(flow.poll); if(window.speechSynthesis) speechSynthesis.cancel(); flow.phase = null; } else flowStep(); paintFlow(); }
+function flowGo(d){ clearTimeout(flow.timer); clearInterval(flow.poll); if(window.speechSynthesis) speechSynthesis.cancel(); flow.phase = null; flow.r = 0; flow.i = Math.max(0, Math.min(flow.i + d, flow.queue.length)); flow.paused = false; flowStep(); }
+function stopFlow(){ if(!flow) return; clearTimeout(flow.timer); clearInterval(flow.poll); clip.pause(); if(window.speechSynthesis) speechSynthesis.cancel(); flow = null; setPlayLabel(!audio.paused); }
 function flowStep(){
   if(!flow) return;
   if(flow.i >= flow.queue.length){
@@ -5136,6 +5206,17 @@ function flowStep(){
   }
   if(flow.all) save('flow:pos', {kind: flow.opt.kind, all: true, i: flow.i});   // 通しで聴くときは、どこまで聴いたかを覚える
   const {it} = flow.queue[flow.i];
+  // 耳だけで言う練習：1回目の前にだけ、訳を読み上げて間を置く（phase: ja → wait → 正解）
+  if(flow.opt.recall && flow.r === 0 && flow.phase !== 'answer' && jaOf(it)){
+    flow.phase = 'ja'; paintFlow();
+    const me = flow;
+    speakJa(jaOf(it), () => {
+      if(flow !== me || flow.paused || flow.phase !== 'ja') return;
+      flow.phase = 'wait'; paintFlow();
+      flow.timer = setTimeout(() => { if(flow !== me || flow.paused) return; flow.phase = 'answer'; flowStep(); }, recallGapMs(it));
+    });
+    return;
+  }
   paintFlow();
   let started = false, waited = 0;
   clearInterval(flow.poll);
@@ -5148,7 +5229,7 @@ function flowStep(){
       clearInterval(flow.poll);
       flow.timer = setTimeout(() => {
         if(!flow) return;
-        if(++flow.r >= flow.opt.n){ flow.r = 0; flow.i++; }
+        if(++flow.r >= flow.opt.n){ flow.r = 0; flow.i++; flow.phase = null; }
         flowStep();
       }, flow.opt.gap * 1000);
     }
@@ -5162,7 +5243,9 @@ function paintFlow(){
   p.innerHTML = FLOWHEAD +
     '<div class="apctx">' + esc(title) + '　' + FLOWNAME[flow.opt.kind] + '　' + (flow.i + 1) + ' / ' + flow.queue.length + (flow.opt.n > 1 ? '　' + (flow.r + 1) + '回目' : '') + (flow.paused ? '　一時停止中' : '') + '</div>' +
     '<div class="jbar"><i style="width:' + ((flow.i) / flow.queue.length * 100) + '%"></i></div>' +
-    '<div class="flownow" lang="' + LP.code + '">' + esc(it.show) + '</div>' + (ja ? '<div class="flowja" lang="ja">' + esc(ja) + '</div>' : '') +
+    (flow.phase === 'ja' || flow.phase === 'wait'
+      ? '<div class="flowja" lang="ja">' + esc(jaOf(it) || '') + '</div><div class="apctx">' + (flow.phase === 'ja' ? '訳を読み上げています' : LP.name + 'で言ってみてください') + '</div>'
+      : '<div class="flownow" lang="' + LP.code + '">' + esc(it.show) + '</div>' + (ja ? '<div class="flowja" lang="ja">' + esc(ja) + '</div>' : '')) +
     '<div class="apctx">再生・前・次は画面の下で。5秒戻すは今の文をもう一度。閉じても流れ続けます</div>' +
     '<button class="linkish" id="flowStop">やめて選び直す</button>';
   p.querySelector('.apclose').onclick = () => openFlow(false);
@@ -5632,7 +5715,8 @@ function journeyHTML(li, defs, last){
     const icon = sg.cleared ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>'
       : state === 'locked' ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></svg>' : (k + 1);
     const act = state === 'locked' ? '<span class="jlock">前のステージをクリアすると開きます</span>'
-      : '<button class="' + (state === 'current' ? 'primary ' : '') + 'jgo" data-stage="' + esc(sg.id) + '">' + (sg.cleared ? 'もう一度' : sg.kind === 'listen' ? '聴く' : sg.kind === 'paper' ? '本で解いて印を付ける' : '始める') + '</button>';
+      : '<button class="' + (state === 'current' ? 'primary ' : '') + 'jgo" data-stage="' + esc(sg.id) + '">' + (sg.cleared ? 'もう一度' : sg.kind === 'listen' ? '聴く' : sg.kind === 'paper' ? '本で解いて印を付ける' : '始める') + '</button>' +
+        (!sg.cleared && sg.kind === 'set' && sg.set && sg.set.items.length >= SKIP_MIN ? '<button class="jskip" data-stage="' + esc(sg.id) + '" title="5問全部合えばクリア扱い">飛び級</button>' : '');
     h += '<li class="jnode ' + state + '"><span class="jdot">' + icon + '</span><div class="jbody"><b>' + esc(sg.title) + (state === 'current' ? '<em>いまここ</em>' : '') + '</b><small>' + esc(sg.sub) +
       (sg.of && !sg.cleared && sg.n ? '　' + sg.n + '/' + sg.of : '') + (sg.score != null ? '　最高 ' + Math.round(sg.score * 100) + '%' : '') + '</small></div>' +
       (sg.cleared ? starHTML(sg.stars) : '') + act + '</li>';
@@ -5669,7 +5753,11 @@ function reviewSkill(it){
   return FILTER.mean(it) ? 'mean' : null;
 }
 function startReview(){
-  const pick = shuffled(reviewDue().slice(0, REVIEW_MAX));
+  const due = reviewDue().slice(0, REVIEW_MAX);
+  // 段2：弱い型（5問以上・正答率80%未満）に当たる問いを、期限前でも WEAK_EXTRA 問まで足す（箱の低い順）
+  const have = new Set(due.map(it => it.id));
+  const extra = hitsWeak(reviewAll().filter(it => !have.has(it.id))).sort((a, b) => srs[a.id].box - srs[b.id].box).slice(0, WEAK_EXTRA);
+  const pick = shuffled(due.concat(extra));
   // 同じ組が続いたら、後ろの違う組と入れ替える（混ぜると見分けが育つ）
   for(let i = 1; i < pick.length; i++){
     if(pick[i].deck.id !== pick[i - 1].deck.id) continue;
@@ -5701,7 +5789,10 @@ function reviewHTML(){
 }
 
 /* ---- ステージを始める ---- */
-function startStage(stageId){
+/* 飛び級（仮想ユーザー評価の案6・2026-11-07）：まだクリアしていない練習のステージで、その組から5問を一番難しい練習で出し、
+   全部合えば星1つでクリア扱いにする。○ 1問でも外れたら何も付けず、普通に始める口を出す。× 項目が SKIP_MIN 未満の組には出さない */
+const SKIP_N = 5, SKIP_MIN = 8;
+function startStage(stageId, skip){
   const ld = lessonData(), li = ld.findIndex(x => stageId.startsWith(x.L.id + '|'));
   if(li < 0) return;
   const sg = stagesOf(li, paperDefs(), paperLatest()).find(s => s.id === stageId);
@@ -5711,7 +5802,10 @@ function startStage(stageId){
   const queue = [];
   const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q2) => p[0] - q2[0]).map(v => v[1]);
   const hardest = it => isSound(it) ? 'hear' : FILTER.gap(it) ? 'gap' : FILTER.mean(it) ? (catOf(it, it.deck) === 'word' ? 'speak' : 'mean') : 'type';
-  if(sg.kind === 'set'){
+  if(sg.kind === 'set' && skip){
+    const its = sg.set.items.map(it => ({...it, deck: sg.set.deck}));
+    shuffle(its).slice(0, SKIP_N).forEach(it => queue.push([it.id, hardest(it)]));
+  }else if(sg.kind === 'set'){
     const its = sg.set.items.map(it => ({...it, deck: sg.set.deck}));
     STEPS[sg.set.cat].forEach(v => shuffle(its.filter(it => !FILTER[v] || FILTER[v](it))).forEach(it => queue.push([it.id, v])));
   }else if(sg.kind === 'drill'){
@@ -5719,13 +5813,17 @@ function startStage(stageId){
   }else{
     // 課のまとめ：この課から7問（一番難しい練習で）＋前の課から3問（混ぜると見分けが育つ）＋文法を使う問いを2問
     shuffle(ld[li].items).slice(0, 7).forEach(it => queue.push([it.id, hardest(it)]));
-    shuffle(ld.slice(0, li).flatMap(x => x.items).filter(it => !isSound(it))).slice(0, 3).forEach(it => queue.push([it.id, hardest(it)]));
+    // 段2：前の課の3問は、弱い型に当たる文を先に取り、足りない分を混ぜて取る
+    const prev = ld.slice(0, li).flatMap(x => x.items).filter(it => !isSound(it));
+    const weakPrev = shuffle(hitsWeak(prev)).slice(0, 3), wp = new Set(weakPrev.map(it => it.id));
+    weakPrev.concat(shuffle(prev.filter(it => !wp.has(it.id))).slice(0, 3 - weakPrev.length)).forEach(it => queue.push([it.id, hardest(it)]));
     const ids = new Set(ld[li].items.map(i => i.deck.id));
     shuffle(drillsIn('transform', ids).concat(drillsIn('respond', ids))).slice(0, 2).forEach(d => queue.push(['drill:' + d.id, d.kind]));
     queue.splice(0, queue.length, ...shuffle(queue));
   }
   if(!queue.length) return;
-  run = {book: bookId, stage: sg.id, title: ld[li].L.title + '　' + sg.title, queue, i: 0, res: [], t: Date.now()};
+  run = {book: bookId, stage: sg.id, title: ld[li].L.title + '　' + sg.title + (skip ? '（飛び級）' : ''), queue, i: 0, res: [], t: Date.now()};
+  if(skip) run.skip = true;
   save('run', run);
   resumeRun();
 }
@@ -5772,6 +5870,7 @@ function finishRun(){
   const total = run.res.length, ok = run.res.reduce((a, b) => a + b, 0), sc = total ? ok / total : 0, stars = starsOf(sc), cleared = sc >= PASS;
   if(run.stage === 'review'){ finishReview(total, ok); return; }
   if(run.stage === 'focus'){ finishFocus(total, ok); return; }
+  if(run.skip){ finishSkip(total, ok); return; }
   if(cleared) emit('stage', {b: run.book, s: run.stage, score: Math.round(sc * 100) / 100, stars});
   const done_ = run; run = null; save('run', null); runOn = false;
   // 次のステージ
@@ -5792,6 +5891,23 @@ function finishRun(){
   const bk = () => { $('#practice').classList.remove('running'); };
   const nb = $('#rnext'); if(nb) nb.onclick = () => { bk(); startStage(nb.dataset.stage); };
   $('#rretry').onclick = () => { bk(); startStage(done_.stage); };
+  $('#rback').onclick = () => { bk(); goLesson(done_.stage.split('|')[0]); };
+}
+function finishSkip(total, ok){
+  const done_ = run, pass = total >= SKIP_N && ok === total;
+  if(pass) emit('stage', {b: done_.book, s: done_.stage, score: 1, stars: 1});
+  run = null; save('run', null); runOn = false;
+  $('#practice').classList.add('running');
+  $('#runbar').hidden = true;
+  $('#psets').hidden = true;
+  $('#pbody').innerHTML = '<div class="result' + (pass ? ' ok' : '') + '">' +
+    '<div class="rtitle">' + esc(done_.title) + '</div>' + (pass ? starHTML(1) : '') +
+    '<div class="rscore">' + ok + ' / ' + total + '<small>問</small></div>' +
+    '<div class="rmsg">' + (pass ? '全部合ったので、このステージはクリア扱いにしました。星を増やしたいときは「始める」で通して解けます。' : '飛び級はなりませんでした。このステージを始めから解きましょう。') + '</div>' +
+    '<div class="row">' + (pass ? '' : '<button class="primary" id="rretry" data-stage="' + esc(done_.stage) + '">始める</button>') +
+    '<button id="rback"' + (pass ? ' class="primary"' : '') + '>コースに戻る</button></div></div>';
+  const bk = () => { $('#practice').classList.remove('running'); };
+  const rb = $('#rretry'); if(rb) rb.onclick = () => { bk(); startStage(done_.stage); };
   $('#rback').onclick = () => { bk(); goLesson(done_.stage.split('|')[0]); };
 }
 /* 今日の復習の終わり：クリアや星は付けない（課のステージではない）。間違えた問いは次の復習でまた出る */
@@ -5829,6 +5945,7 @@ function paintRunbar(){
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.classList.contains('jgo')) startStage(b.dataset.stage);
+  else if(b.classList.contains('jskip')) startStage(b.dataset.stage, true);
   else if(b.id === 'runResume') resumeRun();
   else if(b.id === 'reviewGo') startReview();
 });
