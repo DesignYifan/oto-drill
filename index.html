@@ -2031,17 +2031,22 @@ $('#picker').addEventListener('change', e => loadFiles([...e.target.files]));
   const b = $('#reopen');
   b.textContent = '前の ' + h.name + ' を出す';
   b.hidden = false;
+  /* 覚えていたフォルダが移されたり消されたりしたとき（2026-11-07 本人「音声の一覧が出るはずだけど出ない」）。
+     × 前は起動時の失敗を黙って捨てていたので、一覧が空のまま理由が出なかった */
+  const lost = e => e && e.name === 'NotFoundError'
+    ? '前の ' + h.name + ' が見つかりません（場所が変わりました）。「フォルダを選ぶ」で選び直してください'
+    : '前のフォルダを出せませんでした。選び直してください';
   b.addEventListener('click', async ()=>{
     try{
       if(await h.requestPermission({mode:'read'}) !== 'granted') return;
       await openDir(h, false);
     }catch(e){
-      b.textContent = '前のフォルダを出せませんでした。選び直してください';
+      b.textContent = lost(e);
     }
   });
   try{
     if(await h.queryPermission({mode:'read'}) === 'granted') await openDir(h, false);
-  }catch(e){}
+  }catch(e){ b.textContent = lost(e); }
 })();
 
 $('#play').addEventListener('click', e => { toggle(); e.currentTarget.blur(); });
