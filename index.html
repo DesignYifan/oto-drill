@@ -1254,6 +1254,40 @@ button.linkish:hover{background:none; text-decoration:underline}
 .rmsg{font-size:14px}
 @media (max-width:820px){ .jnode{grid-template-columns:36px minmax(0,1fr); } .jnode .stars, .jnode .jgo, .jnode .jlock{grid-column:2; justify-self:start} }
 
+/* ---- 課のウィザード（2026-11-07 本人「次にどのボタンを押したらいいのか、ユーザーが考えなくても分かるように」） ---- */
+.wband{display:flex; gap:4px; list-style:none; margin:0; padding:0}
+.wband li{flex:1; display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--ui-text-muted-fgColor); min-width:0; padding:0; margin:0; background:none; border:0; box-shadow:none; white-space:nowrap}
+.wband li span{overflow:hidden; text-overflow:ellipsis}
+.wband li::before{content:""; align-self:stretch; height:6px; border-radius:999px; background:var(--ui-outline-borderColor)}
+.wband li.done::before{background:var(--ui-success-color)}
+.wband li.now{color:var(--ui-text-fgColor); font-weight:600}
+.wband li.now::before{background:var(--ui-primary-color)}
+.wband li.none{opacity:.4}
+.wcard{background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-shadow); padding:20px 24px; display:flex; flex-direction:column; gap:16px; margin-bottom:16px}
+.wgo{align-self:stretch; height:56px; font-size:16px; font-weight:600; background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); border-radius:var(--ui-control-radius)}
+.wlater{align-self:center; background:none; box-shadow:none; font-size:13px; color:var(--ui-text-muted-fgColor); text-decoration:underline}
+.wpage{max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:16px}
+.wpage h2{margin:0; font-size:20px}
+.wpage .wsub{font-size:13px; color:var(--ui-text-muted-fgColor); margin:0}
+.wscene{margin:0; border-radius:var(--ui-card-radius); overflow:hidden; background:var(--ui-control-bgColor)}
+.wscene img, .wscene video{display:block; width:100%; max-height:360px; object-fit:cover}
+.wtracks{display:flex; flex-direction:column; gap:4px}
+.wtracks .wt{display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:var(--ui-control-radius); background:var(--ui-control-bgColor); box-shadow:none; justify-content:flex-start; text-align:left}
+.wtracks .wt small{margin-left:auto; font-size:12px; color:var(--ui-text-muted-fgColor)}
+.wtracks .wt.now{background:var(--ui-primary-muted-bgColor); font-weight:600}
+.wtracks .wt.heard small{color:var(--ui-success-fgColor)}
+.wwords{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px}
+.wwords button{display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:10px; background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-control-radius); text-align:left; height:auto}
+.wwords img{width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px}
+.wwords b{font-size:16px} .wwords small{font-size:12px; color:var(--ui-text-muted-fgColor); white-space:normal}
+.wsents{display:flex; flex-direction:column; gap:6px}
+.wsents button{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:10px 14px; background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-control-radius); text-align:left; height:auto}
+.wsents b{font-weight:500; font-size:15px} .wsents small{font-size:12px; color:var(--ui-text-muted-fgColor)}
+.wpts{display:flex; flex-direction:column; gap:12px}
+.wpts div{background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-control-radius); padding:14px 16px}
+.wpts p{margin:6px 0 0; font-size:14px; line-height:1.7}
+.jdetails summary{cursor:pointer; font-size:13px; color:var(--ui-text-muted-fgColor)}
+
 /* ---- AI に聞く（どの画面からでも）（2026-10-03） ---- */
 .askfab{position:fixed; right:24px; bottom:calc(var(--_app-dockHeight, 104px) + 16px); z-index:45; display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 20px;
   background:var(--ui-text-fgColor); color:var(--ui-surface-bgColor); box-shadow:var(--ui-card-raised-shadow); font-weight:500}
@@ -1881,6 +1915,7 @@ audio.addEventListener('ended', ()=>{
     emit('done', {f: folderKey, n: tracks[idx].name});
     paintList();
   }
+  if(wizEnded()) return;   // 課のウィザードで聴いているあいだは、繰り返さずに課の次の本文へ
   const n = Number($('#repeatN').value);
   const g = Number($('#gap').value) * 1000;
   if(n === 0 || playsLeft > 1){
@@ -2220,7 +2255,7 @@ let notes = {};       // 文（正規化した本文）→ 文法メモ
 let gloss = {};       // 文 → {ja, words:[[語, 意味]], point}（gloss.json。機械の訳・未確認）
 /* 絵（2026-10-03 本人「テキストに合わせて画像を入れたり、単語にも内容の画像を。勉強のコンセプトをビジュアルでも理解できるように」）
    教材のフォルダの images.json：{units:{課の id: "images/units/…"}, words:{語（小文字）: "images/words/…"}}。⛔ 絵は教材と同じく公開しない */
-let pics = {units: {}, words: {}}, picFiles = new Map(), picURLs = new Map();
+let pics = {units: {}, words: {}, videos: {}}, picFiles = new Map(), picURLs = new Map();
 const picKey = t => (t || '').normalize('NFC').toLowerCase().replace(/[.,!?;:"“”…]/g, '').replace(/\s+/g, ' ').trim();
 function picURL(rel){
   if(!rel) return null;
@@ -2229,6 +2264,7 @@ function picURL(rel){
 }
 const unitPic = id => picURL(pics.units[id]);
 const wordPic = t => picURL(pics.words[picKey(t)]);
+const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動画（images.json の videos。無ければ止め絵）
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
@@ -2247,10 +2283,10 @@ async function loadSidecars(files){
   if(n) notes = await read(n) || {};
   const g = pick('gloss.json');
   if(g){ const d = await read(g); gloss = (d && d.sentences) || {}; }
-  pics = {units: {}, words: {}}; picFiles = new Map(); picURLs.forEach(u => u && URL.revokeObjectURL(u)); picURLs = new Map();
+  pics = {units: {}, words: {}, videos: {}}; picFiles = new Map(); picURLs.forEach(u => u && URL.revokeObjectURL(u)); picURLs = new Map();
   const ij = pick('images.json');
   if(ij){
-    const d = await read(ij); if(d) pics = {units: d.units || {}, words: d.words || {}};
+    const d = await read(ij); if(d) pics = {units: d.units || {}, words: d.words || {}, videos: d.videos || {}};
     files.forEach(f => { const rel = (f._rel || f.webkitRelativePath || '').split('/').slice(1).join('/'); if(rel.startsWith('images/')) picFiles.set(rel, f); });
   }
   const gj = pick('guide.json');
@@ -2579,6 +2615,7 @@ function setPractice(data, files){
 function setMode(m){
   setTimeout(() => { try{ if($('#list').children.length) applyFilter(); }catch(e){} }, 0);   // 教材を読んだあとで「流すもの」を出す
   if(m !== 'practice' && runOn){ runOn = false; q = null; $('#practice').classList.remove('running'); }
+  if(m !== 'practice' && wiz){ wiz = null; $('#practice').classList.remove('running'); }
   mode = m;
   save('p:mode', m);
   document.querySelector('.app').classList.toggle('practicing', m !== 'listen');
@@ -2880,6 +2917,7 @@ function renderPractice(){
   if(mode !== 'practice') return;
   $('#practice').classList.toggle('empty', !pdata);
   if(!pdata){ $('#pbody').innerHTML = emptyHTML('practice'); return; }
+  if(wiz){ renderWiz(); return; }   // 課のウィザードの頁
   paintRunbar();
   if(runOn && run && !q){ runNext(); return; }
   paintSets();
@@ -4426,7 +4464,7 @@ function guideHTML(id){
     (g.fixes && g.fixes.length ? '<div class="gfix"><b>文字起こしの聞き違い：</b>' + g.fixes.map(f => esc(f.heard) + ' → <b>' + esc(f.should) + '</b>（' + esc(f.note) + '）').join('　') + '</div>' : '') +
     '</details>';
 }
-document.addEventListener('toggle', e => { if(e.target.classList && e.target.classList.contains('lguide')) save('guide:open', e.target.open); }, true);   // 開け閉めは覚えておく
+document.addEventListener('toggle', e => { if(e.target.classList && e.target.classList.contains('lguide')) save('guide:open', e.target.open); if(e.target.classList && e.target.classList.contains('jdetails')) save('j:open', e.target.open); }, true);   // 開け閉めは覚えておく
 
 /* 音声の名前を、何の音声かが分かる言葉に（cơ sở のファイル名の型だけ。ほかは名前のまま） */
 function trackLabel(name){
@@ -5710,11 +5748,12 @@ function journeyHTML(li, defs, last){
   if(run && run.book === bookId && run.stage !== 'review'){   // 今日の復習の続きは、コースの頭に出す
     h += '<div class="resume"><div><b>続きから</b><span>' + esc(run.title) + '　' + run.i + ' / ' + run.queue.length + ' 問</span></div><button class="primary" id="runResume">続きから始める</button></div>';
   }
+  h += wizCardHTML(lessonData()[li].L.id);   // 課のウィザードの入口（2026-11-07）。押すのはこれ1つ
   const hero = unitPic(lessonData()[li].L.id);
   if(hero) h += '<figure class="uhero"><img src="' + hero + '" alt=""></figure>';
   h += guideHTML(lessonData()[li].L.id);   // 聴く前に：絵の下に、たたんで置く（2026-10-04 本人「折りたためるといい」「最初で画像が見えてる方が見栄えがいい」）
   h += '<section class="journey"><div class="jhead"><b>' + (cs.all ? '課クリア' : 'この課のゴール') + '</b><span>ステージ ' + cs.cleared + ' / ' + cs.of + ' クリア　<span class="starn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3l-3.9 2.1.9-4.3-3.3-3 4.4-.5z"/></svg>' + cs.stars + '</span></span></div>' +
-    '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><ol class="jpath">';
+    '<div class="jbar"><i style="width:' + (cs.of ? cs.cleared / cs.of * 100 : 0) + '%"></i></div><details class="jdetails"' + (load('j:open', false) ? ' open' : '') + '><summary>ステージの内訳（' + cs.of + '）を見る・1つ選んでやり直す</summary><ol class="jpath">';
   cs.sgs.forEach((sg, k) => {
     const state = sg.cleared ? 'cleared' : !sg.open ? 'locked' : sg === cur ? 'current' : 'open';
     const icon = sg.cleared ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>'
@@ -5726,7 +5765,7 @@ function journeyHTML(li, defs, last){
       (sg.of && !sg.cleared && sg.n ? '　' + sg.n + '/' + sg.of : '') + (sg.score != null ? '　最高 ' + Math.round(sg.score * 100) + '%' : '') + '</small></div>' +
       (sg.cleared ? starHTML(sg.stars) : '') + act + '</li>';
   });
-  h += '</ol></section>';
+  h += '</ol></details></section>';
   return h;
 }
 
@@ -5802,7 +5841,12 @@ function startStage(stageId, skip){
   if(li < 0) return;
   const sg = stagesOf(li, paperDefs(), paperLatest()).find(s => s.id === stageId);
   if(!sg) return;
-  if(sg.kind === 'listen'){ const t = ld[li].tracks.find(t => !done.has(t.name)) || ld[li].tracks[0]; if(t) openTrack(t.name); return; }
+  if(sg.kind === 'listen'){   // 音声の画面へ飛ばさず、ウィザードの頁で聴く（2026-11-07）
+    const lid = ld[li].L.id, list = wizTracks(lid), k = Math.max(0, list.findIndex(n => !done.has(n)));
+    wiz = {lid, g: 'listen', page: 'listen', k: -1};
+    if(mode !== 'practice') setMode('practice'); else renderPractice();
+    wizPlay(k); return;
+  }
   if(sg.kind === 'paper'){ const el = document.querySelector('#book .lstep.paper-step'); if(el) el.scrollIntoView({block: 'start'}); return; }
   const queue = [];
   const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q2) => p[0] - q2[0]).map(v => v[1]);
@@ -5834,10 +5878,158 @@ function startStage(stageId, skip){
 }
 function resumeRun(){
   if(!run) return;
+  wiz = null;
   runOn = true; q = null;
   setMode('practice');
   runNext();
 }
+
+/* ================= 課のウィザード（2026-11-07） =================
+   本人「本文を聞くを押すと音声のところに飛ばされて、終わったら次にどのボタンを押したらいいのか、ダッシュボードに戻らないといけないのか」
+   「一連の流れがちゃんと分かるようにして、ユーザーが考えなくても次がどういう行動を起こせばいいのか分かるように」。
+   ⭕ 課の中を ① 聴く ② 単語 ③ 文法 ④ 練習 ⑤ まとめ の5段に束ねる。中のステージ（星・クリア）は今のまま使う。
+   ⭕ ② と ③ は、練習の前に「覚える」頁を1回はさむ（語の一覧／文法の要点と基本の文）。
+   ⭕ 聴くは音声の画面へ飛ばさず、ウィザードの頁の中で鳴らす。課の本文を1回ずつ通したら次へ（繰り返しの設定は使わない）。
+   ⭕ どの頁も、大きなボタンは「次」の1つだけ。課の一覧に戻るのは小さな「あとで続ける」。 */
+const WIZ = [['listen', '聴く'], ['word', '単語'], ['grammar', '文法'], ['practice', '練習'], ['final', 'まとめ']];
+const WIZN = ['①', '②', '③', '④', '⑤'];
+let wiz = null;   // {lid, g, page: 'listen' | 'learn' | 'clear', k}  ウィザードの頁を出しているあいだだけ
+function wizGroup(sg){
+  if(sg.kind === 'listen') return 'listen';
+  if(sg.kind === 'final') return 'final';
+  if(sg.kind === 'drill') return 'practice';
+  if(sg.kind === 'set'){ const c = sg.set.cat; return c === 'word' ? 'word' : (c === 'sentence' || c === 'grammar') ? 'grammar' : 'practice'; }
+  return null;   // 紙の問題はウィザードに入れない
+}
+const wizSeenAll = () => load('wiz:seen:' + bookId, {});
+const wizSeen = (lid, g) => !!wizSeenAll()[lid + '|' + g];
+function wizMark(lid, g){ const s = wizSeenAll(); s[lid + '|' + g] = 1; save('wiz:seen:' + bookId, s); }
+/* 課の5段の状態と、次にやること */
+function wizState(lid){
+  const ld = lessonData(), li = ld.findIndex(x => x.L.id === lid);
+  if(li < 0) return null;
+  const sgs = stagesOf(li, paperDefs(), paperLatest()).filter(wizGroup);
+  const groups = WIZ.map(([g, name], k) => {
+    const list = sgs.filter(s => wizGroup(s) === g);
+    let done = list.length > 0 && list.every(s => s.cleared);
+    if(g === 'listen' && list.length && wizSeen(lid, 'listen')) done = true;
+    return {g, name, n: WIZN[k], list, done, has: list.length > 0};
+  });
+  let next = null;
+  for(const G of groups){
+    if(!G.has || G.done) continue;
+    if(G.g === 'listen'){ next = {g: 'listen', page: 'listen'}; break; }
+    if((G.g === 'word' || G.g === 'grammar') && !wizSeen(lid, G.g)){ next = {g: G.g, page: 'learn'}; break; }
+    const sg = G.list.find(s => !s.cleared);
+    if(sg){ next = {g: G.g, stage: sg.id, title: sg.title}; break; }
+  }
+  return {li, L: ld[li].L, groups, next, all: !next, nextLesson: ld[li + 1] ? ld[li + 1].L : null};
+}
+function wizLabel(st){
+  if(!st.next) return st.nextLesson ? '次の課へ：' + st.nextLesson.title : 'この教材はここまでです';
+  const G = st.groups.find(x => x.g === st.next.g);
+  const what = st.next.page === 'listen' ? '本文を聴く'
+    : st.next.page === 'learn' ? (st.next.g === 'word' ? '単語を覚える' : '文法を読む')
+    : st.next.g === 'final' ? '課のまとめ' : st.next.title + (/[：:]/.test(st.next.title) ? '' : 'を練習する');
+  return '次：' + G.n + ' ' + what;
+}
+function wizBandHTML(st, nowG){
+  return '<ol class="wband" aria-label="この課の流れ">' + st.groups.map(G =>
+    '<li class="' + (!G.has ? 'none' : G.g === nowG ? 'now' : G.done ? 'done' : '') + '"><span>' + G.n + ' ' + G.name + '</span></li>').join('') + '</ol>';
+}
+/* コースの課の頭に出す入口 */
+function wizCardHTML(lid){
+  const st = wizState(lid); if(!st) return '';
+  const nowG = st.next ? st.next.g : null;
+  return '<section class="wcard">' + wizBandHTML(st, nowG) +
+    '<button class="wgo" data-wiz="' + esc(lid) + '">' + (st.all ? (st.nextLesson ? '課クリア。' + esc(wizLabel(st)) : '課クリア') : esc(wizLabel(st))) + '</button></section>';
+}
+/* 次へ進む（どの頁からも、これ1つ） */
+function wizGo(lid){
+  const st = wizState(lid); if(!st) return;
+  if(!st.next){
+    if(st.nextLesson){ wizGo(st.nextLesson.id); return; }
+    wiz = null; goLesson(lid); return;
+  }
+  if(st.next.stage){ wiz = null; startStage(st.next.stage); return; }
+  wiz = {lid, g: st.next.g, page: st.next.page, k: -1};
+  if(mode !== 'practice') setMode('practice'); else renderPractice();
+  window.scrollTo({top: 0});
+  if(wiz.page === 'listen') wizPlay(0);
+}
+function wizLater(){ const lid = wiz && wiz.lid; wiz = null; audio.pause(); if(lid) goLesson(lid); else setMode('book'); }
+/* ① 聴く：課の本文をこの頁の中で順に鳴らす */
+function wizTracks(lid){
+  const ld = lessonData(), li = ld.findIndex(x => x.L.id === lid);
+  const exTracks = new Set((paperDefs()[lid] || []).flatMap(e => e.tracks || []));
+  return li < 0 ? [] : ld[li].tracks.filter(t => !exTracks.has(t.name)).map(t => t.name);
+}
+function wizPlay(k){
+  if(!wiz || wiz.page !== 'listen') return;
+  const list = wizTracks(wiz.lid);
+  if(k >= list.length){ wizMark(wiz.lid, 'listen'); wiz.k = list.length; audio.pause(); renderWiz(); return; }
+  wiz.k = k;
+  const i = tracks.findIndex(t => t.name === list[k]);
+  if(i >= 0) play(i, true);
+  renderWiz();
+}
+/* 1本終わったら：ウィザードの中では繰り返さず、課の次の本文へ */
+function wizEnded(){
+  if(!wiz || wiz.page !== 'listen' || mode !== 'practice') return false;
+  clearTimeout(gapTimer);
+  gapTimer = setTimeout(() => wizPlay(wiz.k + 1), 600);
+  return true;
+}
+function renderWiz(){
+  const box = $('#pbody'); if(!box || !wiz) return;
+  $('#practice').classList.add('running');
+  $('#runbar').hidden = true; $('#psets').hidden = true;
+  [...$('#modes').children].forEach(b => b.classList.toggle('on', b.dataset.mode === 'book'));   // ウィザードはコースの中の流れ
+  const st = wizState(wiz.lid); if(!st){ wiz = null; return; }
+  const ld = lessonData(), x = ld[st.li];
+  let body = '', go = '';
+  if(wiz.page === 'listen'){
+    const list = wizTracks(wiz.lid), fin = wiz.k >= list.length;
+    const vid = unitVideo(wiz.lid), pic = unitPic(wiz.lid);
+    body = '<h2>' + WIZN[0] + ' 本文を聴く</h2><p class="wsub">' + (fin ? '聴き終わりました。' : 'この課の本文を、1本ずつ続けて流します。止めるときは下の再生ボタン。') + '</p>' +
+      (vid ? '<figure class="wscene"><video src="' + vid + '" autoplay muted loop playsinline></video></figure>' : pic ? '<figure class="wscene"><img src="' + pic + '" alt=""></figure>' : '') +
+      '<div class="wtracks">' + list.map((n, k) => '<button class="wt' + (k === wiz.k ? ' now' : '') + (done.has(n) ? ' heard' : '') + '" data-wt="' + k + '"><span>' + (k + 1) + '　' + esc(trackLabel(n)) + '</span><small>' +
+        (k === wiz.k ? '再生中' : done.has(n) ? '聴いた' : '') + '</small></button>').join('') + '</div>';
+    go = fin ? wizLabel(st) : '聴き終わったことにして進む';
+  }else if(wiz.page === 'learn' && wiz.g === 'word'){
+    const ws = vocab().out[st.li].filter(e => !e.syl);
+    body = '<h2>' + WIZN[1] + ' 単語を覚える</h2><p class="wsub">この課で出る語です。押すと音が鳴ります。ひと通り見たら練習へ。</p>' +
+      '<div class="wwords">' + ws.map(e => { const p = wordPic(e.w);
+        return '<button class="wsay" data-w="' + esc(e.w) + '">' + (p ? '<img src="' + p + '" alt="">' : '') + '<b lang="' + LP.code + '">' + esc(e.w) + '</b>' + (e.ja ? '<small>' + esc(e.ja) + '</small>' : '') + '</button>'; }).join('') + '</div>' +
+      (ws.some(e => e.ja) ? '<div class="row" style="justify-content:flex-start"><button class="wcopen" data-li="' + st.li + '">単語カードで覚える</button></div>' : '');
+  }else if(wiz.page === 'learn' && wiz.g === 'grammar'){
+    const g = guide[wiz.lid];
+    const its = x.items.filter(it => { const c = catOf(it, it.deck); return (c === 'sentence' || c === 'grammar') && !isSound(it); });
+    const seen = new Set(), sents = its.filter(it => !seen.has(it.show) && seen.add(it.show)).slice(0, 12);
+    body = '<h2>' + WIZN[2] + ' 文法を読む</h2>' +
+      (g && g.goal ? '<p class="wsub">' + esc(g.goal) + '</p>' : '<p class="wsub">この課の基本の文です。押すと音が鳴ります。形を見てから練習へ。</p>') +
+      (g && g.points && g.points.length ? '<div class="wpts">' + g.points.map(p => '<div><b>' + esc(p.title) + '</b><p>' + esc(p.body) + '</p></div>').join('') + '</div>' : '') +
+      (sents.length ? '<div class="wsents">' + sents.map(it => { wizItems.set(it.id, it); const ja = jaOf(it);
+        return '<button class="wsent" data-item="' + esc(it.id) + '"><b lang="' + LP.code + '">' + esc(it.show) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</button>'; }).join('') + '</div>' : '');
+  }
+  if(wiz.page === 'learn'){ wizMark(wiz.lid, wiz.g); go = wizLabel(wizState(wiz.lid)); }
+  box.innerHTML = '<div class="wpage"><div class="wcard"><div class="rtitle" style="text-align:left">' + esc(st.L.title) + '</div>' + wizBandHTML(st, wiz.g) + '</div>' + body +
+    '<button class="wgo" id="wizNext">' + esc(go) + '</button><button class="wlater" id="wizLater">あとで続ける（課の画面へ）</button></div>';
+}
+const wizItems = new Map();
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.wiz){ wizGo(b.dataset.wiz); return; }
+  if(!wiz) return;
+  if(b.id === 'wizNext'){
+    if(wiz.page === 'listen' && wiz.k < wizTracks(wiz.lid).length) wizMark(wiz.lid, 'listen');
+    audio.pause(); wizGo(wiz.lid);
+  }
+  else if(b.id === 'wizLater') wizLater();
+  else if(b.dataset.wt != null) wizPlay(Number(b.dataset.wt));
+  else if(b.classList.contains('wsay')) sayWord(b.dataset.w);
+  else if(b.classList.contains('wsent')){ const it = wizItems.get(b.dataset.item); if(it) say(it); }
+});
 function stopRun(){   // セーブしてやめる（位置は run に残る）
   runOn = false; q = null;
   $('#practice').classList.remove('running');
@@ -5883,6 +6075,7 @@ function finishRun(){
   const sgs = li >= 0 ? stagesOf(li, paperDefs(), paperLatest()) : [];
   const nxt = sgs.find(s => s.open && !s.cleared && s.kind !== 'listen' && s.kind !== 'paper' && s.id !== done_.stage);
   const chapterClear = sgs.length && sgs.every(s => s.cleared);
+  const wlid = li >= 0 ? ld[li].L.id : null, wst = wlid ? wizState(wlid) : null;
   $('#practice').classList.add('running');
   $('#runbar').hidden = true;
   $('#psets').hidden = true;
@@ -5891,8 +6084,10 @@ function finishRun(){
     '<div class="rtitle">' + esc(done_.title) + '</div>' + starHTML(stars) +
     '<div class="rscore">' + Math.round(sc * 100) + '%<small>' + ok + ' / ' + total + ' 問</small></div>' +
     '<div class="rmsg">' + (cleared ? (stars === 3 ? 'クリア。完璧です。' : 'クリア。') : notYetMsg(sc)) + '</div>' +
-    '<div class="row">' + (nxt && cleared ? '<button class="primary" id="rnext" data-stage="' + esc(nxt.id) + '">次のステージへ：' + esc(nxt.title) + '</button>' : '') +
-    '<button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button><button id="rback">コースに戻る</button></div></div>';
+    // 課のウィザード（2026-11-07）：クリアしたら大きな「次」1つ。課の一覧へは小さな「あとで続ける」
+    (cleared && wst ? '<button class="wgo" data-wiz="' + esc(wlid) + '">' + esc(wizLabel(wst)) + '</button>' : '') +
+    '<div class="row"><button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button></div>' +
+    '<button id="rback" class="wlater">あとで続ける（課の画面へ）</button></div>';
   const bk = () => { $('#practice').classList.remove('running'); };
   const nb = $('#rnext'); if(nb) nb.onclick = () => { bk(); startStage(nb.dataset.stage); };
   $('#rretry').onclick = () => { bk(); startStage(done_.stage); };
