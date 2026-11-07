@@ -1257,7 +1257,11 @@ button.linkish:hover{background:none; text-decoration:underline}
 /* ---- 課のウィザード（2026-11-07 本人「次にどのボタンを押したらいいのか、ユーザーが考えなくても分かるように」） ---- */
 .wband{display:flex; gap:4px; list-style:none; margin:0; padding:0}
 .wband li{flex:1; display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--ui-text-muted-fgColor); min-width:0; padding:0; margin:0; background:none; border:0; box-shadow:none; white-space:nowrap}
+.wband{overflow:visible}
+.wband li{overflow:hidden}
 .wband li span{overflow:hidden; text-overflow:ellipsis}
+.wband .wn{font-style:normal}
+@media (max-width:600px){ .wband .wn{display:none} }   /* 狭いときは名前だけ（番号まで出すと切れる） */
 .wband li::before{content:""; align-self:stretch; height:6px; border-radius:999px; background:var(--ui-outline-borderColor)}
 .wband li.done::before{background:var(--ui-success-color)}
 .wband li.now{color:var(--ui-text-fgColor); font-weight:600}
@@ -1616,6 +1620,9 @@ html.big-text body{zoom:1.125}
 
 const $ = s => document.querySelector(s);
 const AUDIO_RE = /\.(mp3|m4a|m4b|aac|wav|aiff?|ogg|oga|opus|flac|webm|mp4)$/i;
+// 教材の images/ の中（課の情景の動画 mp4 など）は音声に数えない（2026-11-07）
+const inImages = f => /(^|\/)images\//.test(f._rel || f.webkitRelativePath || '');
+const isTrack = f => AUDIO_RE.test(f.name) && !f.name.startsWith('.') && !inImages(f);
 const RATES = [0.5,0.75,0.8,0.9,1,1.1,1.25,1.5,2];
 
 const audio = new Audio();
@@ -1736,7 +1743,7 @@ function scrollToCurrent(){
 
 /* ---------- 読み込み ---------- */
 function loadFiles(files){
-  const list = files.filter(f => AUDIO_RE.test(f.name) && !f.name.startsWith('.'));
+  const list = files.filter(isTrack);
   if(!list.length){
     // ⭕ 2026-10-03 iPhone で、記録のフォルダ（記録・質問帳が入っている）を教材として選んでいた。同じ「音声ドリル」という名前で迷う
     const isRec = files.some(f => /(^|\/)(記録|質問帳)\//.test(f._rel || ''));
@@ -2602,7 +2609,7 @@ function setPractice(data, files){
   pfiles = {};
   Object.values(purls).forEach(u => URL.revokeObjectURL(u)); purls = {};
   clip.dataset.src = '';
-  if(pdata) files.forEach(f => { if(AUDIO_RE.test(f.name)) pfiles[f.name] = f; });
+  if(pdata) files.forEach(f => { if(isTrack(f)) pfiles[f.name] = f; });
   $('#modes').hidden = false;
   $('#modes [data-mode="practice"]').hidden = !pdata;
   $('#modes [data-mode="overview"]').hidden = !pdata;
@@ -5935,7 +5942,7 @@ function wizLabel(st){
 }
 function wizBandHTML(st, nowG){
   return '<ol class="wband" aria-label="この課の流れ">' + st.groups.map(G =>
-    '<li class="' + (!G.has ? 'none' : G.g === nowG ? 'now' : G.done ? 'done' : '') + '"><span>' + G.n + ' ' + G.name + '</span></li>').join('') + '</ol>';
+    '<li class="' + (!G.has ? 'none' : G.g === nowG ? 'now' : G.done ? 'done' : '') + '"><span><i class="wn">' + G.n + ' </i>' + G.name + '</span></li>').join('') + '</ol>';
 }
 /* コースの課の頭に出す入口 */
 function wizCardHTML(lid){
