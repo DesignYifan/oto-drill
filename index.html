@@ -1293,6 +1293,30 @@ button.linkish:hover{background:none; text-decoration:underline}
 .wpts div{background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-control-radius); padding:14px 16px}
 .wpts p{margin:6px 0 0; font-size:14px; line-height:1.7}
 .jdetails summary{cursor:pointer; font-size:13px; color:var(--ui-text-muted-fgColor)}
+/* ④ 教科書の練習（2026-11-07） */
+.bknums{display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end}
+.bknums .bkn{flex:none; position:relative; min-width:36px; height:36px; padding:0 8px; border-radius:18px; background:var(--ui-control-bgColor); box-shadow:none; font-size:13px; display:inline-flex; flex-direction:column; justify-content:center}
+.bknums .bkn em{position:absolute; bottom:40px; left:0; font-style:normal; font-size:11px; white-space:nowrap; color:var(--ui-text-muted-fgColor)}
+.bknums .bkn:has(em){margin-top:18px}
+.bknums .bkn.cur{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); font-weight:600}
+.bknums .bkn.ro:not(.cur){background:var(--ui-success-muted-bgColor); color:var(--ui-success-fgColor)}
+.bknums .bkn.rs:not(.cur){background:var(--ui-warning-muted-bgColor)}
+.bknums .bkn.rx:not(.cur){background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor)}
+.bkq{background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-card-radius); padding:20px 24px; display:flex; flex-direction:column; gap:12px}
+.bkno{font-size:15px; font-weight:600; display:flex; align-items:center; gap:10px}
+.bkwas{font-size:12px; font-weight:400; color:var(--ui-text-muted-fgColor)}
+.bkp{margin:0; font-size:16px; line-height:1.7} .bkh{margin:0; font-size:13px; color:var(--ui-text-muted-fgColor)}
+.bkin{width:100%; box-sizing:border-box; font:inherit; font-size:16px; padding:10px 12px; border-radius:var(--ui-control-radius); border:1px solid var(--ui-outline-borderColor); background:var(--ui-surface-bgColor); color:inherit; resize:vertical}
+.bkans{align-self:flex-start}
+.bka{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:var(--ui-control-radius); background:var(--ui-control-bgColor)}
+.bka > div{display:flex; flex-direction:column; gap:4px} .bka b{font-size:17px; font-weight:600} .bka small{font-size:12px; color:var(--ui-text-muted-fgColor)}
+.bksay{width:36px; height:36px; padding:0; border-radius:18px; flex:none}
+.bkmarks{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px}
+.bkmarks .bkm{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; font-size:12px}
+.bkmarks .bkm span{font-size:18px; line-height:1.1}
+.bkdone{display:flex; align-items:center; gap:10px; font-size:14px}
+.jextra{margin-top:12px; display:flex; flex-direction:column; gap:4px}
+.jextra > small{font-size:12px; color:var(--ui-text-muted-fgColor)}
 
 /* ---- AI に聞く（どの画面からでも）（2026-10-03） ---- */
 .askfab{position:fixed; right:24px; bottom:calc(var(--_app-dockHeight, 104px) + 16px); z-index:45; display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 20px;
@@ -2291,6 +2315,7 @@ const unitPic = id => picURL(pics.units[id]);
 const wordPic = t => picURL(pics.words[picKey(t)]);
 const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動画（images.json の videos。無ければ止め絵）
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
+let bookEx = {};      // 練習の id → 教科書の番号ごとの答えと区間（exercises.json。2026-11-07 課のウィザードの ④）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
 let sentEls = [];     // いま出している文の要素
@@ -2316,6 +2341,8 @@ async function loadSidecars(files){
   }
   const gj = pick('guide.json');
   guide = {}; if(gj){ const d = await read(gj); guide = (d && d.lessons) || {}; }
+  const ej = pick('exercises.json');
+  bookEx = {}; if(ej){ const d = await read(ej); bookEx = (d && d.exercises) || {}; }
   const dr = pick('drills.json');
   if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
   const p = pick('practice.json');
@@ -4140,7 +4167,10 @@ function paperLatest(){
   paperRecs().forEach(r => { last[r.l + '|' + r.ex + '|' + r.n] = r; });
   return last;
 }
-function exCount(ex){ const o = load('excount:' + bookId, {}); return o[ex.id] || ex.count || 0; }
+function exCount(ex){
+  const be = bookEx[ex.id]; if(be && be.items.length) return be.items.length;   // 教科書の番号どおりに切ってあれば、その数
+  const o = load('excount:' + bookId, {}); return o[ex.id] || ex.count || 0;
+}
 function paperScore(lid, defs, last){
   let got = 0, tot = 0, done = 0;
   (defs[lid] || []).forEach(ex => { for(let n = 1; n <= exCount(ex); n++){
@@ -5642,34 +5672,51 @@ function stagesOf(li, defs, last){
   const st = lessonSteps(li, defs, last, vocab());
   if(st.listen) out.push({id: L.id + '|listen', kind: 'listen', title: '本文を聴く', sub: st.listen.of + '本', free: true,
     cleared: st.listen.done, stars: st.listen.done ? 3 : 0, n: st.listen.n, of: st.listen.of});
+  /* B（2026-11-07 本人「練習もいっぱいありすぎてやりにくい。教材が取り上げてた練習問題を、そのまま直接できるように」）：
+     ⭕ ④ は教科書の練習問題を番号どおり（exercises.json）。⭕ ③ は基本の文の組だけ。
+     ⭕ 外した組（公式と例文・自動で切った練習・AI の書き換え）は消さず extra にする：課の画面の「もっと練習する（任意）」に出し、課のクリアには数えない */
+  const bks = (defs[L.id] || []).filter(ex => bookEx[ex.id] && bookEx[ex.id].items.length);
   if(pdata){
     const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id));
     const sets = ds.flatMap(d => setsOf(d));
     CATS.forEach(([c, name]) => sets.filter(s => s.cat === c).forEach(sx => out.push({id: L.id + '|' + sx.id, kind: 'set', set: sx,
-      title: name + ' ' + sx.n, sub: sx.items.length + '項目・' + STEPS[c].map(v => STEPNAME[v]).join(' → ')})));
+      title: name + ' ' + sx.n, sub: sx.items.length + '項目・' + STEPS[c].map(v => STEPNAME[v]).join(' → '),
+      extra: c === 'grammar' || (c === 'drill' && bks.length > 0)})));
   }
   if(pdata){
     // 文法を使う：この課の組に付いた「書き換える」「質問に答える」（drills.json の確かめた物）
     const ids = new Set(x.items.map(i => i.deck.id));
     [['transform', '文法を使う：書き換える'], ['respond', '文法を使う：質問に答える']].forEach(([k, t]) => {
       const n = drillsIn(k, ids).length;
-      if(n) out.push({id: L.id + '|' + k, kind: 'drill', dk: k, title: t, sub: n + '問'});
+      if(n) out.push({id: L.id + '|' + k, kind: 'drill', dk: k, title: t, sub: n + '問', extra: true});
     });
   }
-  if(st.paper) out.push({id: L.id + '|paper', kind: 'paper', title: '紙の問題（本で解く）', sub: st.paper.of + '問', free: true,
+  bks.forEach((ex, k) => {
+    const ps = paperScore(L.id, {[L.id]: [ex]}, last), secs = [...new Set(bookEx[ex.id].items.map(i => i.sec))];
+    const done_ = ps.tot > 0 && ps.done === ps.tot;
+    out.push({id: L.id + '|bk:' + ex.id, kind: 'book', ex, title: bookTitle(ex, secs), sub: ps.tot + '問・番号どおり',
+      cleared: done_, stars: done_ ? starsOf(ps.got / ps.tot) || 1 : 0, n: ps.done, of: ps.tot, score: done_ ? ps.got / ps.tot : null});
+  });
+  if(st.paper && !bks.length) out.push({id: L.id + '|paper', kind: 'paper', title: '紙の問題（本で解く）', sub: st.paper.of + '問', free: true,
     cleared: st.paper.done, stars: st.paper.done ? starsOf(st.paper.ps.tot ? st.paper.ps.got / st.paper.ps.tot : 0) || 1 : 0, n: st.paper.n, of: st.paper.of});
   if(pdata && x.items.length) out.push({id: L.id + '|final', kind: 'final', title: '課のまとめ', sub: Math.min(10, x.items.length) + '問・前の課も少し混ぜて'});
   const best = stageBest();
   let open = true;
   out.forEach(sg => {
     if(sg.kind === 'set' || sg.kind === 'final' || sg.kind === 'drill'){ const b = best[sg.id]; sg.cleared = !!b; sg.stars = b ? b.stars : 0; sg.score = b ? b.score : null; }
+    if(sg.extra){ sg.open = true; return; }   // 任意の組は、いつでも開いていて、後ろを止めない
     sg.open = sg.free || open || sg.cleared;
     if(!sg.free && !sg.cleared) open = false;    // 練習のステージは前をクリアすると開く
   });
   return out;
 }
+/* 教科書の練習のステージの名前：「練習 1・2」。番号の無い音声は音声の番号で */
+function bookTitle(ex, secs){
+  const rev = /review/.test(ex.id);
+  return (rev ? 'まとめ問題' : '教科書の練習') + (secs.length > 1 || secs[0] > 1 ? '　' + (rev ? '問題 ' : '練習 ') + secs.join('・') : '');
+}
 function chapterState(li, defs, last){
-  const sgs = stagesOf(li, defs, last);
+  const sgs = stagesOf(li, defs, last).filter(s => !s.extra);   // 任意の組はクリアに数えない
   const cl = sgs.filter(s => s.cleared).length;
   return {sgs, cleared: cl, of: sgs.length, all: sgs.length > 0 && cl === sgs.length, stars: sgs.reduce((n, s) => n + (s.stars || 0), 0)};
 }
@@ -5699,7 +5746,14 @@ function journeyHTML(li, defs, last){
       (sg.of && !sg.cleared && sg.n ? '　' + sg.n + '/' + sg.of : '') + (sg.score != null ? '　最高 ' + Math.round(sg.score * 100) + '%' : '') + '</small></div>' +
       (sg.cleared ? starHTML(sg.stars) : '') + act + '</li>';
   });
-  h += '</ol></details></section>';
+  h += '</ol>';
+  // B（2026-11-07）：③④ から外した組。消さずに、ここから任意で練習できる。課のクリアには数えない
+  const extras = stagesOf(li, defs, last).filter(s => s.extra);
+  if(extras.length) h += '<div class="jextra"><b>もっと練習する（任意）</b><small>例文の組・自動で作った問い。課のクリアには数えません</small><ol class="jpath">' +
+    extras.map(sg => '<li class="jnode ' + (sg.cleared ? 'cleared' : 'open') + '"><span class="jdot">' + (sg.cleared ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>' : '・') + '</span>' +
+      '<div class="jbody"><b>' + esc(sg.title) + '</b><small>' + esc(sg.sub) + (sg.score != null ? '　最高 ' + Math.round(sg.score * 100) + '%' : '') + '</small></div>' +
+      (sg.cleared ? starHTML(sg.stars) : '') + '<button class="jgo" data-stage="' + esc(sg.id) + '">' + (sg.cleared ? 'もう一度' : '始める') + '</button></li>').join('') + '</ol></div>';
+  h += '</details></section>';
   return h;
 }
 
@@ -5781,6 +5835,13 @@ function startStage(stageId, skip){
     if(mode !== 'practice') setMode('practice'); else renderPractice();
     wizPlay(k); return;
   }
+  if(sg.kind === 'book'){   // 教科書の練習：ウィザードの頁で番号どおりに解く（印は紙の問題と同じ記録）
+    const lid = ld[li].L.id, last = paperLatest(), its = bookEx[sg.ex.id].items;
+    const k = its.findIndex(it => !last[lid + '|' + sg.ex.id + '|' + it.id]);
+    wiz = {lid, g: 'practice', page: 'book', ex: sg.ex.id, stage: sg.id, k: k < 0 ? 0 : k, open: false, typed: ''};
+    if(mode !== 'practice') setMode('practice'); else renderPractice();
+    window.scrollTo({top: 0}); return;
+  }
   if(sg.kind === 'paper'){ const el = document.querySelector('#book .lstep.paper-step'); if(el) el.scrollIntoView({block: 'start'}); return; }
   const queue = [];
   const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q2) => p[0] - q2[0]).map(v => v[1]);
@@ -5829,6 +5890,8 @@ const WIZ = [['listen', '聴く'], ['word', '単語'], ['grammar', '文法'], ['
 const WIZN = ['①', '②', '③', '④', '⑤'];
 let wiz = null;   // {lid, g, page: 'listen' | 'learn' | 'clear', k}  ウィザードの頁を出しているあいだだけ
 function wizGroup(sg){
+  if(sg.extra) return null;   // 任意の組（もっと練習する）はウィザードに入れない
+  if(sg.kind === 'book') return 'practice';
   if(sg.kind === 'listen') return 'listen';
   if(sg.kind === 'final') return 'final';
   if(sg.kind === 'drill') return 'practice';
@@ -5855,7 +5918,7 @@ function wizState(lid){
     if(G.g === 'listen'){ next = {g: 'listen', page: 'listen'}; break; }
     if((G.g === 'word' || G.g === 'grammar') && !wizSeen(lid, G.g)){ next = {g: G.g, page: 'learn'}; break; }
     const sg = G.list.find(s => !s.cleared);
-    if(sg){ next = {g: G.g, stage: sg.id, title: sg.title}; break; }
+    if(sg){ next = {g: G.g, stage: sg.id, title: sg.title, kind: sg.kind}; break; }
   }
   return {li, L: ld[li].L, groups, next, all: !next, nextLesson: ld[li + 1] ? ld[li + 1].L : null};
 }
@@ -5864,7 +5927,7 @@ function wizLabel(st){
   const G = st.groups.find(x => x.g === st.next.g);
   const what = st.next.page === 'listen' ? '本文を聴く'
     : st.next.page === 'learn' ? (st.next.g === 'word' ? '単語を覚える' : '文法を読む')
-    : st.next.g === 'final' ? '課のまとめ' : st.next.title + (/[：:]/.test(st.next.title) ? '' : 'を練習する');
+    : st.next.g === 'final' ? '課のまとめ' : st.next.kind === 'book' ? st.next.title + 'を解く' : st.next.title + (/[：:]/.test(st.next.title) ? '' : 'を練習する');
   return '次：' + G.n + ' ' + what;
 }
 function wizBandHTML(st, nowG){
@@ -5940,18 +6003,70 @@ function renderWiz(){
       (ws.some(e => e.ja) ? '<div class="row" style="justify-content:flex-start"><button class="wcopen" data-li="' + st.li + '">単語カードで覚える</button></div>' : '');
   }else if(wiz.page === 'learn' && wiz.g === 'grammar'){
     const g = guide[wiz.lid];
-    const its = x.items.filter(it => { const c = catOf(it, it.deck); return (c === 'sentence' || c === 'grammar') && !isSound(it); });
+    // B（2026-11-07）：基本の文だけを出す。例文の全部の行（公式と例文）は「もっと練習する」へ
+    const its = x.items.filter(it => catOf(it, it.deck) === 'sentence' && !isSound(it));
     const seen = new Set(), sents = its.filter(it => !seen.has(it.show) && seen.add(it.show)).slice(0, 12);
+    const pts = g && g.points && g.points.length ? g.points : grammar().out[st.li].filter(p => p.title && p.body).map(p => ({title: unmark(p.title), body: p.body}));
     body = '<h2>' + WIZN[2] + ' 文法を読む</h2>' +
       (g && g.goal ? '<p class="wsub">' + esc(g.goal) + '</p>' : '<p class="wsub">この課の基本の文です。押すと音が鳴ります。形を見てから練習へ。</p>') +
-      (g && g.points && g.points.length ? '<div class="wpts">' + g.points.map(p => '<div><b>' + esc(p.title) + '</b><p>' + esc(p.body) + '</p></div>').join('') + '</div>' : '') +
+      (pts.length ? '<div class="wpts">' + pts.map(p => '<div><b>' + esc(p.title) + '</b><p>' + esc(p.body) + '</p></div>').join('') + '</div>' : '') +
       (sents.length ? '<div class="wsents">' + sents.map(it => { wizItems.set(it.id, it); const ja = jaOf(it);
         return '<button class="wsent" data-item="' + esc(it.id) + '"><b lang="' + LP.code + '">' + esc(it.show) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</button>'; }).join('') + '</div>' : '');
   }
+  else if(wiz.page === 'book'){ const r = bookPageHTML(st); body = r.body; go = r.go; }
   if(wiz.page === 'learn'){ wizMark(wiz.lid, wiz.g); go = wizLabel(wizState(wiz.lid)); }
   box.innerHTML = '<div class="wpage"><div class="wcard"><div class="rtitle" style="text-align:left">' + esc(st.L.title) + '</div>' + wizBandHTML(st, wiz.g) + '</div>' + body +
-    '<button class="wgo" id="wizNext">' + esc(go) + '</button><button class="wlater" id="wizLater">あとで続ける（課の画面へ）</button></div>';
+    (go ? '<button class="wgo" id="wizNext">' + esc(go) + '</button>' : '') + '<button class="wlater" id="wizLater">あとで続ける（課の画面へ）</button></div>';
 }
+/* ④ 教科書の練習（2026-11-07）：番号どおりに1問ずつ。答えを言う（書く）→ 答えの音声と文 → ○△× を自分で付ける。
+   ⭕ 印は紙の問題と同じ記録（paper:<教材>・課｜練習｜番号）。前に本で付けた印もそのまま出る */
+function bookPageHTML(st){
+  const be = bookEx[wiz.ex], its = be.items, last = paperLatest(), key = it => wiz.lid + '|' + wiz.ex + '|' + it.id;
+  const ex = (paperDefs()[wiz.lid] || []).find(e => e.id === wiz.ex) || {id: wiz.ex};
+  const rev = /review/.test(wiz.ex), secName = rev ? '問題' : '練習';
+  const marked = its.filter(it => last[key(it)]).length, all = marked === its.length;
+  const it = its[wiz.k];
+  let body = '<h2>' + WIZN[3] + ' ' + esc(bookTitle(ex, [...new Set(its.map(i => i.sec))])) + '</h2>' +
+    '<p class="wsub">教科書の' + secName + 'を、番号の順に解きます。答えを口で言うか下の欄に書いてから「答え」を押し、合っていたかを自分で付けます。' +
+    (be.fromBook ? '' : '問題文は本で見てください。') + '</p>';
+  body += '<div class="bknums">' + its.map((x, k) => { const r = last[key(x)];
+    return '<button class="bkn' + (k === wiz.k ? ' cur' : '') + (r ? ' r' + r.r : '') + '" data-bk="' + k + '" aria-label="' + secName + ' ' + x.sec + 'の' + x.n + (r ? '　' + PAPER[r.r][0] : '') + '">' +
+      (x.n === 1 && its.some(y => y.sec !== x.sec) ? '<em>' + secName + ' ' + x.sec + '</em>' : '') + '<span>' + x.n + '</span></button>'; }).join('') + '</div>';
+  if(it){
+    const r = last[key(it)], lines = it.answer.split('\n');
+    const ok = wiz.typed && lines.some(l => norm(l) === norm(wiz.typed)) || (wiz.typed && norm(lines.join(' ')) === norm(wiz.typed));
+    body += '<div class="bkq"><div class="bkno">' + secName + ' ' + it.sec + '　(' + it.n + ')' + (r ? '<span class="bkwas">前回 ' + PAPER[r.r][0] + '</span>' : '') + '</div>' +
+      (it.prompt ? '<p class="bkp">' + esc(it.prompt) + '</p>' : '') + (it.hint ? '<p class="bkh">' + esc(it.hint) + '</p>' : '') +
+      '<textarea class="bkin" rows="2" lang="' + LP.code + '" placeholder="書いて答える（書かずに口で言ってもかまいません）">' + esc(wiz.typed || '') + '</textarea>' +
+      (wiz.open
+        ? '<div class="bka"><button class="bksay" aria-label="答えをもう一度聴く"><svg class="ic fill" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.6 8z"/></svg></button><div>' +
+            lines.map(l => '<b lang="' + LP.code + '">' + esc(l) + '</b>').join('') +
+            (wiz.typed ? '<small>' + (ok ? '書いた答えと同じです' : '書いた答え：' + esc(wiz.typed)) + '</small>' : '') + '</div></div>' +
+          '<div class="bkmarks">' + [['o', '合っていた'], ['s', 'だいたい'], ['x', '違った']].map(([k, l]) =>
+            '<button class="bkm m' + k + '" data-r="' + k + '"><span>' + PAPER[k][0] + '</span>' + l + '</button>').join('') + '</div>'
+        : '<button class="bkans">答えを聴く・見る</button>') + '</div>';
+  }
+  if(all){
+    const ps = paperScore(wiz.lid, {[wiz.lid]: [ex]}, last);
+    body += '<div class="bkdone">' + starHTML(starsOf(ps.got / ps.tot) || 1) + '<span>全 ' + ps.tot + ' 問に印が付きました　' + fmtN(ps.got) + ' / ' + ps.tot + '</span></div>';
+  }
+  return {body, go: all ? wizLabel(wizState(wiz.lid)) : ''};
+}
+function bookMark(r){
+  const be = bookEx[wiz.ex], it = be.items[wiz.k]; if(!it) return;
+  const recs = paperRecs();
+  recs.push({l: wiz.lid, ex: wiz.ex, n: it.id, r, t: Date.now()});
+  save('paper:' + bookId, recs);
+  emit('paper', {b: bookId, l: wiz.lid, ex: wiz.ex, n: it.id, r});
+  const last = paperLatest(), its = be.items;
+  // 次は、後ろのまだ印の無い問題。無ければ前から探し、全部付いていれば次の番号
+  let nx = its.findIndex((x, k) => k > wiz.k && !last[wiz.lid + '|' + wiz.ex + '|' + x.id]);
+  if(nx < 0) nx = its.findIndex(x => !last[wiz.lid + '|' + wiz.ex + '|' + x.id]);
+  wiz.k = nx < 0 ? Math.min(wiz.k + 1, its.length) : nx;
+  wiz.open = false; wiz.typed = '';
+  renderWiz();
+}
+document.addEventListener('input', e => { if(wiz && wiz.page === 'book' && e.target.classList.contains('bkin')) wiz.typed = e.target.value; });
 const wizItems = new Map();
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -5963,6 +6078,14 @@ document.addEventListener('click', e => {
   }
   else if(b.id === 'wizLater') wizLater();
   else if(b.dataset.wt != null) wizPlay(Number(b.dataset.wt));
+  else if(b.dataset.bk != null){ wiz.k = Number(b.dataset.bk); wiz.open = false; wiz.typed = ''; renderWiz(); }
+  else if(b.classList.contains('bkans') || b.classList.contains('bksay')){
+    const it = bookEx[wiz.ex].items[wiz.k]; if(!it) return;
+    const ta = document.querySelector('.bkin'); if(ta) wiz.typed = ta.value;
+    say({src: bookEx[wiz.ex].track, start: it.start, end: it.end, deck: {}});
+    if(!wiz.open){ wiz.open = true; renderWiz(); }
+  }
+  else if(b.classList.contains('bkm')) bookMark(b.dataset.r);
   else if(b.classList.contains('wsay')) sayWord(b.dataset.w);
   else if(b.classList.contains('wsent')){ const it = wizItems.get(b.dataset.item); if(it) say(it); }
 });
@@ -6008,7 +6131,7 @@ function finishRun(){
   const done_ = run; run = null; save('run', null); runOn = false;
   // 次のステージ
   const ld = lessonData(), li = ld.findIndex(x => done_.stage.startsWith(x.L.id + '|'));
-  const sgs = li >= 0 ? stagesOf(li, paperDefs(), paperLatest()) : [];
+  const sgs = li >= 0 ? stagesOf(li, paperDefs(), paperLatest()).filter(s => !s.extra) : [];
   const nxt = sgs.find(s => s.open && !s.cleared && s.kind !== 'listen' && s.kind !== 'paper' && s.id !== done_.stage);
   const chapterClear = sgs.length && sgs.every(s => s.cleared);
   const wlid = li >= 0 ? ld[li].L.id : null, wst = wlid ? wizState(wlid) : null;
