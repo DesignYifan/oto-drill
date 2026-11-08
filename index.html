@@ -3166,6 +3166,45 @@ function telexOpt(inp){
   opt.querySelector('input').addEventListener('change', e => { save('telex', e.target.checked); inp.focus(); });
   return opt;
 }
+/* ---- ほかの言い方（2026-11-08） ----
+   本人「Tên tôi là でもよかったはず」（「私の名前はタンです」に Tên tôi là Thanh と書いて不正解になった）。
+   ⭕ 正解は「教材の文＋項目の alts＋分かっている言い換え＋本人が『これも正解にする』で足したもの」。
+   ⛔ 語順だけ違う答えを何でも正解にはしない（ベトナム語は語順で意味が変わる）。言い換えは確かめた型だけ */
+const ALT_RULES = {vi: [
+  // 名乗り：「Tôi tên là ～」と「Tên tôi là ～」はどちらも「私の名前は～」
+  [/^(tôi|anh|chị|em|bạn|ông|bà|cô|cậu) tên là (.+)$/iu, (m, who, x) => 'Tên ' + who.toLowerCase() + ' là ' + x],
+  [/^tên (tôi|anh|chị|em|bạn|ông|bà|cô|cậu) là (.+)$/iu, (m, who, x) => who[0].toUpperCase() + who.slice(1).toLowerCase() + ' tên là ' + x],
+]};
+function knownAlts(text){
+  const t = (text || '').normalize('NFC').trim(), out = [];
+  (ALT_RULES[LP.code] || []).forEach(([re, f]) => { if(re.test(t)) out.push(t.replace(re, f)); });
+  return out;
+}
+function learnedAlts(id){
+  return evOwn.concat(evOthers).filter(e => e.k === 'alt' && e.b === bookId && e.i === id).map(e => e.a);
+}
+function answersOf(id, base, alts){
+  const seen = new Set(), out = [];
+  [base].concat(alts || [], knownAlts(base), learnedAlts(id)).forEach(a => { const k = norm(a || ''); if(k && !seen.has(k)){ seen.add(k); out.push(a); } });
+  return out;
+}
+/* 「これも正解にする」：書いた答えをこの項目の正解として覚え（ほかの端末にも出来事で同期）、今の1問も正解に直す */
+function acceptAsCorrect(it, typed, skill){
+  const a = (typed || '').trim(); if(!a) return;
+  // いま付いた×の出来事（ans）を正解に読み替える印も一緒に残す。記録は出来事から組み直すので、ほかの端末でも同じ結果になる
+  const last = [...evOwn].reverse().find(e => e.k === 'ans' && e.i === it.id);
+  emit('alt', {b: bookId, i: it.id, a, f: last ? last.id : null});
+  rebuild(); paintStat();
+  if(runOn && run && q && q.runId === it.id && run.res.length){ run.res[run.res.length - 1] = 1; save('run', run); paintRunbar(); }
+  q.g = Object.assign({}, q.g, {ok: true, close: false}); q.accepted = true;
+}
+function acceptBtn(it, typed, skill, after){
+  const b = document.createElement('button'); b.className = 'linkish accept'; b.textContent = 'これも正解にする（次からも正解）';
+  b.title = '書いた「' + typed + '」を、この問いの正解として覚えます';
+  b.addEventListener('click', () => { acceptAsCorrect(it, typed, skill); after(); });
+  return b;
+}
+
 /* 書いた答えを、正しい答え（いくつか）のうち一番近いものと比べる */
 function gradeAgainst(answers, typed){
   let best = null;
@@ -3201,7 +3240,7 @@ function renderWrite(){
     (wordPic(it.show) ? '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">' : '') +
     '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>';
   if(!q.done){
-    const go = v => { q.g = gradeAgainst([it.show], v); q.done = true; mark(it, q.g.ok, 'write', q.g.ok ? 2 : 1); if(q.g.ok) typedOk(it); say(it); renderWrite(); };
+    const go = v => { q.typedText = v; q.g = gradeAgainst(answersOf(it.id, it.show, it.alts), v); q.done = true; mark(it, q.g.ok, 'write', q.g.ok ? 2 : 1); if(q.g.ok) typedOk(it); say(it); renderWrite(); };
     const inp = writeInput('writein', 'ベトナム語で書く（Enter で答え合わせ）', go);
     box.appendChild(inp);
     const opt = telexOpt(inp); if(opt) box.appendChild(opt);
@@ -3215,9 +3254,12 @@ function renderWrite(){
     setTimeout(() => inp.focus(), 0);
   }else{
     const g = q.g;
-    box.insertAdjacentHTML('beforeend', g.ok ? qResult('ok', '正解') : g.close ? qResult('near', 'おしい', '声調・記号だけ違います')
+    const alts = answersOf(it.id, it.show, it.alts).filter(a => norm(a) !== norm(it.show));
+    box.insertAdjacentHTML('beforeend', g.ok ? qResult('ok', '正解', q.accepted ? 'この答えも正解として覚えました' : norm(g.answer) !== norm(it.show) ? '教材の文は「' + esc(it.show) + '」' : '') : g.close ? qResult('near', 'おしい', '声調・記号だけ違います')
       : qResult('ng', '不正解', '正しくは「' + esc(it.show) + '」'));
-    box.appendChild(diffEl(g.res));
+    if(!q.accepted) box.appendChild(diffEl(g.res));
+    if(alts.length) box.insertAdjacentHTML('beforeend', '<div class="pnote exalt" lang="' + LP.code + '">ほかの言い方：' + alts.map(esc).join('／') + '</div>');
+    if(!g.ok && (q.typedText || '').trim()) box.appendChild(acceptBtn(it, q.typedText, 'write', renderWrite));
     if(LP.inputMethod === 'telex' && !g.ok) box.insertAdjacentHTML('beforeend', '<div class="pnote">打つキー：<code>' + esc(toTelex(it.show)) + '</code></div>');
     box.appendChild(hearBtn(() => say(it)));
     box.appendChild(explainEl(it, {ok: g.ok, close: g.close}));
@@ -3309,7 +3351,7 @@ function speakText(t){   // 教材の音が無い文（作った問い）は、�
 }
 function gradeDrill(v){
   const d = q.it.drill;
-  q.typedText = v; q.g = gradeAgainst([d.answer].concat(d.alts || []), v); q.done = true;
+  q.typedText = v; q.g = gradeAgainst(answersOf(q.it.id, d.answer, d.alts), v); q.done = true;
   mark(q.it, q.g.ok, pview);
   renderDrill();
 }
@@ -3350,12 +3392,8 @@ function renderDrill(){
     sec.innerHTML = h;
     sec.appendChild(askEl({text: d.answer, item: null, ja: d.ja || '', words: [], notes: d.note ? [{title: d.pattern || '', body: d.note}] : []}));
     box.appendChild(sec);
-    // 答えが1つに決まらない問い（質問に答える）は、自分の答えも合っていたら押せる
-    if(resp && !g.ok && !q.self && (q.typedText || '').trim()){
-      const self = document.createElement('button'); self.className = 'linkish'; self.textContent = '自分の答えも合っていた（正解にする）';
-      self.addEventListener('click', () => { q.self = true; mark(it, true, pview); renderDrill(); });
-      box.appendChild(self);
-    }
+    // 自分の答えも合っていたら押せる。書いた答えはこの問いの正解として覚える（2026-11-08。前は mark を二度呼んで1問ずれていた）
+    if(!g.ok && !q.self && (q.typedText || '').trim()) box.appendChild(acceptBtn(it, q.typedText, pview, () => { q.self = true; renderDrill(); }));
     box.appendChild(nextRow());
     box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 次へ</div>');
   }
@@ -4788,7 +4826,9 @@ function rebuild(){
   evOwn.concat(evOthers).forEach(e => { if(e && e.id && !seen.has(e.id)){ seen.add(e.id); all.push(e); } });
   all.sort((a, b) => a.t - b.t || (a.id < b.id ? -1 : 1));
   const S = {}, H = [], TY = new Set(), P = {}, PD = {}, EC = {}, WK = {}, KP = {}, DN = {};
-  for(const e of all){
+  const fixed = new Set(all.filter(e => e.k === 'alt' && e.f).map(e => e.f));   // 「これも正解にする」で正解に読み替えた答え
+  for(let e of all){
+    if(e.k === 'ans' && fixed.has(e.id) && !e.o) e = Object.assign({}, e, {o: 1, g: 1});
     if(e.k === 'ans'){
       const r = S[e.i] || {box: 0, due: 0, seen: 0, miss: 0};
       r.seen++;
