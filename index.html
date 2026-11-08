@@ -2805,9 +2805,9 @@ function wrongPairs(ids, la, kind){   // kind：'near'＝おしいだけ／'wron
   la = la || lastAnswers();
   return [...new Set(ids)].map(id => la.get(id)).filter(h => h && !h[3] && h[2] && (!kind || (kind === 'near') === !!h[4])).map(h => [h[1], h[2]]);
 }
-function startRedo(title, pairs, lid){
+function startRedo(title, pairs, lid, kind){
   if(!pairs.length) return;
-  run = {book: bookId, stage: 'redo', lid, title: title + '　間違えた問題だけ', queue: shuffled(pairs), i: 0, res: [], t: Date.now()};
+  run = {book: bookId, stage: 'redo', lid, base: title, kind: kind || '', title: title + (kind === 'near' ? '　おしい問題だけ' : '　間違えた問題だけ'), queue: shuffled(pairs), i: 0, res: [], t: Date.now()};
   save('run', run); resumeRun();
 }
 function finishRedo(){
@@ -2821,16 +2821,16 @@ function finishRedo(){
     '<div class="row">' + (still.length ? '<button class="primary" id="rredo">まだの ' + still.length + '問をもう一度</button>' : '') +
     '<button id="rback"' + (still.length ? '' : ' class="primary"') + '>課の画面へ</button></div></div>';
   const bk = () => { $('#practice').classList.remove('running'); };
-  const rb = $('#rredo'); if(rb) rb.onclick = () => { bk(); startRedo(done_.title.replace(/　間違えた問題だけ$/, ''), still, done_.lid); };
+  const rb = $('#rredo'); if(rb) rb.onclick = () => { bk(); startRedo(done_.base || done_.title, still, done_.lid, done_.kind); };
   $('#rback').onclick = () => { bk(); if(done_.lid) goLesson(done_.lid); else setMode('book'); };
 }
-const redoOne = (pairs, title, lid, label, cls) => pairs.length ? '<button class="lpredo' + (cls || '') + '" data-redo="' + esc(JSON.stringify(pairs)) + '" data-title="' + esc(title) + '" data-lid="' + esc(lid) + '">' + label + ' ' + pairs.length + '問</button>' : '';
+const redoOne = (pairs, title, lid, label, kind) => pairs.length ? '<button class="lpredo' + (kind ? ' ' + kind : '') + '" data-redo="' + esc(JSON.stringify(pairs)) + '" data-title="' + esc(title) + '" data-lid="' + esc(lid) + '" data-kind="' + (kind || '') + '">' + label + ' ' + pairs.length + '問</button>' : '';
 /* 「間違えた ◯問」と「おしい ◯問」（声調・記号だけ違った）を分けて出す。記号の打ち漏れだけをまとめて直せる */
-const redoBtn = (ids, title, lid, la) => redoOne(wrongPairs(ids, la, 'wrong'), title, lid, '間違えた') + redoOne(wrongPairs(ids, la, 'near'), title + '　おしい', lid, 'おしい', ' near');
+const redoBtn = (ids, title, lid, la) => redoOne(wrongPairs(ids, la, 'wrong'), title, lid, '間違えた') + redoOne(wrongPairs(ids, la, 'near'), title, lid, 'おしい', 'near');
 document.addEventListener('click', e => {
   const b = e.target.closest('button.lpredo'); if(!b) return;
   if(b.dataset.bkredo){ const [lid, ex] = b.dataset.bkredo.split('#'); bookRedo(lid, ex); return; }
-  startRedo(b.dataset.title, JSON.parse(b.dataset.redo), b.dataset.lid);
+  startRedo(b.dataset.title, JSON.parse(b.dataset.redo), b.dataset.lid, b.dataset.kind);
 });
 /* 教科書の練習：最後の印が × の問題だけを順に開く */
 function bookRedo(lid, exId){
