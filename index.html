@@ -1268,6 +1268,10 @@ button.linkish:hover{background:none; text-decoration:underline}
 .wband li.now .wdot{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); box-shadow:0 0 0 4px var(--ui-primary-muted-bgColor)}
 .wband li.now{color:var(--ui-text-fgColor); font-weight:600}
 .wband li.none{opacity:.4}
+.wband .wjump{display:contents; cursor:pointer}
+.wband li.can .wdot{cursor:pointer; transition:transform .12s}
+.wband li.can:hover .wdot{transform:scale(1.08)}
+.wband .wjump:focus-visible .wdot{outline:2px solid var(--ui-primary-bgColor); outline-offset:2px}
 .wband .wlab{max-width:100%; overflow:hidden; text-overflow:ellipsis}
 .wcard{background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-shadow); padding:20px 24px; display:flex; flex-direction:column; gap:16px; margin-bottom:16px}
 .wgo{align-self:stretch; height:56px; font-size:16px; font-weight:600; background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor); border-radius:var(--ui-control-radius)}
@@ -1293,6 +1297,49 @@ button.linkish:hover{background:none; text-decoration:underline}
 .wpts div{background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-control-radius); padding:14px 16px}
 .wpts p{margin:6px 0 0; font-size:14px; line-height:1.7}
 .jdetails summary{cursor:pointer; font-size:13px; color:var(--ui-text-muted-fgColor)}
+/* 公式のカード（2026-11-08） */
+.fcards{display:flex; flex-direction:column; gap:16px}
+.fcard{background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-card-radius); padding:20px 24px; display:flex; flex-direction:column; gap:16px}
+.fcard h4{margin:0; font-size:17px; line-height:1.5; display:flex; flex-direction:column; gap:2px}
+.fno{font-size:12px; font-weight:600; color:var(--ui-primary-fgColor, var(--ui-primary-bgColor))}
+.fslots{display:flex; flex-wrap:wrap; gap:6px; align-items:stretch}
+.fsl{display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 12px 10px; border-radius:10px; min-width:56px; background:var(--ui-control-bgColor)}
+.fsl i{font-style:normal; font-size:10px; color:var(--ui-text-muted-fgColor); letter-spacing:.04em}
+.fsl b{font-size:18px; font-weight:600} .fsl small{font-size:11px; color:var(--ui-text-muted-fgColor)}
+.fsl.r-who{background:var(--ui-primary-muted-bgColor)}
+.fsl.r-adj, .fsl.r-deg{background:var(--ui-success-muted-bgColor)}
+.fsl.r-q{background:var(--ui-warning-muted-bgColor)}
+.fsl.r-neg{background:var(--ui-danger-muted-bgColor)}
+.fsl.r-v, .fsl.r-end{background:var(--ui-surface-muted-bgColor)}
+.fsec{display:grid; grid-template-columns:7em 1fr; gap:10px 14px; margin:0; font-size:14px; line-height:1.75}
+.fsec dt{font-size:12px; font-weight:600; color:var(--ui-text-muted-fgColor); padding-top:3px}
+.fsec dd{margin:0} .fsec dd p{margin:0 0 4px} .fsec dd p b{font-weight:600; margin-right:8px}
+.fsec dd small{display:block; font-size:12px; color:var(--ui-text-muted-fgColor)}
+.ftip{font-weight:600}
+.fng{color:var(--ui-danger-fgColor)} .fok{color:var(--ui-success-fgColor)}
+@media (max-width:560px){ .fsec{grid-template-columns:1fr; gap:2px} .fsec dd{margin-bottom:10px} }
+.fex, .fchk{display:flex; flex-direction:column; gap:6px}
+.fexh{font-size:12px; font-weight:600; color:var(--ui-text-muted-fgColor)} .fexh span{font-weight:400; color:var(--ui-text-fgColor); font-size:14px}
+.fsay{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 12px; background:var(--ui-control-bgColor); box-shadow:none; border-radius:var(--ui-control-radius); text-align:left; height:auto}
+.fsay b{font-weight:500; font-size:15px} .fsay small{font-size:12px; color:var(--ui-text-muted-fgColor)}
+.fline{min-height:44px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:6px 10px; border-radius:var(--ui-control-radius); border:1px dashed var(--ui-outline-borderColor)}
+.fline em{font-style:normal; font-size:13px; color:var(--ui-text-muted-fgColor)}
+.fline span{font-size:16px; padding:4px 10px; border-radius:8px; background:var(--ui-surface-muted-bgColor)}
+.fline.ok{border-style:solid; border-color:var(--ui-success-fgColor)} .fline.ng{border-style:solid; border-color:var(--ui-danger-fgColor)}
+.ftoks{display:flex; flex-wrap:wrap; gap:6px} .ftok{font-size:16px; height:40px; padding:0 14px}
+.ftok:disabled{opacity:.3}
+.fres{display:flex; align-items:center; gap:12px; font-size:14px} .fres .fredo{margin-left:auto}
+.wsh{margin:8px 0 0; font-size:15px}
+.flist{display:flex; flex-direction:column; gap:8px; margin-bottom:12px}
+.fitem{background:var(--ui-surface-bgColor); box-shadow:var(--ui-card-shadow); border-radius:var(--ui-card-radius)}
+.fitem > summary{display:flex; align-items:center; gap:12px; padding:14px 18px; cursor:pointer; list-style:none}
+.fitem > summary::-webkit-details-marker{display:none}
+.fitem > summary .ftt{flex:1; min-width:0; font-weight:500}
+.fitem > summary small{font-size:12px; color:var(--ui-text-muted-fgColor)}
+.fitem[open] > summary{border-bottom:1px solid var(--ui-outline-borderColor)}
+.fitem .fcard{box-shadow:none; background:none}
+.fitem .fcard h4{display:none}
+.fitem .row{padding:0 24px 20px}
 /* ④ 教科書の練習（2026-11-07） */
 .bknums{display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end}
 .bknums .bkn{flex:none; position:relative; min-width:36px; height:36px; padding:0 8px; border-radius:18px; background:var(--ui-control-bgColor); box-shadow:none; font-size:13px; display:inline-flex; flex-direction:column; justify-content:center}
@@ -2315,6 +2362,7 @@ const unitPic = id => picURL(pics.units[id]);
 const wordPic = t => picURL(pics.words[picKey(t)]);
 const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動画（images.json の videos。無ければ止め絵）
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
+let formulas = [];    // 文法編の公式（formulas.json：公式の番号・課・音声・例文の id。2026-11-08）
 let bookEx = {};      // 練習の id → 教科書の番号ごとの答えと区間（exercises.json。2026-11-07 課のウィザードの ④）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
@@ -2340,7 +2388,9 @@ async function loadSidecars(files){
     files.forEach(f => { const rel = (f._rel || f.webkitRelativePath || '').split('/').slice(1).join('/'); if(rel.startsWith('images/')) picFiles.set(rel, f); });
   }
   const gj = pick('guide.json');
-  guide = {}; if(gj){ const d = await read(gj); guide = (d && d.lessons) || {}; }
+  guide = {}; if(gj){ const d = await read(gj); guide = (d && d.lessons) || {}; guide.__formulas = (d && d.formulas) || {}; }
+  const fj = pick('formulas.json');
+  formulas = []; if(fj){ const d = await read(fj); formulas = (d && d.formulas) || []; }
   const ej = pick('exercises.json');
   bookEx = {}; if(ej){ const d = await read(ej); bookEx = (d && d.exercises) || {}; }
   const dr = pick('drills.json');
@@ -2649,7 +2699,7 @@ const WAIT = [0, 10*60e3, DAY, 3*DAY, 7*DAY, 21*DAY];   // 箱ごとの次まで
 const MAXBOX = WAIT.length - 1;
 
 function setPractice(data, files){
-  setMemo = new Map();
+  setMemo = new Map(); fsetMemo = new Map();
   pdata = data && Array.isArray(data.decks) ? data : null;
   pfiles = {};
   Object.values(purls).forEach(u => URL.revokeObjectURL(u)); purls = {};
@@ -4201,11 +4251,12 @@ function renderBook(){
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers && bview !== 'paper' ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
   html += reviewHTML();
-  html += '<div class="seg wf bviews">' + [['lesson','課'], ['progress','進み具合'], ['grammar','文法'], ['vocab','語彙']]
+  html += '<div class="seg wf bviews">' + [['lesson','課']].concat(formulas.length ? [['formula','公式']] : [], [['progress','進み具合'], ['grammar','文法'], ['vocab','語彙']])
     .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
 
   const defs = paperDefs(), last = paperLatest();
   if(bview === 'lesson') html += lessonHTML(defs, last);
+  else if(bview === 'formula') html += formulaListHTML();
   else if(bview === 'progress'){
     const V = vocab();
     html += '<div class="btable"><div class="brow bth"><span>課</span><span>聴いた</span><span>練習の正答率</span><span>紙の問題</span><span>覚えた語</span></div>';
@@ -5679,10 +5730,13 @@ function stagesOf(li, defs, last){
   if(pdata){
     const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id));
     const sets = ds.flatMap(d => setsOf(d));
-    CATS.forEach(([c, name]) => sets.filter(s => s.cat === c).forEach(sx => out.push({id: L.id + '|' + sx.id, kind: 'set', set: sx,
+    const fsets = formulaSets(L.id);   // 公式があれば、例文の組は公式ごと（2026-11-08 本人「公式が一気に見えて練習できるやつも欲しい」）
+    CATS.forEach(([c, name]) => sets.filter(s => s.cat === c && !(c === 'grammar' && fsets.length)).forEach(sx => out.push({id: L.id + '|' + sx.id, kind: 'set', set: sx,
       title: name + ' ' + sx.n, sub: sx.items.length + '項目・' + STEPS[c].map(v => STEPNAME[v]).join(' → '),
       extra: c === 'grammar' || (c === 'drill' && bks.length > 0)})));
   }
+  formulaSets(L.id).forEach(fx => out.push({id: L.id + '|' + fx.set.id, kind: 'set', set: fx.set, extra: true, formula: fx.f.n,
+    title: formulaName(fx.f) + (fx.parts > 1 ? '　その' + fx.part : ''), sub: fx.set.items.length + '文・' + STEPS.grammar.map(v => STEPNAME[v]).join(' → ')}));
   if(pdata){
     // 文法を使う：この課の組に付いた「書き換える」「質問に答える」（drills.json の確かめた物）
     const ids = new Set(x.items.map(i => i.deck.id));
@@ -5710,6 +5764,93 @@ function stagesOf(li, defs, last){
   });
   return out;
 }
+/* ================= 公式（2026-11-08） =================
+   本人「公式が一気にこうバーンって見えてバーンと練習できるやつも欲しい」
+   「文法がすごい全部ボタンになってて単調だった。文法の仕組みとか理解がちゃんとできるように」
+   ⭕ 公式＝1枚のカード：語順の図・仕組み・似ているもの（日本語・英語・中国語・インドネシア語から1〜2個）・覚え方・間違えやすい形・例文・その場の1問。
+   ⭕ 中身は guide.json の formulas（自分の言葉で書いたもの）。無い公式は例文だけ出す */
+const FPART = 15;   // 例文がこれより多い公式は、練習を分ける
+const fGuide = n => (guide && guide.__formulas || {})[n] || null;
+const formulaName = f => '公式 ' + f.n + '　' + ((fGuide(f.n) || {}).title || f.title || f.first || '');
+let fsetMemo = new Map();
+function formulaSets(lid){
+  if(fsetMemo.has(lid)) return fsetMemo.get(lid);
+  const out = [];
+  formulas.filter(f => f.lesson === lid).forEach(f => {
+    const its = f.items.map(itemById).filter(Boolean);
+    if(!its.length) return;
+    const parts = Math.ceil(its.length / FPART), size = Math.ceil(its.length / parts);
+    for(let k = 0; k < parts; k++){
+      const items = its.slice(k * size, (k + 1) * size).map(it => { const {deck, ...rest} = it; return rest; });
+      out.push({f, part: k + 1, parts, set: {id: 'set:' + its[0].deck.id + ':kf' + f.n + ':' + (k + 1), deck: its[0].deck, cat: 'grammar', n: k + 1, of: parts, items}});
+    }
+  });
+  fsetMemo.set(lid, out);
+  return out;
+}
+const ROLE = {who: '人', v: 'つなぐ', adj: '様子', n: 'もの', q: '問う', neg: '打ち消し', deg: '程度', num: '数', cls: '類別詞', end: '添える'};
+/* 公式のカード。full＝例文を全部（公式のタブ）、でなければ3文（課の ③） */
+function formulaCardHTML(f, full){
+  const g = fGuide(f.n);
+  const its = f.items.map(itemById).filter(Boolean);
+  const ex = full ? its : its.slice(0, 3);
+  let h = '<article class="fcard"><h4><span class="fno">公式 ' + f.n + '</span>' + esc((g && g.title) || f.title || f.first || '') + '</h4>';
+  if(g){
+    h += '<div class="fslots" lang="' + LP.code + '">' + g.slots.map(sl => '<span class="fsl r-' + esc(sl.r) + '"><i>' + esc(ROLE[sl.r] || '') + '</i><b>' + esc(sl.w) + '</b><small>' + esc(sl.ja) + '</small></span>').join('') + '</div>' +
+      '<dl class="fsec"><dt>仕組み</dt><dd>' + esc(g.how) + '</dd>' +
+      (g.like && g.like.length ? '<dt>似ている</dt><dd>' + g.like.map(l => '<p><b>' + esc(l.lang) + '</b>' + esc(l.text) + '</p>').join('') + '</dd>' : '') +
+      (g.tip ? '<dt>覚え方</dt><dd class="ftip">' + esc(g.tip) + '</dd>' : '') +
+      (g.trap ? '<dt>間違えやすい</dt><dd><p class="fng" lang="' + LP.code + '">× ' + esc(g.trap.ng) + '</p><p class="fok" lang="' + LP.code + '">○ ' + esc(g.trap.ok) + '</p>' + (g.trap.why ? '<small>' + esc(g.trap.why) + '</small>' : '') + '</dd>' : '') + '</dl>';
+  }
+  if(ex.length) h += '<div class="fex"><div class="fexh">例文' + (full || its.length <= 3 ? '' : '（' + its.length + '文のうち3文）') + '</div>' + ex.map(it => { const ja = jaOf(it);
+    return '<button class="fsay" data-item="' + esc(it.id) + '"><b lang="' + LP.code + '">' + esc(it.show) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</button>'; }).join('') + '</div>';
+  if(g && g.check) h += checkHTML(f.n, g.check);
+  return h + '</article>';
+}
+/* その場の1問：札を押して並べる。全部並べたら合っているかを出す */
+function checkHTML(n, c, picked){
+  picked = picked || [];
+  const order = (fChkOrder[n] = fChkOrder[n] || shuffled(c.words.map((w, k) => k)));
+  const done = picked.length === c.words.length, ok = done && picked.every((k, i) => c.words[k] === c.words[i]);
+  return '<div class="fchk" data-fchk="' + n + '"><div class="fexh">確かめる　<span>' + esc(c.ja) + '</span></div>' +
+    '<div class="fline' + (done ? (ok ? ' ok' : ' ng') : '') + '" lang="' + LP.code + '">' + (picked.length ? picked.map(k => '<span>' + esc(c.words[k]) + '</span>').join('') : '<em>下の札を順に押す</em>') + '</div>' +
+    '<div class="ftoks" lang="' + LP.code + '">' + order.map(k => '<button class="ftok" data-k="' + k + '"' + (picked.includes(k) ? ' disabled' : '') + '>' + esc(c.words[k]) + '</button>').join('') + '</div>' +
+    (done ? '<div class="fres">' + (ok ? '○ 正しい語順です' : '× 正しくは ' + esc(c.words.join(' '))) + '<button class="fredo">もう一度</button></div>' : '') + '</div>';
+}
+const fChkOrder = {}, fChkPicked = {};
+/* 公式のタブ */
+function formulaListHTML(){
+  const ld = lessonData(), best = stageBest();
+  let h = '<section class="howto"><b>公式：文法編の型の一覧です</b><p>押すと開いて、仕組み・例文・その場の1問が出ます。「この公式を練習する」で、その公式の例文だけを練習します。課のクリアには数えません。</p></section>';
+  ld.forEach((x, li) => {
+    const fs = formulas.filter(f => f.lesson === x.L.id); if(!fs.length) return;
+    const sets = formulaSets(x.L.id);
+    h += '<h3 class="ovh">' + esc(x.L.title) + '</h3><div class="flist">';
+    fs.forEach(f => {
+      const mine = sets.filter(s => s.f.n === f.n), ids = mine.map(s => x.L.id + '|' + s.set.id);
+      const got = ids.map(id => best[id]).filter(Boolean), stars = got.length === ids.length && ids.length ? Math.min(...got.map(b => b.stars)) : 0;
+      h += '<details class="fitem"' + (fOpen.has(f.n) ? ' open' : '') + ' data-fn="' + f.n + '"><summary><span class="fno">公式 ' + f.n + '</span><span class="ftt">' + esc((fGuide(f.n) || {}).title || f.title || f.first || '') + '</span>' +
+        '<small>' + f.items.length + '文</small>' + (stars ? starHTML(stars) : got.length ? '<small>途中</small>' : '') + '</summary>' +
+        formulaCardHTML(f, true) + '<div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
+        mine.map(s => '<button class="primary jgo" data-stage="' + esc(x.L.id + '|' + s.set.id) + '">この公式を練習する' + (s.parts > 1 ? '（その' + s.part + '・' + s.set.items.length + '文）' : '') + '</button>').join('') + '</div></details>';
+    });
+    h += '</div>';
+  });
+  return h;
+}
+const fOpen = new Set();
+document.addEventListener('toggle', e => { const d = e.target; if(d.classList && d.classList.contains('fitem')){ const n = Number(d.dataset.fn); d.open ? fOpen.add(n) : fOpen.delete(n); } }, true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.classList.contains('fsay')){ const it = itemById(b.dataset.item); if(it) say(it); return; }
+  const box = b.closest('.fchk'); if(!box) return;
+  const n = box.dataset.fchk, g = fGuide(n); if(!g) return;
+  if(b.classList.contains('ftok')) (fChkPicked[n] = fChkPicked[n] || []).push(Number(b.dataset.k));
+  else if(b.classList.contains('fredo')){ fChkPicked[n] = []; delete fChkOrder[n]; }
+  else return;
+  box.outerHTML = checkHTML(n, g.check, fChkPicked[n]);
+});
+
 /* 教科書の練習のステージの名前：「練習 1・2」。番号の無い音声は音声の番号で */
 function bookTitle(ex, secs){
   const rev = /review/.test(ex.id);
@@ -5930,11 +6071,32 @@ function wizLabel(st){
     : st.next.g === 'final' ? '課のまとめ' : st.next.kind === 'book' ? st.next.title + 'を解く' : st.next.title + (/[：:]/.test(st.next.title) ? '' : 'を練習する');
   return '次：' + G.n + ' ' + what;
 }
+/* 段の帯。2026-11-08 本人「ウィザードで前の聞くとか単語とかに全部戻れるようにしてほしい」
+   ⭕ 済んだ段といまの段の丸は押せる（その段の頁へ入る）。まだ先の段は押せない */
 function wizBandHTML(st, nowG){
-  return '<ol class="wband" aria-label="この課の流れ">' + st.groups.map(G =>
-    '<li class="' + (!G.has ? 'none' : G.g === nowG ? 'now' : G.done ? 'done' : '') + '"><span class="wdot">' +
+  const reach = st.next ? st.groups.findIndex(G => G.g === st.next.g) : st.groups.length - 1;
+  return '<ol class="wband" aria-label="この課の流れ">' + st.groups.map((G, k) => {
+    const can = G.has && (G.done || k <= reach);
+    const inner = '<span class="wdot">' +
       (G.done && G.g !== nowG ? '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>' : WIZN.indexOf(G.n) + 1) +
-      '</span><span class="wlab">' + G.name + '</span></li>').join('') + '</ol>';
+      '</span><span class="wlab">' + G.name + '</span>';
+    return '<li class="' + (!G.has ? 'none' : G.g === nowG ? 'now' : G.done ? 'done' : '') + (can ? ' can' : '') + '">' +
+      (can ? '<button class="wjump" data-wjump="' + G.g + '" data-lid="' + esc(st.L.id) + '" aria-label="' + G.n + ' ' + G.name + 'へ">' + inner + '</button>' : inner) + '</li>';
+  }).join('') + '</ol>';
+}
+/* 帯の丸から、その段の頁へ入る */
+function wizEnter(lid, g){
+  const st = wizState(lid); if(!st) return;
+  const G = st.groups.find(x => x.g === g); if(!G || !G.has) return;
+  audio.pause();
+  if(g === 'listen' || g === 'word' || g === 'grammar'){
+    wiz = {lid, g, page: g === 'listen' ? 'listen' : 'learn', k: -1};
+    if(mode !== 'practice') setMode('practice'); else renderPractice();
+    window.scrollTo({top: 0}); return;
+  }
+  // 練習とまとめ：まだのステージがあればそれ、全部済んでいれば最初のステージ（教科書の練習は前の印のまま開く）
+  const sg = G.list.find(s => !s.cleared) || G.list[0];
+  wiz = null; startStage(sg.id);
 }
 /* コースの課の頭に出す入口 */
 function wizCardHTML(lid){
@@ -6006,10 +6168,12 @@ function renderWiz(){
     // B（2026-11-07）：基本の文だけを出す。例文の全部の行（公式と例文）は「もっと練習する」へ
     const its = x.items.filter(it => catOf(it, it.deck) === 'sentence' && !isSound(it));
     const seen = new Set(), sents = its.filter(it => !seen.has(it.show) && seen.add(it.show)).slice(0, 12);
+    const fcs = formulas.filter(f => f.lesson === wiz.lid);   // 公式のカード（2026-11-08）。あればこちらを出す
     const pts = g && g.points && g.points.length ? g.points : grammar().out[st.li].filter(p => p.title && p.body).map(p => ({title: unmark(p.title), body: p.body}));
     body = '<h2>' + WIZN[2] + ' 文法を読む</h2>' +
-      (g && g.goal ? '<p class="wsub">' + esc(g.goal) + '</p>' : '<p class="wsub">この課の基本の文です。押すと音が鳴ります。形を見てから練習へ。</p>') +
-      (pts.length ? '<div class="wpts">' + pts.map(p => '<div><b>' + esc(p.title) + '</b><p>' + esc(p.body) + '</p></div>').join('') + '</div>' : '') +
+      (g && g.goal ? '<p class="wsub">' + esc(g.goal) + '</p>' : fcs.length ? '<p class="wsub">この課の型を1つずつ。図で並びを見て、知っている言葉の似た言い方と比べ、最後の1問で確かめてから練習へ。</p>' : '<p class="wsub">この課の基本の文です。押すと音が鳴ります。形を見てから練習へ。</p>') +
+      (fcs.length ? '<div class="fcards">' + fcs.map(f => formulaCardHTML(f, false)).join('') + '</div>' + (sents.length ? '<h3 class="wsh">この課の基本の文</h3>' : '') :
+       pts.length ? '<div class="wpts">' + pts.map(p => '<div><b>' + esc(p.title) + '</b><p>' + esc(p.body) + '</p></div>').join('') + '</div>' : '') +
       (sents.length ? '<div class="wsents">' + sents.map(it => { wizItems.set(it.id, it); const ja = jaOf(it);
         return '<button class="wsent" data-item="' + esc(it.id) + '"><b lang="' + LP.code + '">' + esc(it.show) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</button>'; }).join('') + '</div>' : '');
   }
@@ -6071,6 +6235,7 @@ const wizItems = new Map();
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.wiz){ wizGo(b.dataset.wiz); return; }
+  if(b.dataset.wjump){ wizEnter(b.dataset.lid, b.dataset.wjump); return; }
   if(!wiz) return;
   if(b.id === 'wizNext'){
     if(wiz.page === 'listen' && wiz.k < wizTracks(wiz.lid).length) wizMark(wiz.lid, 'listen');
