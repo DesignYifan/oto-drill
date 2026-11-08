@@ -1192,7 +1192,11 @@ button.linkish:hover{background:none; text-decoration:underline}
 .lpct{font-variant-numeric:tabular-nums; font-size:13px; color:var(--ui-text-muted-fgColor)}
 .lpr.done .lpct{color:var(--ui-success-fgColor)}
 .lpgo{height:32px; padding:0 14px; font-size:13px}
-@media (max-width:560px){ .lpr{grid-template-columns:20px minmax(0,1fr) auto; } .lpr .stars, .lpr > span:nth-child(4){display:none} .lpr .lpct{grid-column:2} .lpr .lpgo{grid-row:1/3; grid-column:3} }
+.lpbtns{display:flex; gap:6px; align-items:center; justify-content:flex-end}
+.lpredo{height:32px; padding:0 12px; font-size:12px; background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor); box-shadow:none}
+.lpredo.primary{background:var(--ui-danger-fgColor); color:#fff; height:36px; font-size:13px}
+.lpall{display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; padding:10px 14px; margin-bottom:8px; border-radius:var(--ui-control-radius); background:var(--ui-danger-muted-bgColor); font-size:13px}
+@media (max-width:560px){ .lpr{grid-template-columns:20px minmax(0,1fr) auto; } .lpr .stars, .lpr > span:nth-child(4){display:none} .lpr .lpct{grid-column:2} .lpr .lpbtns{grid-row:1/3; grid-column:3; flex-direction:column; align-items:stretch} }
 .setrow{display:grid; grid-template-columns:5em minmax(0,1fr); gap:12px; align-items:center}
 .setcat{font-size:12px; color:var(--ui-text-muted-fgColor); font-weight:500}
 .setchips{display:flex; flex-wrap:wrap; gap:8px}
@@ -2789,6 +2793,52 @@ function findSet(id){
 const setDone = st => st.items.every(it => rec(it.id).box >= 1);
 const setSeen = st => st.items.filter(it => rec(it.id).box >= 1).length;
 /* 組のチップ：種類ごとに 1 2 3 …（済んだ組に印、いまの組は黒） */
+/* ================= 間違えた問題だけ解き直す（2026-11-08） =================
+   本人「これ間違えたところだけ後からセットで復習できるとかできない？」
+   ⭕ 間違えた問題＝その問いに最後に答えたとき不正解だったもの（解き直して正解したら外れる）。
+   ⭕ 出し方は間違えたときと同じ練習。⭕ 星やクリアには数えない（今日の復習と同じ扱い） */
+function lastAnswers(){
+  const m = new Map(); hist.forEach(h => m.set(h[1], h)); return m;
+}
+function wrongPairs(ids, la){
+  la = la || lastAnswers();
+  return [...new Set(ids)].map(id => la.get(id)).filter(h => h && !h[3] && h[2]).map(h => [h[1], h[2]]);
+}
+function startRedo(title, pairs, lid){
+  if(!pairs.length) return;
+  run = {book: bookId, stage: 'redo', lid, title: title + '　間違えた問題だけ', queue: shuffled(pairs), i: 0, res: [], t: Date.now()};
+  save('run', run); resumeRun();
+}
+function finishRedo(){
+  const done_ = run, total = run.res.length, ok = run.res.reduce((a, b) => a + b, 0);
+  run = null; save('run', null); runOn = false;
+  const still = wrongPairs(done_.queue.map(x => x[0]));
+  $('#practice').classList.add('running'); $('#runbar').hidden = true; $('#psets').hidden = true;
+  $('#pbody').innerHTML = '<div class="result' + (total && ok === total ? ' ok' : '') + '"><div class="rtitle">' + esc(done_.title) + '</div>' +
+    '<div class="rscore">直った ' + ok + '問<small>まだ ' + (total - ok) + '問</small></div>' +
+    '<div class="rmsg">' + (still.length ? 'まだの問題は、次もここに残ります。' : '間違えた問題は全部直りました。') + '</div>' +
+    '<div class="row">' + (still.length ? '<button class="primary" id="rredo">まだの ' + still.length + '問をもう一度</button>' : '') +
+    '<button id="rback"' + (still.length ? '' : ' class="primary"') + '>課の画面へ</button></div></div>';
+  const bk = () => { $('#practice').classList.remove('running'); };
+  const rb = $('#rredo'); if(rb) rb.onclick = () => { bk(); startRedo(done_.title.replace(/　間違えた問題だけ$/, ''), still, done_.lid); };
+  $('#rback').onclick = () => { bk(); if(done_.lid) goLesson(done_.lid); else setMode('book'); };
+}
+const redoBtn = (pairs, title, lid) => pairs.length ? '<button class="lpredo" data-redo="' + esc(JSON.stringify(pairs)) + '" data-title="' + esc(title) + '" data-lid="' + esc(lid) + '">間違えた ' + pairs.length + '問</button>' : '';
+document.addEventListener('click', e => {
+  const b = e.target.closest('button.lpredo'); if(!b) return;
+  if(b.dataset.bkredo){ const [lid, ex] = b.dataset.bkredo.split('#'); bookRedo(lid, ex); return; }
+  startRedo(b.dataset.title, JSON.parse(b.dataset.redo), b.dataset.lid);
+});
+/* 教科書の練習：最後の印が × の問題だけを順に開く */
+function bookRedo(lid, exId){
+  const last = paperLatest(), its = bookEx[exId].items;
+  const xs = its.map((it, k) => [it, k]).filter(([it]) => (last[lid + '|' + exId + '|' + it.id] || {}).r === 'x').map(([, k]) => k);
+  if(!xs.length) return;
+  wiz = {lid, g: 'practice', page: 'book', ex: exId, stage: lid + '|bk:' + exId, k: xs[0], open: false, typed: '', redo: true};
+  if(mode !== 'practice') setMode('practice'); else renderPractice();
+  window.scrollTo({top: 0});
+}
+
 /* 課の画面の「③ 練習」の中身（2026-11-08 本人「それぞれのユニットで文法はどこまで進んだか。全体像もわかんない」）
    ⭕ 札の番号をやめ、名前と「◯のうち◯正解」で1行ずつ。文法は公式ごとに1行、頭に「公式◯つのうち◯つ済み」。
    ⭕ ボタンは1つ：続きから（途中）／始める（まだ）／もう一度（済み） */
@@ -2796,9 +2846,12 @@ function lessonPracticeHTML(li, x, last){
   const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id));
   const sets = ds.flatMap(d => setsOf(d)), fsets = formulaSets(x.L.id), best = stageBest();
   const seenOf = its => its.filter(it => rec(it.id).box >= 1).length;
+  const la = lastAnswers(), lt = x.L.title;
   const tick = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
   const act = (done_, started, attrs) => '<button class="lpgo' + (!done_ && started ? ' primary' : '') + '" ' + attrs + '>' + (done_ ? 'もう一度' : started ? '続きから' : '始める') + '</button>';
-  let h = '<div class="lprog2">';
+  const allWrong = wrongPairs(x.items.map(i => i.id), la);
+  let h = '<div class="lprog2">' + (allWrong.length ? '<div class="lpall"><span>この課で、最後に間違えたままの問題が ' + allWrong.length + '問あります</span>' +
+    '<button class="lpredo primary" data-redo="' + esc(JSON.stringify(allWrong)) + '" data-title="' + esc(x.L.title) + '" data-lid="' + esc(x.L.id) + '">この課の間違えた問題だけ（' + allWrong.length + '問）</button></div>' : '');
   // 文法：公式ごと
   if(fsets.length){
     const fs = [...new Map(fsets.map(s => [s.f.n, s.f])).values()];
@@ -2812,7 +2865,7 @@ function lessonPracticeHTML(li, x, last){
         '<span class="lpnm"><b>公式 ' + f.n + '</b>' + esc((fGuide(f.n) || {}).title || f.title || f.first || '') +
         (parts.length > 1 ? '<small class="lpparts">' + parts.map(s => 'その' + s.part + ' ' + (setDone(s.set) ? '✓' : seenOf(s.set.items) + '/' + s.set.items.length)).join('　') + '</small>' : '') + '</span>' +
         '<span class="lpct">' + seen + ' / ' + its.length + '</span>' + (stars ? starHTML(stars) : '<span></span>') +
-        act(done_, seen > 0, 'data-stage="' + esc(x.L.id + '|' + nx.set.id) + '"') + '</div>'};
+        '<span class="lpbtns">' + redoBtn(wrongPairs(its.map(i => i.id), la), lt + '　公式 ' + f.n, x.L.id) + act(done_, seen > 0, 'data-stage="' + esc(x.L.id + '|' + nx.set.id) + '"') + '</span></div>'};
     });
     h += '<div class="lpgroup"><div class="lpgh"><b>文法</b><span>公式 ' + rows.length + 'つのうち ' + rows.filter(r => r.done_).length + 'つ済み</span></div>' + rows.map(r => r.html).join('') + '</div>';
   }
@@ -2825,13 +2878,15 @@ function lessonPracticeHTML(li, x, last){
     const nx = cs.find(s => !setDone(s)) || cs[0], u = UNIT[c];
     h += '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span><span class="lpnm"><b>' + name + '</b>' +
       its.length + u + 'のうち ' + seen + u + '正解</span><span class="lpct"></span><span></span>' +
-      act(done_, seen > 0, 'data-set="' + esc(nx.id) + '"') + '</div>';
+      '<span class="lpbtns">' + redoBtn(wrongPairs(its.map(i => i.id), la), lt + '　' + name, x.L.id) + act(done_, seen > 0, 'data-set="' + esc(nx.id) + '"') + '</span></div>';
   });
   // 教科書の練習
   (paperDefs()[x.L.id] || []).filter(ex => bookEx[ex.id] && bookEx[ex.id].items.length).forEach(ex => {
     const ps = paperScore(x.L.id, {[x.L.id]: [ex]}, last), done_ = ps.tot > 0 && ps.done === ps.tot;
+    const nx = bookEx[ex.id].items.filter(it => (last[x.L.id + '|' + ex.id + '|' + it.id] || {}).r === 'x').length;
     h += '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span><span class="lpnm"><b>' + esc(bookTitle(ex, [...new Set(bookEx[ex.id].items.map(i => i.sec))])) + '</b>' +
-      ps.tot + '問のうち ' + ps.done + '問に印</span><span class="lpct"></span><span></span>' + act(done_, ps.done > 0, 'data-stage="' + esc(x.L.id + '|bk:' + ex.id) + '"') + '</div>';
+      ps.tot + '問のうち ' + ps.done + '問に印</span><span class="lpct"></span><span></span>' +
+      '<span class="lpbtns">' + (nx ? '<button class="lpredo" data-bkredo="' + esc(x.L.id + '#' + ex.id) + '">× の ' + nx + '問</button>' : '') + act(done_, ps.done > 0, 'data-stage="' + esc(x.L.id + '|bk:' + ex.id) + '"') + '</span></div>';
   });
   return h + '</div>';
 }
@@ -6352,6 +6407,10 @@ function bookMark(r){
   emit('paper', {b: bookId, l: wiz.lid, ex: wiz.ex, n: it.id, r});
   const last = paperLatest(), its = be.items;
   // 次は、後ろのまだ印の無い問題。無ければ前から探し、全部付いていれば次の番号
+  if(wiz.redo){   // × の問題だけを順に
+    const xs = its.map((x, k) => k).filter(k => k > wiz.k && (last[wiz.lid + '|' + wiz.ex + '|' + its[k].id] || {}).r === 'x');
+    wiz.k = xs.length ? xs[0] : its.length; wiz.open = false; wiz.typed = ''; renderWiz(); return;
+  }
   let nx = its.findIndex((x, k) => k > wiz.k && !last[wiz.lid + '|' + wiz.ex + '|' + x.id]);
   if(nx < 0) nx = its.findIndex(x => !last[wiz.lid + '|' + wiz.ex + '|' + x.id]);
   wiz.k = nx < 0 ? Math.min(wiz.k + 1, its.length) : nx;
@@ -6386,7 +6445,7 @@ function stopRun(){   // セーブしてやめる（位置は run に残る）
   runOn = false; q = null;
   $('#practice').classList.remove('running');
   if(run && run.stage === 'focus'){ run = run.back || null; save('run', run); }   // この型だけ練習をやめたら、預けた組に戻す
-  const lid = run && run.stage !== 'review' ? run.stage.split('|')[0] : null;
+  const lid = run && run.stage === 'redo' ? run.lid : run && run.stage !== 'review' ? run.stage.split('|')[0] : null;
   if(lid) goLesson(lid); else setMode('book');
 }
 function runNext(){
@@ -6418,6 +6477,7 @@ function notYetMsg(sc){
 function finishRun(){
   const total = run.res.length, ok = run.res.reduce((a, b) => a + b, 0), sc = total ? ok / total : 0, stars = starsOf(sc), cleared = sc >= PASS;
   if(run.stage === 'review'){ finishReview(total, ok); return; }
+  if(run.stage === 'redo'){ finishRedo(); return; }
   if(run.stage === 'focus'){ finishFocus(total, ok); return; }
   if(run.skip){ finishSkip(total, ok); return; }
   if(cleared) emit('stage', {b: run.book, s: run.stage, score: Math.round(sc * 100) / 100, stars});
@@ -6428,6 +6488,7 @@ function finishRun(){
   const nxt = sgs.find(s => s.open && !s.cleared && s.kind !== 'listen' && s.kind !== 'paper' && s.id !== done_.stage);
   const chapterClear = sgs.length && sgs.every(s => s.cleared);
   const wlid = li >= 0 ? ld[li].L.id : null, wst = wlid ? wizState(wlid) : null;
+  const missed = wrongPairs(done_.queue.map(x => x[0]));   // この段で最後に間違えたままの問題
   $('#practice').classList.add('running');
   $('#runbar').hidden = true;
   $('#psets').hidden = true;
@@ -6438,7 +6499,8 @@ function finishRun(){
     '<div class="rmsg">' + (cleared ? (stars === 3 ? 'クリア。完璧です。' : 'クリア。') : notYetMsg(sc)) + '</div>' +
     // 課のウィザード（2026-11-07）：クリアしたら大きな「次」1つ。課の一覧へは小さな「あとで続ける」
     (cleared && wst ? '<button class="wgo" data-wiz="' + esc(wlid) + '">' + esc(wizLabel(wst)) + '</button>' : '') +
-    '<div class="row"><button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button></div>' +
+    '<div class="row"><button id="rretry" data-stage="' + esc(done_.stage) + '"' + (!cleared ? ' class="primary"' : '') + '>もう一度</button>' +
+      (missed.length ? '<button class="lpredo" data-redo="' + esc(JSON.stringify(missed)) + '" data-title="' + esc(done_.title) + '" data-lid="' + esc(wlid || '') + '">間違えた問題だけもう一度（' + missed.length + '問）</button>' : '') + '</div>' +
     '<button id="rback" class="wlater">あとで続ける（課の画面へ）</button></div>';
   const bk = () => { $('#practice').classList.remove('running'); };
   const nb = $('#rnext'); if(nb) nb.onclick = () => { bk(); startStage(nb.dataset.stage); };
