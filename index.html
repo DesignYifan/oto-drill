@@ -1183,6 +1183,16 @@ button.linkish:hover{background:none; text-decoration:underline}
 .psh span{font-size:12px; color:var(--ui-text-muted-fgColor)}
 .psh .psnow{margin-left:auto; color:var(--ui-text-fgColor); font-variant-numeric:tabular-nums}
 .psnext{display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px}
+.lprog2{display:flex; flex-direction:column; gap:4px}
+.lpgroup{display:flex; flex-direction:column; gap:4px; padding-bottom:10px; margin-bottom:6px; border-bottom:1px solid var(--ui-outline-borderColor)}
+.lpgh{display:flex; align-items:baseline; gap:12px; font-size:14px} .lpgh span{font-size:13px; color:var(--ui-text-muted-fgColor)}
+.lpr{display:grid; grid-template-columns:20px minmax(0,1fr) auto auto auto; gap:10px; align-items:center; padding:8px 0; font-size:14px}
+.lpck .ic{width:16px; height:16px; color:var(--ui-success-fgColor)}
+.lpnm b{font-weight:600; margin-right:8px} .lpnm .lpparts{display:block; font-size:12px; color:var(--ui-text-muted-fgColor); margin-top:2px}
+.lpct{font-variant-numeric:tabular-nums; font-size:13px; color:var(--ui-text-muted-fgColor)}
+.lpr.done .lpct{color:var(--ui-success-fgColor)}
+.lpgo{height:32px; padding:0 14px; font-size:13px}
+@media (max-width:560px){ .lpr{grid-template-columns:20px minmax(0,1fr) auto; } .lpr .stars, .lpr > span:nth-child(4){display:none} .lpr .lpct{grid-column:2} .lpr .lpgo{grid-row:1/3; grid-column:3} }
 .setrow{display:grid; grid-template-columns:5em minmax(0,1fr); gap:12px; align-items:center}
 .setcat{font-size:12px; color:var(--ui-text-muted-fgColor); font-weight:500}
 .setchips{display:flex; flex-wrap:wrap; gap:8px}
@@ -2779,6 +2789,56 @@ function findSet(id){
 const setDone = st => st.items.every(it => rec(it.id).box >= 1);
 const setSeen = st => st.items.filter(it => rec(it.id).box >= 1).length;
 /* 組のチップ：種類ごとに 1 2 3 …（済んだ組に印、いまの組は黒） */
+/* 課の画面の「③ 練習」の中身（2026-11-08 本人「それぞれのユニットで文法はどこまで進んだか。全体像もわかんない」）
+   ⭕ 札の番号をやめ、名前と「◯のうち◯正解」で1行ずつ。文法は公式ごとに1行、頭に「公式◯つのうち◯つ済み」。
+   ⭕ ボタンは1つ：続きから（途中）／始める（まだ）／もう一度（済み） */
+function lessonPracticeHTML(li, x, last){
+  const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id));
+  const sets = ds.flatMap(d => setsOf(d)), fsets = formulaSets(x.L.id), best = stageBest();
+  const seenOf = its => its.filter(it => rec(it.id).box >= 1).length;
+  const tick = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+  const act = (done_, started, attrs) => '<button class="lpgo' + (!done_ && started ? ' primary' : '') + '" ' + attrs + '>' + (done_ ? 'もう一度' : started ? '続きから' : '始める') + '</button>';
+  let h = '<div class="lprog2">';
+  // 文法：公式ごと
+  if(fsets.length){
+    const fs = [...new Map(fsets.map(s => [s.f.n, s.f])).values()];
+    const rows = fs.map(f => {
+      const parts = fsets.filter(s => s.f.n === f.n), its = parts.flatMap(s => s.set.items);
+      const seen = seenOf(its), done_ = parts.every(s => setDone(s.set));
+      const ids = parts.map(s => x.L.id + '|' + s.set.id), got = ids.map(id => best[id]).filter(Boolean);
+      const stars = got.length === ids.length ? Math.min(...got.map(b => b.stars)) : 0;
+      const nx = parts.find(s => !setDone(s.set)) || parts[0];
+      return {done_, html: '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span>' +
+        '<span class="lpnm"><b>公式 ' + f.n + '</b>' + esc((fGuide(f.n) || {}).title || f.title || f.first || '') +
+        (parts.length > 1 ? '<small class="lpparts">' + parts.map(s => 'その' + s.part + ' ' + (setDone(s.set) ? '✓' : seenOf(s.set.items) + '/' + s.set.items.length)).join('　') + '</small>' : '') + '</span>' +
+        '<span class="lpct">' + seen + ' / ' + its.length + '</span>' + (stars ? starHTML(stars) : '<span></span>') +
+        act(done_, seen > 0, 'data-stage="' + esc(x.L.id + '|' + nx.set.id) + '"') + '</div>'};
+    });
+    h += '<div class="lpgroup"><div class="lpgh"><b>文法</b><span>公式 ' + rows.length + 'つのうち ' + rows.filter(r => r.done_).length + 'つ済み</span></div>' + rows.map(r => r.html).join('') + '</div>';
+  }
+  // ほかの種類：種類ごとに1行
+  const UNIT = {word: '語', sentence: '文', grammar: '文', drill: '問', sound: '音', other: '項目'};
+  CATS.forEach(([c, name]) => {
+    if(c === 'grammar' && fsets.length) return;
+    const cs = sets.filter(s => s.cat === c); if(!cs.length) return;
+    const its = cs.flatMap(s => s.items), seen = seenOf(its), done_ = cs.every(setDone);
+    const nx = cs.find(s => !setDone(s)) || cs[0], u = UNIT[c];
+    h += '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span><span class="lpnm"><b>' + name + '</b>' +
+      its.length + u + 'のうち ' + seen + u + '正解</span><span class="lpct"></span><span></span>' +
+      act(done_, seen > 0, 'data-set="' + esc(nx.id) + '"') + '</div>';
+  });
+  // 教科書の練習
+  (paperDefs()[x.L.id] || []).filter(ex => bookEx[ex.id] && bookEx[ex.id].items.length).forEach(ex => {
+    const ps = paperScore(x.L.id, {[x.L.id]: [ex]}, last), done_ = ps.tot > 0 && ps.done === ps.tot;
+    h += '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span><span class="lpnm"><b>' + esc(bookTitle(ex, [...new Set(bookEx[ex.id].items.map(i => i.sec))])) + '</b>' +
+      ps.tot + '問のうち ' + ps.done + '問に印</span><span class="lpct"></span><span></span>' + act(done_, ps.done > 0, 'data-stage="' + esc(x.L.id + '|bk:' + ex.id) + '"') + '</div>';
+  });
+  return h + '</div>';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button.lpgo'); if(!b) return;
+  if(b.dataset.stage) startStage(b.dataset.stage); else if(b.dataset.set) startSet(b.dataset.set);
+});
 function setChipsHTML(decksList, current){
   const rows = {};
   decksList.forEach(d => setsOf(d).forEach(st => (rows[st.cat] = rows[st.cat] || []).push(st)));
@@ -4525,8 +4585,8 @@ function lessonHTML(defs, last){
     st.words.n + ' / ' + st.words.of + ' 語');
   if(!st.words && V.out[li].some(e => e.syl)) h += '<section class="lstep muted"><div class="lsh"><span class="num">–</span><b>単語</b><span class="ct">まだ無い</span></div>' +
     '<p class="bfoot" style="margin:0">この教材には語の一覧（lexicon.json）がまだありません。巻末の語彙表か各課の「新しい語」の頁の写真があれば、課ごとの単語をここに並べられます。</p></section>';
-  if(st.practice) h += card('practice', '練習', '<div class="lsets">' + setChipsHTML([...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id)), null) + '</div>' +
-    '<div class="lprac"><span>種類ごとの小さな組（' + SET_SIZE + ' 項目まで）。押すとその組だけを練習します。全部の項目に一度ずつ正解すると、この段は済みです。</span><button id="lpractice">この課を全部まとめて</button></div>',
+  if(st.practice) h += card('practice', '練習', lessonPracticeHTML(li, x, last) +
+    '<div class="lprac"><span>どの項目も、一度正解すると「正解」に数えます。全部の項目に一度ずつ正解すると、この段は済みです。</span><button id="lpractice">この課を全部まとめて</button></div>',
     st.practice.n + ' / ' + st.practice.of + ' 項目');
   if(st.paper) h += card('paper', '紙の問題', st.paper.exs.map(ex => exHTML(x.L.id, ex, last)).join('') +
     '<p class="bfoot">本で解いて、1問ずつ ○ → △ → × の印を付けます。「この問題の音声」を押すと音声の画面に移り、そこでも印を付けられます。</p>',
