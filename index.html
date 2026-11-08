@@ -1194,6 +1194,7 @@ button.linkish:hover{background:none; text-decoration:underline}
 .lpgo{height:32px; padding:0 14px; font-size:13px}
 .lpbtns{display:flex; gap:6px; align-items:center; justify-content:flex-end}
 .lpredo{height:32px; padding:0 12px; font-size:12px; background:var(--ui-danger-muted-bgColor); color:var(--ui-danger-fgColor); box-shadow:none}
+.lpredo.near{background:var(--ui-warning-muted-bgColor); color:var(--ui-text-fgColor)}
 .lpredo.primary{background:var(--ui-danger-fgColor); color:#fff; height:36px; font-size:13px}
 .lpall{display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; padding:10px 14px; margin-bottom:8px; border-radius:var(--ui-control-radius); background:var(--ui-danger-muted-bgColor); font-size:13px}
 @media (max-width:560px){ .lpr{grid-template-columns:20px minmax(0,1fr) auto; } .lpr .stars, .lpr > span:nth-child(4){display:none} .lpr .lpct{grid-column:2} .lpr .lpbtns{grid-row:1/3; grid-column:3; flex-direction:column; align-items:stretch} }
@@ -2800,9 +2801,9 @@ const setSeen = st => st.items.filter(it => rec(it.id).box >= 1).length;
 function lastAnswers(){
   const m = new Map(); hist.forEach(h => m.set(h[1], h)); return m;
 }
-function wrongPairs(ids, la){
+function wrongPairs(ids, la, kind){   // kind：'near'＝おしいだけ／'wrong'＝おしい以外の不正解だけ／無し＝両方
   la = la || lastAnswers();
-  return [...new Set(ids)].map(id => la.get(id)).filter(h => h && !h[3] && h[2]).map(h => [h[1], h[2]]);
+  return [...new Set(ids)].map(id => la.get(id)).filter(h => h && !h[3] && h[2] && (!kind || (kind === 'near') === !!h[4])).map(h => [h[1], h[2]]);
 }
 function startRedo(title, pairs, lid){
   if(!pairs.length) return;
@@ -2823,7 +2824,9 @@ function finishRedo(){
   const rb = $('#rredo'); if(rb) rb.onclick = () => { bk(); startRedo(done_.title.replace(/　間違えた問題だけ$/, ''), still, done_.lid); };
   $('#rback').onclick = () => { bk(); if(done_.lid) goLesson(done_.lid); else setMode('book'); };
 }
-const redoBtn = (pairs, title, lid) => pairs.length ? '<button class="lpredo" data-redo="' + esc(JSON.stringify(pairs)) + '" data-title="' + esc(title) + '" data-lid="' + esc(lid) + '">間違えた ' + pairs.length + '問</button>' : '';
+const redoOne = (pairs, title, lid, label, cls) => pairs.length ? '<button class="lpredo' + (cls || '') + '" data-redo="' + esc(JSON.stringify(pairs)) + '" data-title="' + esc(title) + '" data-lid="' + esc(lid) + '">' + label + ' ' + pairs.length + '問</button>' : '';
+/* 「間違えた ◯問」と「おしい ◯問」（声調・記号だけ違った）を分けて出す。記号の打ち漏れだけをまとめて直せる */
+const redoBtn = (ids, title, lid, la) => redoOne(wrongPairs(ids, la, 'wrong'), title, lid, '間違えた') + redoOne(wrongPairs(ids, la, 'near'), title + '　おしい', lid, 'おしい', ' near');
 document.addEventListener('click', e => {
   const b = e.target.closest('button.lpredo'); if(!b) return;
   if(b.dataset.bkredo){ const [lid, ex] = b.dataset.bkredo.split('#'); bookRedo(lid, ex); return; }
@@ -2850,7 +2853,8 @@ function lessonPracticeHTML(li, x, last){
   const tick = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
   const act = (done_, started, attrs) => '<button class="lpgo' + (!done_ && started ? ' primary' : '') + '" ' + attrs + '>' + (done_ ? 'もう一度' : started ? '続きから' : '始める') + '</button>';
   const allWrong = wrongPairs(x.items.map(i => i.id), la);
-  let h = '<div class="lprog2">' + (allWrong.length ? '<div class="lpall"><span>この課で、最後に間違えたままの問題が ' + allWrong.length + '問あります</span>' +
+  const nNear = wrongPairs(x.items.map(i => i.id), la, 'near').length;
+  let h = '<div class="lprog2">' + (allWrong.length ? '<div class="lpall"><span>この課で、最後に間違えたままの問題が ' + allWrong.length + '問あります' + (nNear ? '（うち おしい ' + nNear + '問）' : '') + '</span>' +
     '<button class="lpredo primary" data-redo="' + esc(JSON.stringify(allWrong)) + '" data-title="' + esc(x.L.title) + '" data-lid="' + esc(x.L.id) + '">この課の間違えた問題だけ（' + allWrong.length + '問）</button></div>' : '');
   // 文法：公式ごと
   if(fsets.length){
@@ -2865,7 +2869,7 @@ function lessonPracticeHTML(li, x, last){
         '<span class="lpnm"><b>公式 ' + f.n + '</b>' + esc((fGuide(f.n) || {}).title || f.title || f.first || '') +
         (parts.length > 1 ? '<small class="lpparts">' + parts.map(s => 'その' + s.part + ' ' + (setDone(s.set) ? '✓' : seenOf(s.set.items) + '/' + s.set.items.length)).join('　') + '</small>' : '') + '</span>' +
         '<span class="lpct">' + seen + ' / ' + its.length + '</span>' + (stars ? starHTML(stars) : '<span></span>') +
-        '<span class="lpbtns">' + redoBtn(wrongPairs(its.map(i => i.id), la), lt + '　公式 ' + f.n, x.L.id) + act(done_, seen > 0, 'data-stage="' + esc(x.L.id + '|' + nx.set.id) + '"') + '</span></div>'};
+        '<span class="lpbtns">' + redoBtn(its.map(i => i.id), lt + '　公式 ' + f.n, x.L.id, la) + act(done_, seen > 0, 'data-stage="' + esc(x.L.id + '|' + nx.set.id) + '"') + '</span></div>'};
     });
     h += '<div class="lpgroup"><div class="lpgh"><b>文法</b><span>公式 ' + rows.length + 'つのうち ' + rows.filter(r => r.done_).length + 'つ済み</span></div>' + rows.map(r => r.html).join('') + '</div>';
   }
@@ -2878,7 +2882,7 @@ function lessonPracticeHTML(li, x, last){
     const nx = cs.find(s => !setDone(s)) || cs[0], u = UNIT[c];
     h += '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span><span class="lpnm"><b>' + name + '</b>' +
       its.length + u + 'のうち ' + seen + u + '正解</span><span class="lpct"></span><span></span>' +
-      '<span class="lpbtns">' + redoBtn(wrongPairs(its.map(i => i.id), la), lt + '　' + name, x.L.id) + act(done_, seen > 0, 'data-set="' + esc(nx.id) + '"') + '</span></div>';
+      '<span class="lpbtns">' + redoBtn(its.map(i => i.id), lt + '　' + name, x.L.id, la) + act(done_, seen > 0, 'data-set="' + esc(nx.id) + '"') + '</span></div>';
   });
   // 教科書の練習
   (paperDefs()[x.L.id] || []).filter(ex => bookEx[ex.id] && bookEx[ex.id].items.length).forEach(ex => {
@@ -2998,11 +3002,11 @@ function sayWith(it, u){
 /* ---- 記録 ---- */
 function rec(id){ return srs[id] || {box:0, due:0, seen:0, miss:0}; }
 let hist = load('hist', []);   // [時刻, 項目, 練習, 正誤(1/0)]
-function mark(it, ok, skill, gain){
+function mark(it, ok, skill, gain, near){   // near＝語は合っていて声調・記号だけ違った（おしい。2026-11-08 間違えた問題の解き直しで分けて数える）
   const r = rec(it.id);
   ansN++; save('ans:n', ansN);   // 答えの通し番号（つまずきの「最近20問」に使う。hist は上限で切られるので別に数える）
   r.seen++;
-  hist.push([Date.now(), it.id, skill || pview, ok ? 1 : 0]);
+  hist.push([Date.now(), it.id, skill || pview, ok ? 1 : 0, !ok && near ? 1 : 0]);
   if(hist.length > 20000) hist = hist.slice(-20000);
   save('hist', hist);
   if(ok){ r.box = Math.min(MAXBOX, r.box + (gain || 1)); }
@@ -3011,7 +3015,7 @@ function mark(it, ok, skill, gain){
   r.last = Date.now();
   srs[it.id] = r;
   save('srs', srs);
-  emit('ans', {i: it.id, s: skill || pview, o: ok ? 1 : 0, g: gain || 1});
+  emit('ans', Object.assign({i: it.id, s: skill || pview, o: ok ? 1 : 0, g: gain || 1}, !ok && near ? {n: 1} : {}));
   runAnswered(it, ok);
   paintStat();
   paintSets();
@@ -3358,7 +3362,7 @@ function renderWrite(){
     (wordPic(it.show) ? '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">' : '') +
     '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>';
   if(!q.done){
-    const go = v => { q.typedText = v; q.g = gradeAgainst(answersOf(it.id, it.show, it.alts), v); q.done = true; mark(it, q.g.ok, 'write', q.g.ok ? 2 : 1); if(q.g.ok) typedOk(it); say(it); renderWrite(); };
+    const go = v => { q.typedText = v; q.g = gradeAgainst(answersOf(it.id, it.show, it.alts), v); q.done = true; mark(it, q.g.ok, 'write', q.g.ok ? 2 : 1, q.g.close); if(q.g.ok) typedOk(it); say(it); renderWrite(); };
     const inp = writeInput('writein', 'ベトナム語で書く（Enter で答え合わせ）', go);
     box.appendChild(inp);
     const opt = telexOpt(inp); if(opt) box.appendChild(opt);
@@ -3470,7 +3474,7 @@ function speakText(t){   // 教材の音が無い文（作った問い）は、�
 function gradeDrill(v){
   const d = q.it.drill;
   q.typedText = v; q.g = gradeAgainst(answersOf(q.it.id, d.answer, d.alts), v); q.done = true;
-  mark(q.it, q.g.ok, pview);
+  mark(q.it, q.g.ok, pview, 1, q.g.close);
   renderDrill();
 }
 function renderDrill(){
@@ -3664,7 +3668,7 @@ function answerCloze(c){
     q.gapClose = !q.gapOk && r.every(x => x.k === 'ok' || x.k === 'near');
     q.picked = c.trim() || '（なし）';
   }
-  mark(q.it, q.typed ? q.gapOk : c === q.ans, q.typed ? 'gap' : 'cloze');
+  mark(q.it, q.typed ? q.gapOk : c === q.ans, q.typed ? 'gap' : 'cloze', 1, q.typed && q.gapClose);
   say(q.it);
   renderCloze();
 }
@@ -3852,7 +3856,7 @@ function gradeType(v){
   q.res = res; q.done = true;
   q.ok = res.every(r => r.k === 'ok');
   q.close = !q.ok && res.every(r => r.k === 'ok' || r.k === 'near');
-  mark(q.it, q.ok, 'type', 2);   // 音だけから書けたら、箱を2つ上げる
+  mark(q.it, q.ok, 'type', 2, q.close);   // 音だけから書けたら、箱を2つ上げる
   if(q.ok) typedOk(q.it);
   say(q.it);
   renderType();
@@ -4977,7 +4981,7 @@ function rebuild(){
       r.seen++;
       if(e.o){ r.box = Math.min(MAXBOX, r.box + (e.g || 1)); } else { r.box = 0; r.miss++; }
       r.due = e.t + WAIT[r.box]; r.last = e.t; S[e.i] = r;
-      H.push([e.t, e.i, e.s, e.o]);
+      H.push([e.t, e.i, e.s, e.o, e.o ? 0 : (e.n ? 1 : 0)]);
     }
     else if(e.k === 'typed') e.w.forEach(w => TY.add(w));
     else if(e.k === 'paper') (P[e.b] = P[e.b] || []).push({l: e.l, ex: e.ex, n: e.n, r: e.r, t: e.t});
