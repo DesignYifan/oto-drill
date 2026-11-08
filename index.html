@@ -2362,6 +2362,7 @@ const unitPic = id => picURL(pics.units[id]);
 const wordPic = t => picURL(pics.words[picKey(t)]);
 const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動画（images.json の videos。無ければ止め絵）
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
+let gapsCfg = {};     // 穴埋めの穴にするもの（gaps.json：課ごとの要の句と新出の語。2026-11-08）
 let formulas = [];    // 文法編の公式（formulas.json：公式の番号・課・音声・例文の id。2026-11-08）
 let bookEx = {};      // 練習の id → 教科書の番号ごとの答えと区間（exercises.json。2026-11-07 課のウィザードの ④）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
@@ -2389,6 +2390,8 @@ async function loadSidecars(files){
   }
   const gj = pick('guide.json');
   guide = {}; if(gj){ const d = await read(gj); guide = (d && d.lessons) || {}; guide.__formulas = (d && d.formulas) || {}; }
+  const gpj = pick('gaps.json');
+  gapsCfg = {}; if(gpj){ const d = await read(gpj); gapsCfg = (d && d.lessons) || {}; }
   const fj = pick('formulas.json');
   formulas = []; if(fj){ const d = await read(fj); formulas = (d && d.formulas) || []; }
   const ej = pick('exercises.json');
@@ -3496,10 +3499,34 @@ function stopRec(){ if(recState && recState.on){ recState.on = false; try{ recSt
 function playMyRec(){ if(!q || !q.myRec) return; const a = new Audio(q.myRec); a.play().catch(()=>{}); }
 /* ---- 穴埋め：1語だけ抜く。文法の語を優先して抜く ---- */
 const FUNC = { includes: w => LP.functionWords.includes(w), get list(){ return LP.functionWords; } };   // 文法の語は言語パックから
+/* 穴を課の要に空ける（2026-11-08 本人「第2課では không phải là が一番重要なところだから、そこが練習できるように」）
+   ⭕ その文の課の gaps.json：要の句（keys）→ 新出の語（words）の順に、文の中にあるものを探す。句は1つの穴（len 語ぶん）。
+   ⭕ 長い句の中に含まれる短い語は候補から外す（không phải là の中の là）。どちらも無ければ、文法の語からくじ引き */
+function gapSpans(lw, list){
+  const nw = lw.map(x => norm(x)), out = [];
+  (list || []).forEach(ph => {
+    const pw = norm(ph).split(' ').filter(Boolean); if(!pw.length) return;
+    for(let i = 0; i + pw.length <= nw.length; i++) if(pw.every((x, k) => nw[i + k] === x)) out.push({at: i, len: pw.length});
+  });
+  return out.filter(a => !out.some(b => b !== a && b.len > a.len && b.at <= a.at && a.at + a.len <= b.at + b.len));
+}
 function clozeQ(it){
   if(!it) return null;
   const w = words(it.show);
   const lw = w.map(x => x.toLowerCase());
+  const gc = gapsCfg[(it.deck || {}).id];
+  if(gc){
+    const sp = gapSpans(lw, gc.keys), sp2 = sp.length ? sp : gapSpans(lw, gc.words);
+    if(sp2.length){
+      const pick = sp2[Math.floor(Math.random() * sp2.length)];
+      const ans = lw.slice(pick.at, pick.at + pick.len).join(' ');
+      // 選択肢：同じ課の一覧から（似たもの同士を見分ける）。足りなければ同じ組の語から
+      const lst = [...new Set((gc.keys || []).concat(gc.words || []).map(x => x.toLowerCase()))].filter(x => norm(x) !== norm(ans) && !norm(lw.join(' ')).includes(norm(x)));
+      const more = [...new Set(it.deck.items.flatMap(x => words(x.show).map(y => y.toLowerCase())))].filter(x => x !== ans && !lw.includes(x));
+      const others = shuffled(lst).slice(0, 3); while(others.length < 3 && more.length) others.push(more.splice(Math.floor(Math.random() * more.length), 1)[0]);
+      return {it, at: pick.at, len: pick.len, ans, w, opts: [ans, ...others].sort(()=> Math.random() - .5), done: false};
+    }
+  }
   let cand = lw.map((x,i)=> i).filter(i => FUNC.includes(lw[i]));
   if(!cand.length) cand = lw.map((x,i)=> i).filter(i => i > 0 || w.length === 1);
   if(!cand.length) cand = [0];
@@ -3511,7 +3538,7 @@ function clozeQ(it){
   const others = pool.filter(x => x !== ans && !lw.includes(x))
     .map(x => [x, Math.abs(x.length - ans.length) + Math.random() * 3]).sort((a,b)=> a[1] - b[1]).slice(0, 8)
     .sort(()=> Math.random() - .5).slice(0, 3).map(x => x[0]);
-  return {it, at, ans, w, opts:[ans, ...others].sort(()=> Math.random() - .5), done:false};
+  return {it, at, len: 1, ans, w, opts:[ans, ...others].sort(()=> Math.random() - .5), done:false};
 }
 function answerCloze(c){
   if(q.done) return;
@@ -3536,13 +3563,14 @@ function renderCloze(){
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
     (q.typed ? qPrompt('この意味になるように、空いているところに入る語を書いてください', '答えると文が鳴ります') + '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>'
       : qPrompt('空いているところに入る語を選んでください', '答えると文が鳴ります'));
+  const L = q.len || 1;
   const line = q.w.map((x,i)=> i === q.at
-    ? '<span class="blank' + (q.done ? (q.picked === q.ans ? ' right' : ' wrong') : '') + '">' + (q.done ? esc(x) : '　　') + '</span>'
-    : esc(x)).join(' ');
+    ? '<span class="blank' + (q.done ? ((q.gapOk != null ? q.gapOk : q.picked === q.ans) ? ' right' : ' wrong') : '') + '">' + (q.done ? esc(q.w.slice(q.at, q.at + L).join(' ')) : '　'.repeat(1 + L)) + '</span>'
+    : i > q.at && i < q.at + L ? null : esc(x)).filter(x => x != null).join(' ');
   box.insertAdjacentHTML('beforeend', '<div class="ask long">' + line + '</div>');
   if(q.typed){
     if(!q.done){
-      const inp = writeInput('gapin', '空いているところの語（Enter で答え合わせ）', v => answerCloze(v));
+      const inp = writeInput('gapin', (q.len || 1) > 1 ? '空いているところの ' + q.len + ' 語（Enter で答え合わせ）' : '空いているところの語（Enter で答え合わせ）', v => answerCloze(v));
       box.appendChild(inp);
       const opt = telexOpt(inp); if(opt) box.appendChild(opt);
       setTimeout(() => inp.focus(), 0);
