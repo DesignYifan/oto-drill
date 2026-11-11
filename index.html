@@ -4376,8 +4376,17 @@ function wordLevel(w){
   return lv;
 }
 
+/* 語の一覧は、課の数ぶん呼ばれる（左の課の一覧で stagesOf → lessonSteps が1課ずつ呼ぶ）。
+   ⭕ 中身は lessonData・lex・kept だけで決まるので、それが変わらないあいだは作り直さない（2026-11-11 本人「コースのところちょっと動きが重い」。1回 1.3 秒のうち大半がここだった） */
+let vocabMemo = null;
 function vocab(){
   const ld = lessonData();
+  if(vocabMemo && vocabMemo.ld === ld && vocabMemo.lex === lex && vocabMemo.kept === kept && vocabMemo.n === kept.length) return vocabMemo.v;
+  const v = vocabBuild(ld);
+  vocabMemo = {ld, lex, kept, n: kept.length, v};
+  return v;
+}
+function vocabBuild(ld){
   const out = ld.map(() => []);
   const rest = [];
   const seen = new Set();
