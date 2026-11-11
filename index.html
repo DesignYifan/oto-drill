@@ -1526,6 +1526,30 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .flowmenu button:disabled{opacity:.4}
 .flowmenu .fphd{font-size:11px; color:var(--ui-text-muted-fgColor); padding:8px 12px 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .flowmenu .fpmore{font-size:13px; color:var(--ui-text-muted-fgColor); border-top:1px solid var(--ui-outline-borderColor); border-radius:0; margin-top:4px}
+/* 会話を観る（2026-11-11）：課の絵の上に、メインの音声の会話を字幕で出す。終わったら次の課へ */
+.theater{position:fixed; inset:0; z-index:90; display:flex; flex-direction:column; background:#0E0E10; color:#FAFAFA}
+.theater[hidden]{display:none}
+.th-top{display:flex; align-items:center; gap:12px; padding:12px 16px}
+.th-top select{flex:1; min-width:0; max-width:420px; height:36px; background:#1E1E22; color:#FAFAFA; border:none; border-radius:var(--ui-control-radius); padding:0 10px; font-size:14px}
+.th-top .th-n{font-size:12px; color:#A0A0A8; white-space:nowrap}
+.th-top button{background:#1E1E22; color:#FAFAFA; box-shadow:none; height:36px; padding:0 12px; font-size:13px}
+.th-top .th-x{margin-left:auto}
+.th-stage{position:relative; flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden}
+.th-stage img, .th-stage video{max-width:100%; max-height:100%; object-fit:contain; display:block}
+.th-stage .th-none{color:#A0A0A8; font-size:14px}
+.th-sub{position:absolute; left:50%; bottom:24px; transform:translateX(-50%); width:min(920px, calc(100% - 32px)); text-align:center; pointer-events:none}
+.th-sub .v, .th-sub .j{display:inline-block; padding:6px 14px; border-radius:10px; background:rgba(0,0,0,.66); line-height:1.45}
+.th-sub .v{font-size:clamp(20px, 3.2vw, 32px); font-weight:600}
+.th-sub .j{font-size:clamp(14px, 2vw, 18px); color:#E4E4E8; margin-top:6px}
+.th-sub .n{font-size:clamp(14px, 2vw, 18px); color:#C8C8D0}
+.th-bar{display:flex; align-items:center; gap:12px; padding:12px 16px 16px}
+.th-bar input[type=range]{flex:1; min-width:0}
+.th-bar button{background:#1E1E22; color:#FAFAFA; box-shadow:none; height:40px; padding:0 14px; font-size:13px}
+.th-bar button.primary{background:#FAFAFA; color:#0E0E10; font-weight:600}
+.th-bar .clock{font-size:12px; color:#A0A0A8; font-variant-numeric:tabular-nums}
+.th-bar label{font-size:13px; color:#C8C8D0; display:flex; align-items:center; gap:6px; white-space:nowrap}
+@media (max-width:820px){ .th-bar{flex-wrap:wrap; justify-content:center} .th-bar input[type=range]{flex:1 0 100%; order:-1} .th-bar .clock, .th-top .th-n{display:none} }
+.th-bar{padding-bottom:max(16px, env(safe-area-inset-bottom))} .th-top{padding-top:max(12px, env(safe-area-inset-top))}
 @media (max-width:820px){
   .dock-row{flex-wrap:wrap}
   .dock-row .spacer.fp{order:-1; flex:1 0 100%; justify-content:stretch}
@@ -1739,6 +1763,7 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 <circle cx="32" cy="32" r="30" fill="url(#orbShade)"/><ellipse cx="24" cy="18" rx="14" ry="9" fill="url(#orbShine)"/></svg>AI に聞く</button>
 <div class="askpanel" id="askPanel" role="dialog" aria-label="AI に聞く" hidden></div>
 <div class="askpanel flowpanel" id="flowPanel" role="dialog" aria-label="1文ずつ聴く" hidden></div>
+<div class="theater" id="theater" role="dialog" aria-label="会話を観る" hidden></div>
 
 <div id="drop">フォルダをここに落とす</div>
 
@@ -2038,6 +2063,7 @@ audio.addEventListener('loadedmetadata', ()=>{ $('#dur').textContent = fmt(audio
 audio.addEventListener('timeupdate', ()=>{
   $('#cur').textContent = fmt(audio.currentTime);
   syncScript(audio.currentTime);
+  if(theater) paintTheaterSub();
   if(audio.duration){ $('#seek').value = Math.round(audio.currentTime / audio.duration * 1000); paintSeek(); }
   const now = Date.now();
   if(now - lastSave > 3000){ lastSave = now; saveLast(); }
@@ -2050,6 +2076,7 @@ audio.addEventListener('ended', ()=>{
     emit('done', {f: folderKey, n: tracks[idx].name});
     paintList();
   }
+  if(theaterEnded()) return;   // 会話を観ているあいだは、次の課のメインの音声へ
   if(wizEnded()) return;   // 課のウィザードで聴いているあいだは、繰り返さずに課の次の本文へ
   const n = Number($('#repeatN').value);
   const g = Number($('#gap').value) * 1000;
@@ -5565,7 +5592,9 @@ function openFlowMenu(on){
   const nm = x ? x.L.title.replace(/^文法編　|^文字と発音編　/, '') : '';
   const kinds = ['sentence', 'both', 'word'].map(k => [k, x ? flowItems(li, k).length : 0]);
   m.innerHTML = '<button role="menuitem" data-fp="all"' + (!flow ? ' class="on"' : '') + '><b>全部の音声を順に</b><small>音声の一覧の順に、1本まるごと</small></button>' +
-    (x ? '<div class="fphd">この課：' + esc(nm) + '</div>' + kinds.map(([k, n]) =>
+    '<button role="menuitem" data-fp="mainall"><b>全部の課の会話を観る</b><small>各課のメインの音声を、絵と字幕つきで順に</small></button>' +
+    (x ? '<div class="fphd">この課：' + esc(nm) + '</div>' +
+      '<button role="menuitem" data-fp="main"' + (!x.tracks.length ? ' disabled' : '') + '><b>この課の会話を観る</b><small>メインの音声（' + esc(x.tracks[0] ? x.tracks[0].name : '無い') + '）を絵と字幕つきで</small></button>' + kinds.map(([k, n]) =>
       '<button role="menuitem" data-fp="' + k + '"' + (!n ? ' disabled' : '') + (flow && !flow.all && flow.opt.kind === k && flow.opt.sel && flow.opt.sel[0] === x.L.id ? ' class="on"' : '') + '><b>' + FLOWNAME[k] + 'だけ</b><small>' + (n ? n + (k === 'word' ? '語' : '文') + 'を1つずつ' : 'この課には無い') + '</small></button>').join('')
       : '<div class="fphd">課を開くか音声を選ぶと、その課だけを流せます</div>') +
     '<button role="menuitem" data-fp="more" class="fpmore">細かい設定（回数・間・訳・ほかの課）</button>';
@@ -5578,9 +5607,122 @@ $('#flowMenu').addEventListener('click', e => {
   const k = b.dataset.fp;
   if(k === 'more'){ openFlow(true); return; }
   if(k === 'all'){ stopFlow(); paintFlowPick(); if(audio.paused) play(idx >= 0 ? idx : 0, true); return; }
+  if(k === 'main' || k === 'mainall'){ openTheater(k === 'main' ? flowLessonIndex() : Math.max(0, flowLessonIndex()), k === 'mainall'); return; }
   startFlowFor(flowLessonIndex(), k);
 });
 document.addEventListener('click', e => { const m = $('#flowMenu'); if(m && !m.hidden && !e.target.closest('.flowpick')) openFlowMenu(false); });
+
+/* ---- 会話を観る（2026-11-11） ----
+   本人「会話がちゃんとサブタイトルで出るようになる」「ユニットがある分だけ一気に見れたりする」
+   「ユニットのメインの音声だけを見たいときはどれを選んだらいいのかわかんない」
+   ⭕ メインの音声＝各課の最初の1本（本人 2026-11-11 に確認）。
+   ⭕ 絵は課の情景の動画（あれば）か止め絵。字幕は書き起こしの区間ごと。文は教材の項目（直した文）を先に使い、無ければ書き起こしのまま。
+   ⭕ 「全部の課」では、終わったら次の課のメインの音声へ進む。mp4 には書き出さない（本人：oto-drill の中で見る） */
+let theater = null;
+function mainTracks(){
+  return lessonData().map((x, li) => ({li, x, t: x.tracks[0]})).filter(r => r.t && tracks.indexOf(r.t) >= 0);
+}
+function openTheater(li, all){
+  const list = all ? mainTracks() : mainTracks().filter(r => r.li === li);
+  if(!list.length){ toast('この課にはメインの音声がありません'); return; }
+  if(flow) stopFlow();
+  let k = Math.max(0, list.findIndex(r => r.li === li));
+  theater = {list, k, all, ja: load('theater:ja', true)};
+  $('#theater').hidden = false;
+  theaterPlay(k);
+}
+function closeTheater(){
+  if(!theater) return;
+  theater = null; audio.pause();
+  const el = $('#theater'); el.hidden = true; el.innerHTML = '';
+}
+function theaterPlay(k){
+  if(!theater) return;
+  theater.k = Math.max(0, Math.min(k, theater.list.length - 1));
+  const r = theater.list[theater.k];
+  theater.subs = theaterSubs(r);
+  paintTheater();
+  play(tracks.indexOf(r.t), true);
+}
+function theaterEnded(){
+  if(!theater) return false;
+  if(theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); }
+  else toast(theater.all ? '全部の課の会話を観終えました' : 'この課の会話を観終えました');
+  return true;
+}
+/* 字幕の区間：書き起こしの区間ごとに、同じ文の教材の項目（直した文）があればその文と訳を使う。
+   ⛔ 書き起こしは、日本語の読み上げを化けさせている。冒頭の「文法編」は Vũng bó hèn、訳の読み上げは Konnichiwa・Kanojo wa aruite… になる。
+      ① UNIT の区間より前は出さない ② ベトナム語の声調記号が1つも無く、ほかにも当たらない区間は出さない（日本語のローマ字化け）。
+      発音・単語の課は大半が教材の文に当たらないので、②は会話の課（当たる区間が半分以上）だけ */
+const VI_MARK = /[àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/i;
+function theaterSubs(r){
+  const name = r.t.name, segs = (script && script[name] ? script[name].segments : []) || [];
+  const its = r.x.items.filter(it => srcOf(it) === name);
+  const key = t => norm(String(t || '')).replace(/[.?!。、,]/g, '').trim();
+  let seenUnit = !segs.some(seg => /^\s*unit[\s-]*\d+/i.test(seg.text || ''));
+  const subs = [];
+  segs.forEach(seg => {
+    const u = /^\s*unit[\s-]*(\d+)/i.exec(seg.text || '');
+    if(u){ seenUnit = true; subs.push({s: seg.start, e: seg.end, n: 'UNIT ' + u[1]}); return; }
+    if(!seenUnit) return;
+    if(seg.lang === 'ja'){ subs.push({s: seg.start, e: seg.end, n: seg.text}); return; }
+    const k = key(seg.text), it = k && its.find(i => key(i.show) === k);
+    if(it){ subs.push({s: seg.start, e: seg.end, v: it.show, j: jaOf(it)}); return; }
+    const g = glossOf(seg.text) || glossOf((seg.text || '').replace(/[.。]$/, ''));
+    subs.push({s: seg.start, e: seg.end, v: seg.text, j: g && g.ja, raw: !g, junk: !g && (!VI_MARK.test(seg.text || '') || /[\u3040-\u30ff\u4e00-\u9fff]/.test(seg.text || ''))});
+  });
+  const vi = subs.filter(x => !x.n), raw = vi.filter(x => x.raw).length;
+  return raw * 2 <= vi.length ? subs.filter(x => !x.junk) : subs;
+}
+function paintTheater(){
+  if(!theater) return;
+  const el = $('#theater'), r = theater.list[theater.k], id = r.x.L.id;
+  const vid = unitVideo(id), pic = unitPic(id);
+  el.innerHTML =
+    '<div class="th-top">' +
+      (theater.list.length > 1 ? '<select id="thPick" aria-label="課を選ぶ">' + theater.list.map((q, i) => '<option value="' + i + '"' + (i === theater.k ? ' selected' : '') + '>' + esc(q.x.L.title) + '</option>').join('') + '</select>'
+        : '<b>' + esc(r.x.L.title) + '</b>') +
+      '<span class="th-n">' + (theater.k + 1) + ' / ' + theater.list.length + '　' + esc(r.t.name) + '</span>' +
+      '<button class="th-x" id="thClose">閉じる</button>' +
+    '</div>' +
+    '<div class="th-stage">' +
+      (vid ? '<video src="' + vid + '" autoplay muted loop playsinline></video>' : pic ? '<img src="' + pic + '" alt="">' : '<div class="th-none">この課の絵はまだありません</div>') +
+      '<div class="th-sub" id="thSub" aria-live="polite"></div>' +
+    '</div>' +
+    '<div class="th-bar">' +
+      '<button id="thPrev"' + (theater.k === 0 ? ' disabled' : '') + '>前の課</button>' +
+      '<button class="primary" id="thPlay">' + (audio.paused ? '再生' : '一時停止') + '</button>' +
+      '<button id="thNext"' + (theater.k + 1 >= theater.list.length ? ' disabled' : '') + '>次の課</button>' +
+      '<span class="clock" id="thCur">0:00</span><input type="range" id="thSeek" min="0" max="1000" value="0" aria-label="再生位置"><span class="clock" id="thDur">0:00</span>' +
+      '<label><input type="checkbox" id="thJa"' + (theater.ja ? ' checked' : '') + '> 訳</label>' +
+    '</div>';
+  $('#thClose').onclick = closeTheater;
+  $('#thPrev').onclick = () => theaterPlay(theater.k - 1);
+  $('#thNext').onclick = () => theaterPlay(theater.k + 1);
+  $('#thPlay').onclick = () => { if(audio.paused) audio.play().catch(() => {}); else audio.pause(); };
+  $('#thJa').onchange = e => { theater.ja = e.target.checked; save('theater:ja', theater.ja); paintTheaterSub(); };
+  $('#thSeek').oninput = e => { if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; };
+  const pk = $('#thPick'); if(pk) pk.onchange = e => { clearTimeout(gapTimer); theaterPlay(+e.target.value); };
+  paintTheaterSub();
+}
+function paintTheaterSub(){
+  if(!theater) return;
+  const box = $('#thSub'); if(!box) return;
+  const t = audio.currentTime;
+  const c = (theater.subs || []).find(x => t >= x.s - 0.15 && t <= x.e + 0.8);
+  const html = !c ? '' : c.n ? '<span class="n" lang="ja">' + esc(c.n) + '</span>'
+    : '<span class="v" lang="' + LP.code + '">' + esc(c.v) + '</span>' + (theater.ja && c.j ? '<br><span class="j" lang="ja">' + esc(c.j) + '</span>' : '');
+  if(box.dataset.h !== html){ box.dataset.h = html; box.innerHTML = html; }
+  const b = $('#thPlay'); if(b) b.textContent = audio.paused ? '再生' : '一時停止';
+  if(audio.duration){ $('#thSeek').value = Math.round(t / audio.duration * 1000); $('#thCur').textContent = fmt(t); $('#thDur').textContent = fmt(audio.duration); }
+}
+audio.addEventListener('play', () => paintTheaterSub());
+audio.addEventListener('pause', () => paintTheaterSub());
+document.addEventListener('keydown', e => {
+  if(!theater) return;
+  if(e.key === 'Escape'){ closeTheater(); e.preventDefault(); }
+  else if(e.key === ' ' && !e.target.closest('input,select,textarea')){ if(audio.paused) audio.play().catch(() => {}); else audio.pause(); e.preventDefault(); e.stopPropagation(); }
+}, true);
 
 /* ================= これどういうこと？と質問帳（2026-10-02） =================
    本人「その都度わからないところはあなたに聞いていって、データベースに貯めていくと、何がわからなかったところかが蓄積されていい」。
