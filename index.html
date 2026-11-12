@@ -5686,7 +5686,7 @@ function paintTheater(){
       '<button class="th-x" id="thClose">閉じる</button>' +
     '</div>' +
     '<div class="th-stage">' +
-      (vid ? '<video src="' + vid + '" autoplay muted loop playsinline></video>' : pic ? '<img src="' + pic + '" alt="">' : '<div class="th-none">この課の絵はまだありません</div>') +
+      (vid ? '<video id="thVid" src="' + vid + '" muted playsinline preload="auto"></video>' : pic ? '<img src="' + pic + '" alt="">' : '<div class="th-none">この課の絵はまだありません</div>') +
       '<div class="th-sub" id="thSub" aria-live="polite"></div>' +
     '</div>' +
     '<div class="th-bar">' +
@@ -5713,10 +5713,28 @@ function paintTheaterSub(){
   const html = !c ? '' : c.n ? '<span class="n" lang="ja">' + esc(c.n) + '</span>'
     : '<span class="v" lang="' + LP.code + '">' + esc(c.v) + '</span>' + (theater.ja && c.j ? '<br><span class="j" lang="ja">' + esc(c.j) + '</span>' : '');
   if(box.dataset.h !== html){ box.dataset.h = html; box.innerHTML = html; }
+  syncTheaterVideo(t);
   const b = $('#thPlay'); if(b) b.textContent = audio.paused ? '再生' : '一時停止';
   if(audio.duration){ $('#thSeek').value = Math.round(t / audio.duration * 1000); $('#thCur').textContent = fmt(t); $('#thDur').textContent = fmt(audio.duration); }
 }
+/* 課の動画を音声に合わせる（2026-11-12）。
+   ⭕ 動画が音声とほぼ同じ長さ（8割以上）なら、場面が会話の順に作ってあるので、音声の位置に合わせて動かす（止める・飛ばすも一緒）。
+   ⭕ 短い動画（前の8秒の版など）は、これまでどおり音を消してくり返す */
+function syncTheaterVideo(t){
+  const v = $('#thVid'); if(!v || !v.duration || !audio.duration) return;
+  const follow = v.duration >= audio.duration * 0.8;
+  v.loop = !follow;
+  if(follow){
+    const want = Math.min(t, v.duration - 0.05);
+    if(Math.abs(v.currentTime - want) > 0.35) v.currentTime = want;
+    v.playbackRate = audio.playbackRate || 1;
+    if(audio.paused || t >= v.duration){ if(!v.paused) v.pause(); }
+    else if(v.paused) v.play().catch(() => {});
+  } else if(v.paused) v.play().catch(() => {});
+}
 audio.addEventListener('play', () => paintTheaterSub());
+audio.addEventListener('seeked', () => paintTheaterSub());
+audio.addEventListener('ratechange', () => paintTheaterSub());
 audio.addEventListener('pause', () => paintTheaterSub());
 document.addEventListener('keydown', e => {
   if(!theater) return;
