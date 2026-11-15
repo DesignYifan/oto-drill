@@ -28,7 +28,7 @@ targets:
         PRODUCT_NAME: OtoDrill
         MARKETING_VERSION: "0.1"
         CURRENT_PROJECT_VERSION: "1"
-        DEVELOPMENT_TEAM: XMBCS38N25   # 個人のチーム（無料・7日で入れ直し）
+        DEVELOPMENT_TEAM: XMBCS38N25   # 個人のチーム（2026-10-08 から有料の Developer Program。署名は1年もつ）
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1,2"   # Mac Catalyst に要る（iPad も入る）
         SUPPORTS_MACCATALYST: YES       # Mac も同じ殻で開く。手元のモデル（localhost）を立てなくてよくなる（2026-10-04）

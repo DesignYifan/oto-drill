@@ -4,7 +4,7 @@
 #   ./dev_mac.sh run [-selftest 1] [...]   試す版を開く（引数はそのままアプリへ。例：-page http://localhost:8793/?app=1）
 #   ./dev_mac.sh stop                      閉じて、Mac のアプリ一覧から外す
 #   ./dev_mac.sh release                   普段使いの版を作り、~/Applications/音声ドリル.app に入れ替える
-#   ./dev_mac.sh iphone                    iPhone の版を作って入れる（7日ごとの入れ直し。iPhone のロックを外してもらう）
+#   ./dev_mac.sh iphone                    iPhone の版を作って入れる（有料のチームなので署名は1年もつ。iPhone のロックを外してもらう）
 #
 # ⭕ 2026-10-04 本人「毎回間違えた方を開いちゃうから、あなたが立ち上げる時だけそっちを開いてほしい」。
 #   作ったものは build.noindex（Spotlight が見ない名前）に置き、開いたあとは stop で登録を外す。
