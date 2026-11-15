@@ -1547,6 +1547,7 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .th-bar button{background:#1E1E22; color:#FAFAFA; box-shadow:none; height:40px; padding:0 14px; font-size:13px}
 .th-bar button.primary{background:#FAFAFA; color:#0E0E10; font-weight:600}
 .th-bar .clock{font-size:12px; color:#A0A0A8; font-variant-numeric:tabular-nums}
+.th-bar .th-rate{height:40px; background:#1E1E22; color:#FAFAFA; border:none; box-shadow:none; border-radius:var(--ui-control-radius); padding:0 12px; font-size:13px; font-variant-numeric:tabular-nums; cursor:pointer}
 .th-bar label{font-size:13px; color:#C8C8D0; display:flex; align-items:center; gap:6px; white-space:nowrap}
 @media (max-width:820px){ .th-bar{flex-wrap:wrap; justify-content:center} .th-bar input[type=range]{flex:1 0 100%; order:-1} .th-bar .clock, .th-top .th-n{display:none} }
 .th-bar{padding-bottom:max(16px, env(safe-area-inset-bottom))} .th-top{padding-top:max(12px, env(safe-area-inset-top))}
@@ -5694,6 +5695,7 @@ function paintTheater(){
       '<button class="primary" id="thPlay">' + (audio.paused ? '再生' : '一時停止') + '</button>' +
       '<button id="thNext"' + (theater.k + 1 >= theater.list.length ? ' disabled' : '') + '>次の課</button>' +
       '<span class="clock" id="thCur">0:00</span><input type="range" id="thSeek" min="0" max="1000" value="0" aria-label="再生位置"><span class="clock" id="thDur">0:00</span>' +
+      thRateSelect() +
       '<label><input type="checkbox" id="thJa"' + (theater.ja ? ' checked' : '') + '> 訳</label>' +
     '</div>';
   $('#thClose').onclick = closeTheater;
@@ -5703,7 +5705,16 @@ function paintTheater(){
   $('#thJa').onchange = e => { theater.ja = e.target.checked; save('theater:ja', theater.ja); paintTheaterSub(); };
   $('#thSeek').oninput = e => { if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; };
   const pk = $('#thPick'); if(pk) pk.onchange = e => { clearTimeout(gapTimer); theaterPlay(+e.target.value); };
+  $('#thRate').onchange = e => { setRate(+e.target.value); e.target.blur(); };
   paintTheaterSub();
+}
+/* 会話を観るの速さ（本人 2026-11-15「再生速度を2倍とかに変えたい」）。
+   ⭕ 音声の画面と同じ setRate を使う（速さは1つ。動画も syncTheaterVideo で同じ速さになる） */
+const TH_RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
+function thRateSelect(){
+  const rs = TH_RATES.includes(rate) ? TH_RATES : [...TH_RATES, rate].sort((x, y) => x - y);
+  return '<select id="thRate" class="th-rate" aria-label="再生速度">' +
+    rs.map(r => '<option value="' + r + '"' + (r === rate ? ' selected' : '') + '>' + r + '×</option>').join('') + '</select>';
 }
 function paintTheaterSub(){
   if(!theater) return;
