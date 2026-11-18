@@ -5,6 +5,7 @@
 | 何 | どこから | 置き方 |
 |---|---|---|
 | ゼロからスタート ベトナム語（26295）の音声158本と、そこから作った book.json・gloss.json・practice.json・images/ など | 本人が買った教材の付属音声。2026-11-07 に `~/Downloads/26295` から移した（AppBuilding_RULES ④「Downloads の下にインプットを置かない」） | `26295/`（実体） |
+| 改訂版 キクタンベトナム語【入門編】の音声92本（アルクの配布ページ portal-dlc.alc.co.jp/dl/7025049 の 7025049_audio.zip を番号の名前で展開）と、Kindle を撮った頁の OCR（`ocr/`）・見出し語の台帳（`parts/`） | 本人が買った Kindle 本の付属音声。2026-11-18 に本人の了承を得て落とした | `kikutan_vi/` |
 
 - 作るスクリプトは `~/Downloads/WIP/_course/26295/*.py`。iPhone 向けの写しは `sync_to_icloud.py` が iCloud Drive の `音声ドリル/教材/26295` へ作る
 - `~/Programming/jibun-kyozai/_input/zero` はここへのシンボリックリンク
