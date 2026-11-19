@@ -1490,6 +1490,7 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 #flowPick .fpk{font-size:12px; color:var(--ui-text-muted-fgColor); flex:none}
 #flowPick .fpv{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; min-width:0}
 #flowPick .ic{width:14px; height:14px; flex:none}
+.flowmenu[hidden]{display:none}   /* ⛔ 下の display:flex が hidden を上書きして、閉じても画面に残っていた（2026-11-19） */
 .flowmenu{position:absolute; right:0; bottom:calc(100% + 8px); z-index:60; width:300px; max-width:calc(100vw - 32px); display:flex; flex-direction:column; gap:2px; padding:8px; background:var(--ui-surface-bgColor); border-radius:var(--ui-card-radius); box-shadow:var(--ui-card-raised-shadow)}
 .flowmenu button{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:10px 12px; height:auto; background:none; box-shadow:none; text-align:left; white-space:nowrap; border-radius:var(--ui-control-radius)}
 .flowmenu button b{font-size:14px; font-weight:600} .flowmenu button small{font-size:12px; color:var(--ui-text-muted-fgColor)}
@@ -5645,10 +5646,13 @@ function openFlowMenu(on){
   m.innerHTML = '<button role="menuitem" data-fp="all"' + (!flow ? ' class="on"' : '') + '><b>全部の音声を順に</b><small>音声の一覧の順に、1本まるごと</small></button>' +
     '<button role="menuitem" data-fp="mainall"><b>全部の課の会話を観る</b><small>各課のメインの音声を、絵と字幕つきで順に</small></button>' +
     (x ? '<div class="fphd">この課：' + esc(nm) + '</div>' +
-      '<button role="menuitem" data-fp="main"' + (!x.tracks.length ? ' disabled' : '') + '><b>この課の会話を観る</b><small>メインの音声（' + esc(x.tracks[0] ? x.tracks[0].name : '無い') + '）を絵と字幕つきで</small></button>' + kinds.map(([k, n]) =>
-      '<button role="menuitem" data-fp="' + k + '"' + (!n ? ' disabled' : '') + (flow && !flow.all && flow.opt.kind === k && flow.opt.sel && flow.opt.sel[0] === x.L.id ? ' class="on"' : '') + '><b>' + FLOWNAME[k] + 'だけ</b><small>' + (n ? n + (k === 'word' ? '語' : '文') + 'を1つずつ' : 'この課には無い') + '</small></button>').join('')
-      : '<div class="fphd">課を開くか音声を選ぶと、その課だけを流せます</div>') +
-    '<button role="menuitem" data-fp="more" class="fpmore">細かい設定（回数・間・訳・ほかの課）</button>';
+      '<button role="menuitem" data-fp="mainaudio"' + (!x.tracks.length ? ' disabled' : '') + '><b>この課のメインの音声を聴く</b><small>音だけ。いまの画面のまま（' + esc(x.tracks[0] ? x.tracks[0].name : '無い') + '）</small></button>' +
+      '<button role="menuitem" data-fp="main"' + (!x.tracks.length ? ' disabled' : '') + '><b>この課の会話を観る</b><small>メインの音声を絵と字幕つきで</small></button>'
+      : '<div class="fphd">課を開くか音声を選ぶと、その課のメインの音声を聴けます</div>') +
+    '<button role="menuitem" data-fp="list" class="fpmore">音声の一覧から選ぶ（' + tracks.length + '本）</button>';
+  /* 2026-11-19 本人「単語だけとか基本文、例文だけとかで聞いたりしない。本文のメインの音声を聞くか、前後の音声を聞くか」
+     → 基本文だけ・基本文＋例文・単語だけ・細かい設定は一覧から外した（startFlowFor・openFlow は残してある）。前後の音声は操作卓の「前」「次」 */
+  void kinds;
   m.hidden = false;
 }
 $('#flowPick').addEventListener('click', e => { e.stopPropagation(); openFlowMenu($('#flowMenu').hidden); });
@@ -5657,6 +5661,10 @@ $('#flowMenu').addEventListener('click', e => {
   e.stopPropagation(); openFlowMenu(false);
   const k = b.dataset.fp;
   if(k === 'more'){ openFlow(true); return; }
+  if(k === 'list'){ stopFlow(); paintFlowPick(); setMode('listen'); scrollToCurrent(); return; }
+  if(k === 'mainaudio'){   // 音だけ（2026-11-19 本人「普通に音声だけで聞きたい時もある。フルモーダルにならずに」）
+    const x = lessonData()[flowLessonIndex()], t = x && x.tracks[0], j = t ? tracks.findIndex(y => y.name === t.name) : -1;
+    if(j >= 0){ stopFlow(); paintFlowPick(); play(j, true); } return; }
   if(k === 'all'){ stopFlow(); paintFlowPick(); if(audio.paused) play(idx >= 0 ? idx : 0, true); return; }
   if(k === 'main' || k === 'mainall'){ openTheater(k === 'main' ? flowLessonIndex() : Math.max(0, flowLessonIndex()), k === 'mainall'); return; }
   startFlowFor(flowLessonIndex(), k);
