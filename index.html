@@ -1902,7 +1902,7 @@ function loadFiles(files){
     // ⭕ 2026-10-03 iPhone で、記録のフォルダ（記録・質問帳が入っている）を教材として選んでいた。同じ「音声ドリル」という名前で迷う
     const isRec = files.some(f => /(^|\/)(記録|質問帳)\//.test(f._rel || ''));
     $('#fname').textContent = isRec
-      ? 'これは記録のフォルダです。教材は' + (NATIVE ? ' iCloud Drive の「音声ドリル」→「教材」→「26295」' : '音声の入ったフォルダ') + 'を選んでください。記録のフォルダは、見出しの「同期」から選びます。'
+      ? 'これは記録のフォルダです。教材は' + (NATIVE ? ' iCloud Drive の「音声ドリル」→「教材」' : '「教材」のフォルダか、音声の入ったフォルダ') + 'を選んでください。記録のフォルダは、見出しの「同期」から選びます。'
       : '音声ファイルが見つかりませんでした。mp3・m4a・wav などが入ったフォルダを選んでください。';
     $('#fname').classList.add('blank');
     return;
@@ -2196,7 +2196,48 @@ async function filesFromDir(dir, prefix){
   return out;
 }
 
+/* ---- 教材の棚（2026-11-19 本人「文法のやつ（26295）と聞く単語（キクタン）が入ってるはずだけど、選べるようなUIが必要」）
+   ⭕ 親の「教材」フォルダを選ぶと、その下の book.json のあるフォルダを教材として並べ、押せば切り替える。
+   ⭕ iPhone は親を1回選べば、中のフォルダは同じ許可のまま相対パスで開ける（アプリの組み直しは要らない）。
+   ⭕ 1冊のフォルダを直接選んだときは、これまでどおりその1冊だけを開く。
+   ⛔ 棚を見るときは中身を全部は読まない（3冊ぶんの音声を iCloud から読みに行くと止まる）。見るのは1段目と book.json だけ */
+let LIB = null;        // {h: 親のフォルダ, books: [{folder, title, h}]}
+async function shelfOf(h){
+  const subs = [];
+  try{
+    for await (const [name, c] of h.entries()){
+      if(name === 'book.json') return null;   // 1冊のフォルダそのもの
+      if(c.kind === 'directory') subs.push([name, c]);
+    }
+  }catch(e){ return null; }
+  const books = [];
+  for(const [name, c] of subs){
+    try{
+      const f = await (await c.getFileHandle('book.json')).getFile();
+      let title = name; try{ title = JSON.parse(await f.text()).title || name; }catch(e){}
+      books.push({folder: name, title, h: c});
+    }catch(e){}
+  }
+  books.sort((a, b) => a.folder.localeCompare(b.folder, 'ja', {numeric: true}));
+  return books.length ? books : null;
+}
+async function openShelfBook(folder){
+  const b = LIB && LIB.books.find(x => x.folder === folder);
+  if(!b) return false;
+  save('lib:cur', folder);
+  await openDir(b.h, false);
+  return true;
+}
+
 async function openDir(h, remember){
+  const shelf = await shelfOf(h);
+  if(shelf){
+    LIB = {h, books: shelf};
+    if(remember) await putDir(h);
+    const cur = load('lib:cur', '');
+    await openShelfBook(shelf.some(b => b.folder === cur) ? cur : shelf[0].folder);
+    return;
+  }
   pendingHandle = h;
   const files = await filesFromDir(h, h.name + '/');
   if(remember) await putDir(h);
@@ -2205,16 +2246,17 @@ async function openDir(h, remember){
 }
 
 $('#pick').addEventListener('click', async ()=>{
+  // 選び直したら棚も読み直す（iPhone は選んだフォルダが根になるので、前の棚の住所は使えなくなる）。やめたときは今の棚のまま
   if(NATIVE){   // iPhone：「ファイル」から教材のフォルダを選ぶ
     const r = await oto.fs.pick('book').catch(() => null);
-    if(r) await openDir(new NDir('book', '', r.name), false);
+    if(r){ LIB = null; await openDir(new NDir('book', '', r.name), false); }
     return;
   }
   if(window.showDirectoryPicker){
     let h = null;
     try{ h = await showDirectoryPicker({id:'otodrill', mode:'read'}); }
     catch(e){ if(e && e.name === 'AbortError') return; }
-    if(h){ await openDir(h, true); return; }
+    if(h){ LIB = null; await openDir(h, true); return; }
   }
   $('#picker').click();
 });
@@ -2470,6 +2512,8 @@ async function loadSidecars(files){
   const lj = pick('lang.json');
   const bkd = bk ? await read(bk) : null;
   setLang((bkd && bkd.lang) || 'vi', lj ? await read(lj) : null);
+  // ⛔ 教材を切り替えるとき、前の教材の課（book）が残ったまま新しい練習で画面を描くと落ちていた（2026-11-19）。先に外す
+  book = null; lessonCache = null;
   setPractice(p ? await read(p) : null, files);
   kept = load('kept:'+folderKey, []);
   setBook(bkd);
@@ -3175,7 +3219,7 @@ function paintSets(){
    本人「2の空の画面の案内も進めて」（仮想ユーザー評価の案2）。読む前の練習・ダッシュボードが真っ白で、壊れているように見えていた。
    ⭕ そのページが何をするところかを1行目に、どうすれば中身が出るかを次に、押す所を1つ。 */
 const EMPTY = {
-  book: ['コース：教材を課ごとに進めるページです', ['音声の入ったフォルダを選びます（本文や問いのファイルが同じフォルダにあれば、それも読みます）', '課を上から順に進めます。本文を聴く → 単語 → 文の練習 → 課のまとめ', '次の日からは、頭に出る「今日の復習」から始めます']],
+  book: ['コース：教材を課ごとに進めるページです', ['「音声ドリル」の「教材」フォルダを選びます。中の教材が並び、押すと切り替わります（1冊のフォルダを直接選んでもかまいません）', '課を上から順に進めます。本文を聴く → 単語 → 文の練習 → 課のまとめ', '次の日からは、頭に出る「今日の復習」から始めます']],
   practice: ['練習：教材の問いを解くページです', '教材のフォルダを選ぶと、「聴いて意味」「日本語から書く」などの問いがここに出ます。課の順に進めたいときは「コース」から始めてください。'],
   overview: ['ダッシュボード：どこまで覚えたかを見るページです', '練習で答えると、覚えた数・続けた日数・よく間違える問いがここに出ます。まず教材のフォルダを選んでください。']};
 function emptyHTML(k){
@@ -4488,11 +4532,15 @@ function renderBook(){
   const title = (book && book.title) || folderKey || '（未読み込み）';
 
   // 教材の一覧
-  let html = '<h3 class="ovh" style="margin-top:0">教材<small>開いたことのある教材です。押すとそのフォルダを開きます</small></h3><div class="blib">' +
-    Object.entries(lib).sort((a, b) => b[1].last - a[1].last).map(([id, b]) =>
-      '<button class="bcard' + (id === bookId ? ' on' : '') + '" data-book="' + esc(id) + '"><b>' + esc(b.title) + '</b><small>' +
-      esc(b.folder) + '　' + b.lessons + '課　' + new Date(b.last).toLocaleDateString('ja-JP') + '</small></button>').join('') + '</div>';
-  if(!tracks.length){ box.innerHTML = (Object.keys(lib).length ? html : '') + emptyHTML('book'); wireBook(box); return; }   // 一覧が空なら、空の見出しは出さない
+  // 棚（親の「教材」フォルダ）があれば、その中の教材を並べる。開いたことのある教材は進み具合も出す
+  const cards = LIB
+    ? LIB.books.map(s => { const e = Object.entries(lib).find(([, b]) => b.folder === s.folder);
+        return {id: e ? e[0] : '', folder: s.folder, title: (e && e[1].title) || s.title, lessons: e ? e[1].lessons : 0, last: e ? e[1].last : 0}; })
+    : Object.entries(lib).sort((a, b) => b[1].last - a[1].last).map(([id, b]) => ({id, folder: b.folder, title: b.title, lessons: b.lessons, last: b.last}));
+  let html = '<h3 class="ovh" style="margin-top:0">教材<small>' + (LIB ? '「' + esc(LIB.h.name) + '」の中の教材です。押すと切り替わります' : '開いたことのある教材です。押すとそのフォルダを開きます') + '</small></h3><div class="blib">' +
+    cards.map(c => '<button class="bcard' + ((c.id && c.id === bookId) || c.folder === folderKey ? ' on' : '') + '" data-book="' + esc(c.id) + '" data-folder="' + esc(c.folder) + '"><b>' + esc(c.title) + '</b><small>' +
+      esc(c.folder) + (c.last ? '　' + c.lessons + '課　' + new Date(c.last).toLocaleDateString('ja-JP') : '　まだ開いていません') + '</small></button>').join('') + '</div>';
+  if(!tracks.length){ box.innerHTML = (cards.length ? html : '') + emptyHTML('book'); wireBook(box); return; }   // 一覧が空なら、空の見出しは出さない
 
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers && bview !== 'paper' ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
@@ -4909,7 +4957,8 @@ const fmtN = n => String(Math.round(n * 10) / 10);
 function wireBook(box){
   box.querySelectorAll('.bcard').forEach(b => b.addEventListener('click', async ()=>{
     const id = b.dataset.book;
-    if(id === bookId && tracks.length) return;
+    if(b.classList.contains('on') && tracks.length) return;
+    if(await openShelfBook(b.dataset.folder)) return;
     if(NATIVE){ $('#pick').click(); return; }
     const h = await getDir('book:' + id);
     try{
@@ -5150,7 +5199,7 @@ $('#recChip').addEventListener('click', async ()=> {
   paintRecInfo();
 })();
 // 試験の口：?test のときだけ、フォルダの代わりにブラウザの内部の保存領域（OPFS）を渡せる。⛔ ふだんは出ない
-if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, loadFiles, emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
+if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, loadFiles, openDir, shelf: () => LIB && LIB.books.map(b => b.folder), emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
   miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li) };   // 段5のつまずき・範囲を試す口
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
@@ -6170,7 +6219,7 @@ function stagesOf(li, defs, last){
      ⭕ 外した組（公式と例文・自動で切った練習・AI の書き換え）は消さず extra にする：課の画面の「もっと練習する（任意）」に出し、課のクリアには数えない */
   const bks = (defs[L.id] || []).filter(ex => bookEx[ex.id] && bookEx[ex.id].items.length);
   if(pdata){
-    const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id));
+    const ds = [...new Set(x.items.map(i => i.deck.id))].map(id => pdata.decks.find(d => d.id === id)).filter(Boolean);
     const sets = ds.flatMap(d => setsOf(d));
     const fsets = formulaSets(L.id);   // 公式があれば、例文の組は公式ごと（2026-11-08 本人「公式が一気に見えて練習できるやつも欲しい」）
     CATS.forEach(([c, name]) => sets.filter(s => s.cat === c && !(c === 'grammar' && fsets.length)).forEach(sx => out.push({id: L.id + '|' + sx.id, kind: 'set', set: sx,
