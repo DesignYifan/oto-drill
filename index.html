@@ -1551,6 +1551,49 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .th-bar .th-rate{height:40px; background:#1E1E22; color:#FAFAFA; border:none; box-shadow:none; border-radius:var(--ui-control-radius); padding:0 12px; font-size:13px; font-variant-numeric:tabular-nums; cursor:pointer}
 .th-bar label{font-size:13px; color:#C8C8D0; display:flex; align-items:center; gap:6px; white-space:nowrap}
 @media (max-width:820px){ .th-bar{flex-wrap:wrap; justify-content:center} .th-bar input[type=range]{flex:1 0 100%; order:-1} .th-bar .clock, .th-top .th-n{display:none} }
+/* 会話のあとの「この課で習ったこと」（2026-11-19） */
+.th-top .th-rv{background:#2A2A30}
+.rv{flex:1; min-height:0; overflow-y:auto; padding:8px 16px 32px; -webkit-overflow-scrolling:touch}
+.rv-in{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:20px}
+.rv-tabs{display:flex; gap:8px; position:sticky; top:0; padding:8px 0; background:#0E0E10; z-index:1}
+.rv-tabs button{flex:1; height:40px; background:#1E1E22; color:#C8C8D0; box-shadow:none; font-size:14px; border-radius:var(--ui-control-radius)}
+.rv-tabs button.on{background:#FAFAFA; color:#0E0E10; font-weight:600}
+.rv h2{font-size:20px; margin:0; line-height:1.4} .rv h3{font-size:16px; margin:0 0 8px; color:#FAFAFA}
+.rv p{margin:0; line-height:1.75; color:#E4E4E8; font-size:15px}
+.rv .rv-teach{font-size:16px; line-height:1.8}
+.rv .rv-lead{display:flex; flex-direction:column; gap:2px; padding:14px 16px; background:#1A1A1E; border-radius:12px}
+.rv .rv-lead b{font-size:22px} .rv .rv-lead small{color:#A0A0A8; font-size:13px}
+.rv-f{background:#17171B; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px}
+.rv-f .no{font-size:12px; color:#A0A0A8; letter-spacing:.04em}
+.rv-f .tt{font-size:17px; font-weight:600; line-height:1.5}
+.rv-f .pat{font-size:16px; padding:8px 12px; background:#24242A; border-radius:8px; align-self:flex-start}
+.rv-f .pt{font-size:15px; line-height:1.75; color:#E4E4E8}
+.rv-ex{display:flex; flex-direction:column; gap:6px}
+.rv-say{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 12px; background:#202026; color:#FAFAFA; box-shadow:none; border-radius:8px; text-align:left; height:auto}
+.rv-say b{font-weight:500; font-size:15px} .rv-say small{font-size:12px; color:#A0A0A8}
+.rv details{border-top:1px solid #2A2A30; padding-top:8px}
+.rv summary{cursor:pointer; font-size:13px; color:#A0A0A8; padding:4px 0}
+.rv .md{display:flex; flex-direction:column; gap:8px; margin-top:8px; font-size:14px}
+.rv .md p{font-size:14px} .rv .md ul{margin:0; padding-left:20px; color:#E4E4E8; line-height:1.7}
+.rv table{border-collapse:collapse; font-size:13px; width:100%} .rv td, .rv th{border:1px solid #2E2E34; padding:6px 8px; text-align:left; vertical-align:top}
+.rv th{background:#1E1E22; font-weight:600}
+.rv-pts{display:flex; flex-direction:column; gap:8px} .rv-pts p{padding:10px 14px; background:#1A1A1E; border-radius:10px; font-size:14px}
+.rv-voc{display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px}
+.rv-q{background:#17171B; border-radius:12px; padding:20px 16px; display:flex; flex-direction:column; gap:12px; align-items:stretch}
+.rv-q .qv{font-size:26px; font-weight:600; text-align:center}
+.rv-q .qn{font-size:12px; color:#A0A0A8; text-align:center}
+.rv-ch{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.rv-ch button{height:auto; min-height:48px; padding:10px; background:#202026; color:#FAFAFA; box-shadow:none; border-radius:10px; font-size:14px}
+.rv-ch button.ok{background:#1F3A2A} .rv-ch button.ng{background:#3A1F22}
+.rv-exs{display:flex; flex-direction:column; gap:12px}
+.rv-exs .ins{font-size:14px; color:#C8C8D0}
+.rv-exs ol{margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:6px}
+.rv-exs li{padding:10px 14px; background:#17171B; border-radius:10px; font-size:15px; line-height:1.6}
+.rv-exs li span{color:#A0A0A8; margin-right:8px}
+.rv-go{display:flex; flex-direction:column; gap:8px}
+.rv-go button{height:48px; font-size:15px; box-shadow:none; border-radius:var(--ui-control-radius); background:#1E1E22; color:#FAFAFA}
+.rv-go button.primary{background:#FAFAFA; color:#0E0E10; font-weight:600}
+@media (max-width:520px){ .rv-ch{grid-template-columns:1fr} .rv-tabs button{font-size:13px} }
 .th-bar{padding-bottom:max(16px, env(safe-area-inset-bottom))} .th-top{padding-top:max(12px, env(safe-area-inset-top))}
 @media (max-width:820px){
   .dock-row{flex-wrap:wrap}
@@ -2474,6 +2517,7 @@ const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
 let gapsCfg = {};     // 穴埋めの穴にするもの（gaps.json：課ごとの要の句と新出の語。2026-11-08）
 let formulas = [];    // 文法編の公式（formulas.json：公式の番号・課・音声・例文の id。2026-11-08）
+let textbook = {};    // 課の id → 誌面から起こした課の中身（textbook.json：まとめ・公式・単語・練習問題。2026-11-19）
 let bookEx = {};      // 練習の id → 教科書の番号ごとの答えと区間（exercises.json。2026-11-07 課のウィザードの ④）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
 let kept = [];        // 貯めた語
@@ -2506,6 +2550,9 @@ async function loadSidecars(files){
   formulas = []; if(fj){ const d = await read(fj); formulas = (d && d.formulas) || []; }
   const ej = pick('exercises.json');
   bookEx = {}; if(ej){ const d = await read(ej); bookEx = (d && d.exercises) || {}; }
+  const tbj = pick('textbook.json');
+  textbook = {}; if(tbj){ const d = await read(tbj); textbook = (d && d.lessons) || {}; }
+  mergeBookPrompts();
   const dr = pick('drills.json');
   if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
   const p = pick('practice.json');
@@ -5711,9 +5758,162 @@ function theaterPlay(k){
 }
 function theaterEnded(){
   if(!theater) return false;
+  const r = theater.list[theater.k];
+  if(r && textbook[r.x.L.id]){ openReview(); return true; }   // 誌面の中身がある課は、次へ進まず「この課で習ったこと」へ（本人 2026-11-19）
   if(theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); }
   else toast(theater.all ? '全部の課の会話を観終えました' : 'この課の会話を観終えました');
   return true;
+}
+/* ---- 会話のあとの「この課で習ったこと」（2026-11-19） ----
+   本人「その章の動画が終わったら、文法のまとめをバッと出して、それぞれの文法で教えていた要点を出して、
+   簡単な単語とその章の練習問題が解ける形に」「Kindle ももう見なくていいくらいに」
+   ⭕ 中身は textbook.json（誌面を1ページずつ起こした book_pages から、課ごとに整えたもの。市販の教材なので公開しない）。
+   ⭕ teach と point だけは講師としての自分の言葉。ほかは誌面どおり。
+   ⭕ 練習問題は、前からある「教科書の練習」の頁（番号どおり・答えの音声・○△×）で解く。問題文は mergeBookPrompts が重ねる */
+function mergeBookPrompts(){
+  /* ⭕ 練習は誌面の問題を正にして、番号どおりに全部並べる（本人 2026-11-19「Kindle を見なくていいくらいに」）。
+     ⛔ 答えの音声（exercises.json）の番号は誌面とずれる課がある（g10・g18・まとめ問題 7〜12 など。音声に練習 I が無い課も多い）。
+        番号では合わせず、答えの文が近い音声の区間を付ける。当たらない問題は音声なし（「答え」は端末の声で読む）。
+     ⛔ 印の記録は id（1から順）で持つ。誌面の順に並べ直したので、前に付けた印が別の問題に付いて見える課がある（UNIT 1 は並びが同じ） */
+  const toks = t => norm(String(t || '').replace(/［例］/g, '')).split(' ').filter(Boolean);
+  const sim = (x, y) => { const A = toks(x), B = new Set(toks(y)); if(!A.length || !B.size) return 0; return A.filter(w => B.has(w)).length / Math.max(A.length, B.size); };
+  Object.values(textbook).forEach(tb => {
+    const exs = tb.exercises || []; if(!exs.length) return;
+    const key = Object.keys(bookEx).find(k => k.startsWith(tb.lesson + '.ex.'));
+    const be = key ? bookEx[key] : null, aud = be ? be.items : [];
+    const items = [], sections = {};
+    // 穴埋め（（　）に語を入れる）は、答えの語を文の穴に埋めた全文で音声と比べ、答えにも全文を添える
+    const BLANK = /[（(][\s\u3000]*[）)]/g;
+    const filled = x => { const q = String(x.q || ''), lines = q.split(/\n| ／ /), vi = lines.find(l => BLANK.test(l) && (BLANK.lastIndex = 0, VI_MARK.test(l) || /[a-z]/i.test(l)));
+      if(!vi) return ''; const parts = String(x.a || '').split(' / ')[0].split(/\u3000+/); let k = 0;
+      return vi.replace(BLANK, () => parts[k++] || '').replace(/\s+/g, ' ').replace(/\s+([.,?!])/g, '$1').trim(); };
+    exs.forEach(e => { sections[e.sec] = e.instr || e.label || '';
+      (e.items || []).forEach(x => {
+        const full = filled(x), cmp = full || x.a;
+        let best = null, bs = 0;
+        aud.forEach(it => { const v = Math.max(...String(it.answer || '').split('\n').map(l => sim(l, cmp)), sim(it.answer, cmp)); if(v > bs){ bs = v; best = it; } });
+        const hit = bs >= 0.5 ? best : null;
+        items.push({sec: +e.sec || 1, n: +x.n, id: items.length + 1, prompt: x.q || '', answer: String(x.a || '').split(' / ').join('\n') + (full ? '\n' + full : ''),
+          start: hit ? hit.start : null, end: hit ? hit.end : null});
+      });
+    });
+    if(!be) return;   // 音声の練習が無い課は、いまは「この課で習ったこと」の一覧だけ（ステージは exercises の定義から作られる）
+    be.items = items; be.sections = sections; be.fromBook = true;
+  });
+}
+function openReview(){
+  if(!theater) return;
+  clearTimeout(gapTimer); audio.pause();
+  theater.rv = {tab: 'sum', wq: null};
+  paintReview();
+}
+function closeReview(){ if(!theater) return; theater.rv = null; paintTheater(); }
+function rvMD(t){   // 誌面の説明（md）を小さく描く：表・箇条・太字・段落
+  const inl = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  const out = []; let tb = null, ul = null;
+  const flush = () => { if(tb){ out.push('<table>' + tb.map((r, i) => '<tr>' + r.map(c => (i ? '<td>' : '<th>') + inl(c) + (i ? '</td>' : '</th>')).join('') + '</tr>').join('') + '</table>'); tb = null; }
+    if(ul){ out.push('<ul>' + ul.map(x => '<li>' + inl(x) + '</li>').join('') + '</ul>'); ul = null; } };
+  String(t || '').split('\n').forEach(line => {
+    const L = line.trim();
+    if(/^\|.*\|$/.test(L)){ if(/^\|[\s:|-]+\|$/.test(L)) return; (tb = tb || []).push(L.slice(1, -1).split('|').map(c => c.trim())); return; }
+    if(/^[-*] /.test(L)){ if(tb) flush(); (ul = ul || []).push(L.slice(2)); return; }
+    flush();
+    if(!L) return;
+    if(/^#+ /.test(L)){ out.push('<p><b>' + inl(L.replace(/^#+ /, '')) + '</b></p>'); return; }
+    out.push('<p>' + inl(L) + '</p>');
+  });
+  flush(); return out.join('');
+}
+function rvSay(vi, ja){
+  return '<button class="rv-say" data-say="' + esc(vi) + '"><b lang="' + LP.code + '">' + esc(vi) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</button>';
+}
+function rvBookStage(lid){
+  const ld = lessonData(), li = ld.findIndex(x => x.L.id === lid); if(li < 0) return null;
+  return stagesOf(li, paperDefs(), paperLatest()).find(s => s.kind === 'book') || null;
+}
+function paintReview(){
+  if(!theater || !theater.rv) return;
+  const el = $('#theater'), r = theater.list[theater.k], lid = r.x.L.id, tb = textbook[lid], rv = theater.rv;
+  const fs = tb.formulas || [], voc = tb.vocab || [], exs = tb.exercises || [];
+  const nEx = exs.reduce((a, e) => a + (e.items || []).length, 0);
+  const tabs = [['sum', 'まとめ'], ['f', '文法' + (fs.length ? ' ' + fs.length : '')], ['w', '単語' + (voc.length ? ' ' + voc.length : '')], ['ex', '練習問題' + (nEx ? ' ' + nEx : '')]]
+    .filter(([k]) => k === 'sum' || (k === 'f' && fs.length) || (k === 'w' && voc.length) || (k === 'ex' && nEx));
+  let h = '';
+  if(rv.tab === 'sum'){
+    h += '<h2>' + esc(tb.unit || '') + '　' + esc(tb.title || '') + '</h2>';
+    if(tb.lead && tb.lead.vi) h += '<button class="rv-say rv-lead" data-say="' + esc(tb.lead.vi) + '"><b lang="' + LP.code + '">' + esc(tb.lead.vi) + '</b><small>' + esc(tb.lead.ja || '') + '</small></button>';
+    if(tb.teach) h += '<p class="rv-teach">' + esc(tb.teach) + '</p>';
+    if(fs.length) h += '<section><h3>この課の文法</h3><div class="rv-in" style="gap:10px">' + fs.map(f =>
+      '<div class="rv-f"><div class="no">公式 ' + f.n + '</div><div class="tt">' + esc(f.title || '') + '</div>' +
+      (f.pattern ? '<div class="pat" lang="' + LP.code + '">' + esc(f.pattern) + '</div>' : '') +
+      (f.point ? '<div class="pt">' + esc(f.point) + '</div>' : '') + '</div>').join('') + '</div></section>';
+    if((tb.points || []).length) h += '<section><h3>学習のポイント</h3><div class="rv-pts">' + tb.points.map(p => '<p>' + esc(p) + '</p>').join('') + '</div></section>';
+    if((tb.examples || []).length) h += '<section><h3>この課の例文</h3><div class="rv-ex">' + tb.examples.map(e => rvSay(e.vi, e.ja)).join('') + '</div></section>';
+  }else if(rv.tab === 'f'){
+    h += fs.map(f => {
+      const card = formulas.find(x => x.n === f.n);
+      return '<div class="rv-f"><div class="no">公式 ' + f.n + '</div><div class="tt">' + esc(f.title || '') + '</div>' +
+        (f.pattern ? '<div class="pat" lang="' + LP.code + '">' + esc(f.pattern) + '</div>' : '') +
+        (f.point ? '<div class="pt">' + esc(f.point) + '</div>' : '') +
+        ((f.examples || []).length ? '<div class="rv-ex">' + f.examples.map(e => rvSay(e.vi, e.ja)).join('') + '</div>' : '') +
+        (f.body ? '<details' + (fs.length === 1 ? ' open' : '') + '><summary>教科書の説明を読む</summary><div class="md">' + rvMD(f.body) + '</div></details>' : '') +
+        (card ? '<button class="rv-say" data-fprac="' + f.n + '"><b>この公式の例文を練習する</b><small>' + card.items.length + '文</small></button>' : '') +
+      '</div>';
+    }).join('');
+    if((tb.columns || []).length) h += tb.columns.map(c => '<details><summary>' + esc(c.title || 'コラム') + '</summary><div class="md">' + rvMD(c.body) + '</div></details>').join('');
+  }else if(rv.tab === 'w'){
+    const q = rv.wq;
+    if(q && q.i < q.list.length){
+      const w = q.list[q.i];
+      h += '<div class="rv-q"><div class="qn">' + (q.i + 1) + ' / ' + q.list.length + '　意味を選ぶ</div>' +
+        '<button class="rv-say qv" data-say="' + esc(w.vi) + '" style="align-items:center;background:none"><b lang="' + LP.code + '">' + esc(w.vi) + '</b></button>' +
+        '<div class="rv-ch">' + q.ch.map((c, k) => '<button data-wch="' + k + '" class="' + (q.picked == null ? '' : (c === w.ja ? 'ok' : (k === q.picked ? 'ng' : ''))) + '"' + (q.picked == null ? '' : ' disabled') + '>' + esc(c) + '</button>').join('') + '</div>' +
+        (q.picked == null ? '' : '<div class="rv-go"><button class="primary" id="rvWNext">' + (q.i + 1 < q.list.length ? '次へ' : '結果を見る') + '</button></div>') + '</div>';
+    }else if(q){
+      h += '<div class="rv-q"><div class="qv">' + q.ok + ' / ' + q.list.length + '</div><div class="qn">意味を選ぶ練習が終わりました</div><div class="rv-go"><button class="primary" id="rvWStart">もう一度</button></div></div>';
+    }else{
+      h += '<div class="rv-go"><button class="primary" id="rvWStart">単語の意味を選ぶ練習（' + voc.length + '語）</button></div>';
+    }
+    h += '<section><h3>この課の単語</h3><div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : ''))).join('') + '</div></section>';
+  }else if(rv.tab === 'ex'){
+    const sg = rvBookStage(lid);
+    h += '<div class="rv-go">' + (sg ? '<button class="primary" id="rvBook">教科書の練習問題を解く</button><p style="font-size:13px;color:#A0A0A8">番号どおりに1問ずつ。答えを書くか口で言ってから「答え」を押すと、答えの音声と文が出ます。</p>' : '') + '</div>';
+    h += exs.map(e => '<section class="rv-exs"><h3>' + esc(e.label || '練習') + '</h3>' + (e.instr ? '<div class="ins">' + esc(e.instr) + '</div>' : '') +
+      '<ol>' + (e.items || []).map(x => '<li><span>(' + x.n + ')</span>' + esc(x.q || '') + '</li>').join('') + '</ol></section>').join('');
+  }
+  const last = theater.k + 1 >= theater.list.length;
+  h += '<div class="rv-go">' + (rv.tab !== 'ex' && tabs.length > 1 ? '<button class="primary" id="rvNextTab">次：' + esc(tabs[Math.min(tabs.findIndex(t => t[0] === rv.tab) + 1, tabs.length - 1)][1].replace(/ \d+$/, '')) + '</button>' : '') +
+    '<button id="rvWatch">もう一度会話を観る</button>' + (last ? '' : '<button id="rvNextLesson">次の課の会話を観る</button>') + '</div>';
+  el.innerHTML =
+    '<div class="th-top"><b>' + esc(r.x.L.title) + '</b><span class="th-n">この課で習ったこと</span><button class="th-x" id="thClose">閉じる</button></div>' +
+    '<div class="rv" id="rvBox"><div class="rv-in"><div class="rv-tabs">' + tabs.map(([k, n]) => '<button data-rvtab="' + k + '" class="' + (k === rv.tab ? 'on' : '') + '">' + n + '</button>').join('') + '</div>' + h + '</div></div>';
+  $('#thClose').onclick = closeTheater;
+  el.querySelectorAll('[data-rvtab]').forEach(b => b.onclick = () => { rv.tab = b.dataset.rvtab; paintReview(); $('#rvBox').scrollTop = 0; });
+  el.querySelectorAll('[data-say]').forEach(b => b.onclick = () => rvSpeak(b.dataset.say));
+  el.querySelectorAll('[data-fprac]').forEach(b => b.onclick = () => { const n = +b.dataset.fprac, s = formulaSets(lid).find(x => x.f.n === n); closeTheater(); if(s) startStage(lid + '|' + s.set.id); });
+  const nt = $('#rvNextTab'); if(nt) nt.onclick = () => { const i = tabs.findIndex(t => t[0] === rv.tab); rv.tab = tabs[Math.min(i + 1, tabs.length - 1)][0]; paintReview(); $('#rvBox').scrollTop = 0; };
+  $('#rvWatch').onclick = () => { theater.rv = null; theaterPlay(theater.k); };
+  const nl = $('#rvNextLesson'); if(nl) nl.onclick = () => { theater.rv = null; theaterPlay(theater.k + 1); };
+  const ws = $('#rvWStart'); if(ws) ws.onclick = () => { rv.wq = rvWordQuiz(voc); paintReview(); };
+  el.querySelectorAll('[data-wch]').forEach(b => b.onclick = () => { const q = rv.wq; q.picked = +b.dataset.wch; if(q.ch[q.picked] === q.list[q.i].ja) q.ok++; paintReview(); });
+  const wn = $('#rvWNext'); if(wn) wn.onclick = () => { const q = rv.wq; q.i++; q.picked = null; if(q.i < q.list.length) q.ch = rvChoices(q.list[q.i], q.pool); paintReview(); };
+  const bk = $('#rvBook'); if(bk) bk.onclick = () => { const sg = rvBookStage(lid); closeTheater(); if(sg) startStage(sg.id); };
+}
+/* 単語の音：教材の項目に同じ語があればその音、無ければ端末の声 */
+function rvSpeak(t){
+  const k = norm(t);
+  const hit = lessonData().flatMap(x => x.items).find(i => norm(i.show || '') === k);
+  if(hit){ say(hit); return; }
+  speakText(t);
+}
+function rvChoices(w, pool){
+  const others = shuffled(pool.filter(x => x.ja && x.ja !== w.ja).map(x => x.ja)).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
+  return shuffled([w.ja, ...others]);
+}
+function rvWordQuiz(voc){
+  const pool = Object.values(textbook).flatMap(t => t.vocab || []).filter(x => x.vi && x.ja);
+  const list = shuffled(voc.filter(x => x.vi && x.ja));
+  return {list, pool, i: 0, ok: 0, picked: null, ch: list.length ? rvChoices(list[0], pool) : []};
 }
 /* 字幕の区間：書き起こしの区間ごとに、同じ文の教材の項目（直した文）があればその文と訳を使う。
    ⛔ 書き起こしは、日本語の読み上げを化けさせている。冒頭の「文法編」は Vũng bó hèn、訳の読み上げは Konnichiwa・Kanojo wa aruite… になる。
@@ -5748,6 +5948,7 @@ function paintTheater(){
       (theater.list.length > 1 ? '<select id="thPick" aria-label="課を選ぶ">' + theater.list.map((q, i) => '<option value="' + i + '"' + (i === theater.k ? ' selected' : '') + '>' + esc(q.x.L.title) + '</option>').join('') + '</select>'
         : '<b>' + esc(r.x.L.title) + '</b>') +
       '<span class="th-n">' + (theater.k + 1) + ' / ' + theater.list.length + '　' + esc(r.t.name) + '</span>' +
+      (textbook[id] ? '<button class="th-rv" id="thRv">この課で習ったこと</button>' : '') +
       '<button class="th-x" id="thClose">閉じる</button>' +
     '</div>' +
     '<div class="th-stage">' +
@@ -5763,6 +5964,7 @@ function paintTheater(){
       '<label><input type="checkbox" id="thJa"' + (theater.ja ? ' checked' : '') + '> 訳</label>' +
     '</div>';
   $('#thClose').onclick = closeTheater;
+  const rvb = $('#thRv'); if(rvb) rvb.onclick = openReview;
   $('#thPrev').onclick = () => theaterPlay(theater.k - 1);
   $('#thNext').onclick = () => theaterPlay(theater.k + 1);
   $('#thPlay').onclick = () => { if(audio.paused) audio.play().catch(() => {}); else audio.pause(); };
@@ -6757,7 +6959,8 @@ document.addEventListener('click', e => {
   else if(b.classList.contains('bkans') || b.classList.contains('bksay')){
     const it = bookEx[wiz.ex].items[wiz.k]; if(!it) return;
     const ta = document.querySelector('.bkin'); if(ta) wiz.typed = ta.value;
-    say({src: bookEx[wiz.ex].track, start: it.start, end: it.end, deck: {}});
+    if(it.start != null && it.end > it.start) say({src: bookEx[wiz.ex].track, start: it.start, end: it.end, deck: {}});
+    else speakText(it.answer.split('\n')[0]);   // 音声に無い問題（誌面だけにある練習 I など）は端末の声
     if(!wiz.open){ wiz.open = true; renderWiz(); }
   }
   else if(b.classList.contains('bkm')) bookMark(b.dataset.r);
