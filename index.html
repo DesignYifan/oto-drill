@@ -5661,7 +5661,11 @@ $('#flowMenu').addEventListener('click', e => {
   if(k === 'main' || k === 'mainall'){ openTheater(k === 'main' ? flowLessonIndex() : Math.max(0, flowLessonIndex()), k === 'mainall'); return; }
   startFlowFor(flowLessonIndex(), k);
 });
-document.addEventListener('click', e => { const m = $('#flowMenu'); if(m && !m.hidden && !e.target.closest('.flowpick')) openFlowMenu(false); });
+/* 閉じる（2026-11-19 本人「ここが開いたら閉じれるくらいは直しておいてほしい」）
+   ⛔ 前は外の click で閉じていたが、iPhone・Mac のアプリ（WKWebView）は押せない所を押しても click が来ず、閉じられなかった。
+   ⭕ 外を触った時点（pointerdown・先に拾う）で閉じる。Esc でも閉じる。「流すもの」をもう一度押しても閉じる */
+document.addEventListener('pointerdown', e => { const m = $('#flowMenu'); if(m && !m.hidden && !e.target.closest('.flowpick')) openFlowMenu(false); }, true);
+document.addEventListener('keydown', e => { const m = $('#flowMenu'); if(e.key === 'Escape' && m && !m.hidden){ openFlowMenu(false); $('#flowPick').focus(); } });
 
 /* ---- 会話を観る（2026-11-11） ----
    本人「会話がちゃんとサブタイトルで出るようになる」「ユニットがある分だけ一気に見れたりする」
