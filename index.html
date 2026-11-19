@@ -678,6 +678,7 @@ span.blank.right{color:var(--ui-success-fgColor)} span.blank.wrong{color:var(--u
 .blib{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin-bottom:24px}
 .bcard{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px 12px}
 .bcard small{color:var(--ui-text-muted-fgColor); font-size:11px}
+.lpsrc{display:block; color:var(--ui-text-muted-fgColor); font-size:11px; font-weight:400; margin-top:2px}
 .bcard.on{border-color:var(--ui-primary-color); background:var(--ui-primary-muted-bgColor)}
 .bhead{display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; margin-bottom:12px}
 .bhead h2{font-size:20px; margin:0; font-weight:600}
@@ -2897,6 +2898,17 @@ const setSeen = st => st.items.filter(it => rec(it.id).box >= 1).length;
 function lastAnswers(){
   const m = new Map(); hist.forEach(h => m.set(h[1], h)); return m;
 }
+/* 答えの出どころ（2026-11-19 本人「まだやったことないけど、間違えた問題とか出てきてる」→「共有して出どころを書く」）
+   ⭕ 記録は文ごとに全教材で1つのまま（同じ文なら、どの教材で覚えても覚えたことにする）。ほかの教材で答えたものは、そう書く。
+   ⭕ 答えた教材は 2026-11-19 から記録に入れる（hist の6つ目・出来事の b）。それより前の答えは、その言語の最初の教材で答えたもの */
+const FIRST_BOOK = {vi: 'zero', id: 'jk-イントネシア語レッスン初級1'};
+function ansBook(h){ return (h && h[5]) || FIRST_BOOK[String(h && h[1]).split('.')[0]] || ''; }
+function otherAns(ids, la){   // ほかの教材で答えた最後の答え：{n: 件数, names: 教材の名前}
+  la = la || lastAnswers();
+  const lib = load('books', {}), names = new Set(); let n = 0;
+  [...new Set(ids)].forEach(id => { const h = la.get(id), b = ansBook(h); if(h && b && b !== bookId){ n++; names.add((lib[b] && lib[b].title) || b); } });
+  return {n, names: [...names]};
+}
 function wrongPairs(ids, la, kind){   // kind：'near'＝おしいだけ／'wrong'＝おしい以外の不正解だけ／無し＝両方
   la = la || lastAnswers();
   return [...new Set(ids)].map(id => la.get(id)).filter(h => h && !h[3] && h[2] && (!kind || (kind === 'near') === !!h[4])).map(h => [h[1], h[2]]);
@@ -2950,7 +2962,9 @@ function lessonPracticeHTML(li, x, last){
   const act = (done_, started, attrs) => '<button class="lpgo' + (!done_ && started ? ' primary' : '') + '" ' + attrs + '>' + (done_ ? 'もう一度' : started ? '続きから' : '始める') + '</button>';
   const allWrong = wrongPairs(x.items.map(i => i.id), la);
   const nNear = wrongPairs(x.items.map(i => i.id), la, 'near').length;
-  let h = '<div class="lprog2">' + (allWrong.length ? '<div class="lpall"><span>この課で、最後に間違えたままの問題が ' + allWrong.length + '問あります' + (nNear ? '（うち おしい ' + nNear + '問）' : '') + '</span>' +
+  const wElse = otherAns(allWrong.map(p => p[0]), la);
+  let h = '<div class="lprog2">' + (allWrong.length ? '<div class="lpall"><span>この課で、最後に間違えたままの問題が ' + allWrong.length + '問あります' + (nNear ? '（うち おしい ' + nNear + '問）' : '') +
+    (wElse.n ? '<small class="lpsrc">うち ' + wElse.n + '問は「' + esc(wElse.names.join('」「')) + '」で同じ文に答えたものです</small>' : '') + '</span>' +
     '<button class="lpredo primary" data-redo="' + esc(JSON.stringify(allWrong)) + '" data-title="' + esc(x.L.title) + '" data-lid="' + esc(x.L.id) + '">この課の間違えた問題だけ（' + allWrong.length + '問）</button></div>' : '');
   // 文法：公式ごと
   if(fsets.length){
@@ -2976,8 +2990,9 @@ function lessonPracticeHTML(li, x, last){
     const cs = sets.filter(s => s.cat === c); if(!cs.length) return;
     const its = cs.flatMap(s => s.items), seen = seenOf(its), done_ = cs.every(setDone);
     const nx = cs.find(s => !setDone(s)) || cs[0], u = UNIT[c];
+    const oElse = otherAns(its.filter(it => rec(it.id).box >= 1).map(it => it.id), la);
     h += '<div class="lpr' + (done_ ? ' done' : '') + '"><span class="lpck">' + (done_ ? tick : '') + '</span><span class="lpnm"><b>' + name + '</b>' +
-      its.length + u + 'のうち ' + seen + u + '正解</span><span class="lpct"></span><span></span>' +
+      its.length + u + 'のうち ' + seen + u + '正解' + (oElse.n ? '<small class="lpsrc">うち ' + oElse.n + u + 'は「' + esc(oElse.names.join('」「')) + '」で答えたもの</small>' : '') + '</span><span class="lpct"></span><span></span>' +
       '<span class="lpbtns">' + redoBtn(its.map(i => i.id), lt + '　' + name, x.L.id, la) + act(done_, seen > 0, 'data-set="' + esc(nx.id) + '"') + '</span></div>';
   });
   // 教科書の練習
@@ -3102,7 +3117,7 @@ function mark(it, ok, skill, gain, near){   // near＝語は合っていて声�
   const r = rec(it.id);
   ansN++; save('ans:n', ansN);   // 答えの通し番号（つまずきの「最近20問」に使う。hist は上限で切られるので別に数える）
   r.seen++;
-  hist.push([Date.now(), it.id, skill || pview, ok ? 1 : 0, !ok && near ? 1 : 0]);
+  hist.push([Date.now(), it.id, skill || pview, ok ? 1 : 0, !ok && near ? 1 : 0, bookId]);   // 6つ目＝答えた教材（2026-11-19〜）
   if(hist.length > 20000) hist = hist.slice(-20000);
   save('hist', hist);
   if(ok){ r.box = Math.min(MAXBOX, r.box + (gain || 1)); }
@@ -3111,7 +3126,7 @@ function mark(it, ok, skill, gain, near){   // near＝語は合っていて声�
   r.last = Date.now();
   srs[it.id] = r;
   save('srs', srs);
-  emit('ans', Object.assign({i: it.id, s: skill || pview, o: ok ? 1 : 0, g: gain || 1}, !ok && near ? {n: 1} : {}));
+  emit('ans', Object.assign({i: it.id, s: skill || pview, o: ok ? 1 : 0, g: gain || 1, b: bookId}, !ok && near ? {n: 1} : {}));
   runAnswered(it, ok);
   paintStat();
   paintSets();
@@ -5091,7 +5106,7 @@ function rebuild(){
       r.seen++;
       if(e.o){ r.box = Math.min(MAXBOX, r.box + (e.g || 1)); } else { r.box = 0; r.miss++; }
       r.due = e.t + WAIT[r.box]; r.last = e.t; S[e.i] = r;
-      H.push([e.t, e.i, e.s, e.o, e.o ? 0 : (e.n ? 1 : 0)]);
+      H.push([e.t, e.i, e.s, e.o, e.o ? 0 : (e.n ? 1 : 0), e.b || '']);
     }
     else if(e.k === 'typed') e.w.forEach(w => TY.add(w));
     else if(e.k === 'paper') (P[e.b] = P[e.b] || []).push({l: e.l, ex: e.ex, n: e.n, r: e.r, t: e.t});
