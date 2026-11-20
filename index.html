@@ -573,6 +573,10 @@ li.hidden{display:none}
 .choices.mean button{text-align:left; font-size:16px; line-height:1.5}
 .exalt{font-size:13px; color:var(--ui-text-muted-fgColor); margin-top:4px}
 .qprompt{font-size:17px; font-weight:600; line-height:1.5; text-align:center; color:var(--ui-text-fgColor)}
+.ansmode{display:flex; align-items:center; justify-content:center; gap:6px; margin:4px 0 8px; font-size:13px; color:var(--ui-text-muted-fgColor)}
+.ansmode span{margin-right:4px}
+.ansmode button{height:32px; padding:0 14px; font-size:13px; box-shadow:none; background:var(--ui-control-bgColor); border-radius:16px}
+.ansmode button.on{background:var(--ui-text-fgColor); color:var(--ui-surface-bgColor); font-weight:600}
 .qprompt small{display:block; margin-top:4px; font-size:12px; font-weight:400; color:var(--ui-text-muted-fgColor)}
 .qresult{display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline; justify-content:center; width:100%; padding:12px 20px; border-radius:var(--ui-control-radius); font-size:14px; text-align:center}
 .qresult b{font-size:16px; font-weight:600}
@@ -3497,6 +3501,8 @@ function renderWrite(){
     qPrompt('この意味の' + LP.name + 'を書いてください', LP.nearMiss ? LP.nearMiss.label.replace('だけ違う', '') + 'の記号まで打ちます。' + (LP.typing ? '打ち方は「タイピング」で練習できます' : '') : '綴りのとおりに打ちます') +
     (wordPic(it.show) ? '<img class="wpic big" src="' + wordPic(it.show) + '" alt="">' : '') +
     '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>';
+  if(q.pick){ renderWritePick(box, it); body.appendChild(box); return; }
+  if(!q.done) box.insertBefore(ansModeEl(), box.children[1] || null);
   if(!q.done){
     const go = v => { q.typedText = v; q.g = gradeAgainst(answersOf(it.id, it.show, it.alts), v); q.done = true; mark(it, q.g.ok, 'write', q.g.ok ? 2 : 1, q.g.close); if(q.g.ok) typedOk(it); say(it); renderWrite(); };
     const inp = writeInput('writein', 'ベトナム語で書く（Enter で答え合わせ）', go);
@@ -3525,6 +3531,32 @@ function renderWrite(){
     box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 次へ</div>');
   }
   body.appendChild(box);
+}
+
+/* 日本語から書く を4択で：同じ組の似た文から4つ */
+function answerWritePick(c){
+  if(!q || q.done) return;
+  q.done = true; q.picked = c; q.ok = c.id === q.it.id;
+  mark(q.it, q.ok, 'mean', 1, false); say(q.it); renderWrite();
+}
+function renderWritePick(box, it){
+  if(!q.done) box.insertBefore(ansModeEl(), box.children[1] || null);
+  const ch = document.createElement('div'); ch.className = 'choices';
+  q.pick.forEach((c, i) => {
+    const b = document.createElement('button'); b.lang = LP.code;
+    b.innerHTML = esc(c.show) + '<small>' + (i + 1) + '</small>';
+    if(q.done){ if(c.id === it.id) b.classList.add('right'); else if(q.picked && c.id === q.picked.id) b.classList.add('wrong'); }
+    b.addEventListener('click', () => answerWritePick(c));
+    ch.appendChild(b);
+  });
+  box.appendChild(ch);
+  if(q.done){
+    box.insertAdjacentHTML('beforeend', q.ok ? qResult('ok', '正解', '文を聴いて確かめてください') : qResult('ng', '不正解', '正しくは「' + esc(it.show) + '」'));
+    box.appendChild(hearBtn(() => say(it)));
+    box.appendChild(explainEl(it, {ok: q.ok}));
+    box.appendChild(nextRow());
+    box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>enter</kbd> 次へ</div>');
+  }else box.insertAdjacentHTML('beforeend', '<div class="pkeys"><kbd>1</kbd>〜<kbd>4</kbd> 選ぶ</div>');
 }
 
 /* ---- タイピング入門：Telex の打ち方を、字 → 声調 → 組み合わせ → 教材の単語 の順に ---- */
@@ -3816,7 +3848,9 @@ function renderCloze(){
   const box = document.createElement('div'); box.className = 'quiz';
   box.innerHTML = '<div class="from">' + esc(it.deck.book + '　' + it.deck.title) + '</div>' +
     (q.typed ? qPrompt('この意味になるように、空いているところに入る語を書いてください', '答えると文が鳴ります') + '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>'
+      : q.fromGap ? qPrompt('この意味になるように、空いているところに入る語を選んでください', '答えると文が鳴ります') + '<div class="japrompt" lang="ja">' + esc(jaOf(it) || '') + '</div>'
       : qPrompt('空いているところに入る語を選んでください', '答えると文が鳴ります'));
+  if(q.fromGap && !q.done) box.insertBefore(ansModeEl(), box.children[1] || null);   // 問いの上（日本語と文のあいだに割り込まない）
   const L = q.len || 1;
   const line = q.w.map((x,i)=> i === q.at
     ? '<span class="blank' + (q.done ? ((q.gapOk != null ? q.gapOk : q.picked === q.ans) ? ' right' : ' wrong') : '') + '">' + (q.done ? esc(q.w.slice(q.at, q.at + L).join(' ')) : '　'.repeat(1 + L)) + '</span>'
@@ -4130,10 +4164,26 @@ function nextRow(){
   return row;
 }
 /* 問いを1つ作る（どの練習も同じ入口） */
+/* 答え方：書く／4択（本人 2026-11-20「書き写すやつ以外は書き込みにするのか、4択の選択肢にするのか選べると、一気にバーって進めたい時は4択にして」）
+   ⭕ 切り替わるのは「穴を書く」と「日本語から書く」だけ。聴いて書く（聞こえたとおりに書き写す）は書くまま。
+   ⭕ 4択で答えた分は記録の上でも軽い問い（穴埋め・選ぶ）として数える。選んだ方は次の問いからも続く */
+let ansPick = load('ans:pick', false);
+function ansModeEl(){
+  const w = document.createElement('div'); w.className = 'ansmode';
+  w.innerHTML = '<span>答え方</span>' + [[false, '書いて答える'], [true, '4択で答える']].map(([v, n]) => '<button data-pick="' + v + '" class="' + (ansPick === v ? 'on' : '') + '">' + n + '</button>').join('');
+  w.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const v = b.dataset.pick === 'true'; if(v === ansPick) return;
+    ansPick = v; save('ans:pick', v);
+    if(q && !q.done){ const it = q.it; q = makeQ(pview, it); }
+    renderPractice();
+  });
+  return w;
+}
 function makeQ(v, it){
   if(!it) return null;
   if(v === 'order' || v === 'build'){ const x = orderQ(it); if(x){ x.build = v === 'build'; if(x.build) x.heard = true; } return x; }
-  if(v === 'cloze' || v === 'gap'){ const x = clozeQ(it); if(x) x.typed = v === 'gap'; return x; }
+  if(v === 'cloze' || v === 'gap'){ const x = clozeQ(it); if(x){ x.typed = v === 'gap' && !ansPick; x.fromGap = v === 'gap'; } return x; }
+  if(v === 'write' && ansPick) return {it, done: false, pick: choicesFor(it)};
   if(v === 'type') return {it, done: false, heard: false};
   if(v === 'mean') return {it, done: false, heard: false, choices: meanChoices(it)};
   if(v === 'write') return {it, done: false};
@@ -4151,6 +4201,11 @@ document.addEventListener('keydown', e=>{
   if(mode !== 'practice' || !q || pview === 'table' || pview === 'typing') return;
   if(e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
+  if((pview === 'write' && q.pick) || (pview === 'gap' && !q.typed)){   // 4択で答えるとき（2026-11-20）
+    if(!q.done && /^[1-4]$/.test(k)){ if(q.pick){ const c = q.pick[Number(k)-1]; if(c) answerWritePick(c); } else { const c = q.opts[Number(k)-1]; if(c) answerCloze(c); } }
+    else if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
+    return;
+  }
   if(pview === 'type' || pview === 'gap' || pview === 'write' || DRILLV[pview]){   // 書く欄の中では space と enter を欄に任せる
     if(e.target.classList && e.target.classList.contains('typein')) return;
     if(k === 'Enter' && q.done){ e.preventDefault(); nextQ(); }
