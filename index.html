@@ -1566,6 +1566,30 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .rv-go{display:flex; flex-direction:column; gap:8px}
 .rv-go button{height:48px; font-size:15px; box-shadow:none; border-radius:var(--ui-control-radius); background:#1E1E22; color:#FAFAFA}
 .rv-go button.primary{background:#FAFAFA; color:#0E0E10; font-weight:600}
+/* ⛔ 明るい画面用の hover（button:hover・li:hover の明るい地）が暗い画面にも効いて、白い文字が地に溶けていた（本人 2026-11-20）。暗い画面の中だけ暗い hover に戻す */
+#theater button:hover{background:#2A2A30; color:#FAFAFA; border-color:transparent; filter:none}
+#theater button.primary:hover, #theater .rv-tabs button.on:hover{background:#E4E4E8; color:#0E0E10}
+#theater li:hover{background:#17171B}
+#theater .rv-ch button.ok, #theater .rv-ch button.ok:hover{background:#1F3A2A; color:#FAFAFA}
+#theater .rv-ch button.ng, #theater .rv-ch button.ng:hover{background:#3A1F22; color:#FAFAFA}
+#theater .rv-ch button:disabled{opacity:1; cursor:default}
+/* 文法の例文は音を鳴らさず読むだけ（本人 2026-11-20「要点をチェックしたいだけ」） */
+.rv-line{display:flex; flex-direction:column; gap:2px; padding:8px 12px; background:#202026; border-radius:8px}
+.rv-line b{font-weight:500; font-size:15px} .rv-line small{font-size:12px; color:#A0A0A8}
+/* 単語：覚えるまで繰り返す（本人 2026-11-20） */
+.rv-meter{height:6px; background:#24242A; border-radius:3px; overflow:hidden} .rv-meter i{display:block; height:100%; background:#3FA66B}
+.rv-q .fb{font-size:14px; text-align:center; color:#C8C8D0; min-height:20px}
+/* 練習問題：その場で答えを書いて確かめる（本人 2026-11-20） */
+.rv-exs li{display:flex; flex-direction:column; align-items:stretch; text-align:left; gap:8px}
+.rv-exs .qq{display:flex; gap:8px}
+.rv-exs input{flex:1; min-width:0; height:44px; padding:0 12px; font-size:16px; background:#0E0E10; color:#FAFAFA; border:1px solid #3A3A42; border-radius:8px}
+.rv-exs input:focus{outline:none; border-color:#8A8A94}
+.rv-exs .qq button{height:44px; padding:0 14px; background:#2A2A30; color:#FAFAFA; box-shadow:none; border-radius:8px; font-size:14px; white-space:nowrap}
+.rv-exs .res{font-size:14px; line-height:1.6; padding:8px 12px; border-radius:8px; background:#202026; white-space:pre-line}
+.rv-exs .res.ok{background:#1F3A2A} .rv-exs .res.mid{background:#3A3420} .rv-exs .res.ng{background:#3A1F22}
+.rv-exs .self{display:flex; gap:6px; flex-wrap:wrap} .rv-exs .self button{height:36px; padding:0 14px; background:#2A2A30; color:#FAFAFA; box-shadow:none; border-radius:8px; font-size:14px}
+.rv-exs .self button.on{background:#FAFAFA; color:#0E0E10}
+.rv-score{font-size:14px; color:#C8C8D0}
 @media (max-width:520px){ .rv-ch{grid-template-columns:1fr} .rv-tabs button{font-size:13px} }
 .th-bar{padding-bottom:max(16px, env(safe-area-inset-bottom))} .th-top{padding-top:max(12px, env(safe-area-inset-top))}
 @media (max-width:820px){
@@ -5778,6 +5802,35 @@ function rvMD(t){   // 誌面の説明（md）を小さく描く：表・箇条�
 function rvSay(vi, ja){
   return '<button class="rv-say" data-say="' + esc(vi) + '"><b lang="' + LP.code + '">' + esc(vi) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</button>';
 }
+function rvLine(vi, ja){
+  return '<div class="rv-line"><b lang="' + LP.code + '">' + esc(vi) + '</b>' + (ja ? '<small>' + esc(ja) + '</small>' : '') + '</div>';
+}
+/* 練習問題の採点。⭕ ベトナム語で答える問題は、声調記号まで合えば正解・記号だけ違えば△・ほかは×。
+   ⭕ 訳し方は1つではないので、×でも「合っていた」に直せる。日本語で答える問題は答えを見て自分で付ける */
+const rvKey = t => String(t || '').normalize('NFC').toLowerCase().replace(/［例］/g, '').replace(/[.,?!。、，？！「」『』"'“”…:;：；（）()]/g, ' ').replace(/\s+/g, ' ').trim();
+const rvBare = t => rvKey(t).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+function rvAnswers(x){
+  const a = String(x.a || ''), out = new Set();
+  a.split(/\s*\/\s*|\n/).forEach(p => p.trim() && out.add(p.trim()));
+  out.add(a);
+  if(/[（(][\s　]*[）)]/.test(String(x.q || ''))){   // 穴埋め：語だけでも、埋めた全文でも正解にする
+    const words = a.split(' / ')[0].split(/　+/).filter(Boolean);
+    out.add(words.join(' '));
+    const line = String(x.q || '').split(/\n| ／ /).find(l => /[（(][\s　]*[）)]/.test(l) && (VI_MARK.test(l) || /[a-z]/i.test(l)));
+    if(line){ let k = 0; out.add(line.replace(/[（(][\s　]*[）)]/g, () => ' ' + (words[k++] || '') + ' ').replace(/\s+/g, ' ').trim()); }
+  }
+  return [...out];
+}
+const rvViAnswer = x => VI_MARK.test(String(x.a || '')) || /^[\sa-z.,?!\/　]+$/i.test(String(x.a || ''));
+function rvGrade(x, typed){
+  const ans = rvAnswers(x), k = rvKey(typed);
+  if(!k) return null;
+  if(ans.some(a => rvKey(a) === k)) return 'ok';
+  if(ans.some(a => rvBare(a) === rvBare(typed))) return 'mid';
+  return 'ng';
+}
+function rvExStore(lid){ try{ return JSON.parse(localStorage.getItem('rvEx.' + lid) || '{}'); }catch(e){ return {}; } }
+function rvExSave(lid, st){ try{ localStorage.setItem('rvEx.' + lid, JSON.stringify(st)); }catch(e){} }
 function rvBookStage(lid){
   const ld = lessonData(), li = ld.findIndex(x => x.L.id === lid); if(li < 0) return null;
   return stagesOf(li, paperDefs(), paperLatest()).find(s => s.kind === 'book') || null;
@@ -5785,6 +5838,7 @@ function rvBookStage(lid){
 function paintReview(){
   if(!theater || !theater.rv) return;
   const el = $('#theater'), r = theater.list[theater.k], lid = r.x.L.id, tb = textbook[lid], rv = theater.rv;
+  const keepTop = $('#rvBox') ? $('#rvBox').scrollTop : 0;   // 答えを確かめて描き直しても、読んでいた位置に留まる
   const fs = tb.formulas || [], voc = tb.vocab || [], exs = tb.exercises || [];
   const nEx = exs.reduce((a, e) => a + (e.items || []).length, 0);
   const tabs = [['sum', 'まとめ'], ['f', '文法' + (fs.length ? ' ' + fs.length : '')], ['w', '単語' + (voc.length ? ' ' + voc.length : '')], ['ex', '練習問題' + (nEx ? ' ' + nEx : '')]]
@@ -5806,31 +5860,46 @@ function paintReview(){
       return '<div class="rv-f"><div class="no">公式 ' + f.n + '</div><div class="tt">' + esc(f.title || '') + '</div>' +
         (f.pattern ? '<div class="pat" lang="' + LP.code + '">' + esc(f.pattern) + '</div>' : '') +
         (f.point ? '<div class="pt">' + esc(f.point) + '</div>' : '') +
-        ((f.examples || []).length ? '<div class="rv-ex">' + f.examples.map(e => rvSay(e.vi, e.ja)).join('') + '</div>' : '') +
+        ((f.examples || []).length ? '<div class="rv-ex">' + f.examples.map(e => rvLine(e.vi, e.ja)).join('') + '</div>' : '') +
         (f.body ? '<details' + (fs.length === 1 ? ' open' : '') + '><summary>教科書の説明を読む</summary><div class="md">' + rvMD(f.body) + '</div></details>' : '') +
-        (card ? '<button class="rv-say" data-fprac="' + f.n + '"><b>この公式の例文を練習する</b><small>' + card.items.length + '文</small></button>' : '') +
-      '</div>';
+      '</div>';   // ⭕ 文法のタブは要点を読んで確かめるだけ。例文の音と「例文を練習する」は外した（本人 2026-11-20）。公式の練習はコースの画面から入れる
     }).join('');
     if((tb.columns || []).length) h += tb.columns.map(c => '<details><summary>' + esc(c.title || 'コラム') + '</summary><div class="md">' + rvMD(c.body) + '</div></details>').join('');
   }else if(rv.tab === 'w'){
+    if(!rv.wq && voc.length) rv.wq = rvWordQuiz(voc);
     const q = rv.wq;
-    if(q && q.i < q.list.length){
-      const w = q.list[q.i];
-      h += '<div class="rv-q"><div class="qn">' + (q.i + 1) + ' / ' + q.list.length + '　意味を選ぶ</div>' +
-        '<button class="rv-say qv" data-say="' + esc(w.vi) + '" style="align-items:center;background:none"><b lang="' + LP.code + '">' + esc(w.vi) + '</b></button>' +
-        '<div class="rv-ch">' + q.ch.map((c, k) => '<button data-wch="' + k + '" class="' + (q.picked == null ? '' : (c === w.ja ? 'ok' : (k === q.picked ? 'ng' : ''))) + '"' + (q.picked == null ? '' : ' disabled') + '>' + esc(c) + '</button>').join('') + '</div>' +
-        (q.picked == null ? '' : '<div class="rv-go"><button class="primary" id="rvWNext">' + (q.i + 1 < q.list.length ? '次へ' : '結果を見る') + '</button></div>') + '</div>';
+    if(q && q.queue.length){
+      const w = q.queue[0], jv = q.dir === 'jv', right = jv ? w.vi : w.ja;
+      const meter = '<div class="rv-meter"><i style="width:' + Math.round(q.done / q.total * 100) + '%"></i></div>';
+      h += '<div class="rv-q">' + meter + '<div class="qn">覚えた ' + q.done + ' / ' + q.total + '語　' + (jv ? 'ベトナム語を選ぶ' : '意味を選ぶ') + '</div>' +
+        '<div class="qv"' + (jv ? '' : ' lang="' + LP.code + '"') + '>' + esc(jv ? w.ja : w.vi) + '</div>' +
+        '<div class="rv-ch">' + q.ch.map((c, k) => '<button data-wch="' + k + '"' + (jv ? ' lang="' + LP.code + '"' : '') + ' class="' + (q.picked == null ? '' : (c === right ? 'ok' : (k === q.picked ? 'ng' : ''))) + '"' + (q.picked == null ? '' : ' disabled') + '>' + esc(c) + '</button>').join('') + '</div>' +
+        '<div class="fb">' + (q.picked == null ? '' : (q.ch[q.picked] === right ? 'あたり' : '答えは ' + esc(right) + '。少しあとでもう一度出ます')) + '</div>' +
+        (q.picked != null && q.ch[q.picked] !== right ? '<div class="rv-go"><button class="primary" id="rvWNext">次へ</button></div>' : '') + '</div>';
     }else if(q){
-      h += '<div class="rv-q"><div class="qv">' + q.ok + ' / ' + q.list.length + '</div><div class="qn">意味を選ぶ練習が終わりました</div><div class="rv-go"><button class="primary" id="rvWStart">もう一度</button></div></div>';
-    }else{
-      h += '<div class="rv-go"><button class="primary" id="rvWStart">単語の意味を選ぶ練習（' + voc.length + '語）</button></div>';
+      h += '<div class="rv-q"><div class="qv">' + q.total + '語 覚えました</div><div class="qn">間違えた回数 ' + q.miss + '。どの語も、意味からもベトナム語からも2回続けて当てるまで出しました</div><div class="rv-go"><button class="primary" id="rvWStart">もう一度</button></div></div>';
     }
     h += '<section><h3>この課の単語</h3><div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : ''))).join('') + '</div></section>';
   }else if(rv.tab === 'ex'){
     const sg = rvBookStage(lid);
-    h += '<div class="rv-go">' + (sg ? '<button class="primary" id="rvBook">教科書の練習問題を解く</button><p style="font-size:13px;color:#A0A0A8">番号どおりに1問ずつ。答えを書くか口で言ってから「答え」を押すと、答えの音声と文が出ます。</p>' : '') + '</div>';
+    /* ⭕ ここで解く：問題ごとに書く欄と「確かめる」を置く（本人 2026-11-20「インプットできる枠がないと正誤を測れない」）。
+       ⭕ 書いた答えと印は端末に残る（rvEx.<課>）。音声つきで1問ずつ解く前からの頁は、下のボタンで残してある */
+    const st = rvExStore(lid), all = exs.flatMap(e => (e.items || []).map(x => ({e, x, k: e.sec + '-' + x.n})));
+    const nOk = all.filter(o => (st[o.k] || {}).mark === 'ok').length, nDone = all.filter(o => (st[o.k] || {}).mark).length;
+    h += '<div class="rv-score">' + nDone + ' / ' + all.length + '問 答えた　正解 ' + nOk + '</div>';
     h += exs.map(e => '<section class="rv-exs"><h3>' + esc(e.label || '練習') + '</h3>' + (e.instr ? '<div class="ins">' + esc(e.instr) + '</div>' : '') +
-      '<ol>' + (e.items || []).map(x => '<li><span>(' + x.n + ')</span>' + esc(x.q || '') + '</li>').join('') + '</ol></section>').join('');
+      '<ol>' + (e.items || []).map(x => {
+        const k = e.sec + '-' + x.n, s = st[k] || {}, vi = rvViAnswer(x);
+        const msg = {ok: '正解', mid: '声調の記号だけ違います', ng: '違います'}[s.mark] || '';
+        return '<li><div><span>(' + x.n + ')</span>' + esc(x.q || '') + '</div>' +
+          '<div class="qq"><input data-exin="' + k + '" value="' + esc(s.typed || '') + '" placeholder="' + (vi ? 'ベトナム語で書く' : '日本語で書く') + '" autocomplete="off" autocapitalize="off" spellcheck="false"' + (vi ? ' lang="' + LP.code + '"' : '') + '>' +
+          '<button data-exck="' + k + '">確かめる</button></div>' +
+          (s.shown ? '<div class="res ' + (s.mark || '') + '">' + (vi && msg ? '<b>' + msg + '</b>\n' : '') + '答え：' + esc(String(x.a || '').split(' / ').join(' ／ ')) + '</div>' +
+            '<div class="self">' + (vi ? (s.mark === 'ok' ? '' : '<button data-exself="' + k + '|ok">合っていた（訳し方の違い）</button>') :
+              [['ok', '○ 合っていた'], ['mid', '△ 少し違う'], ['ng', '× 違った']].map(([m, n]) => '<button data-exself="' + k + '|' + m + '" class="' + (s.mark === m ? 'on' : '') + '">' + n + '</button>').join('')) + '</div>' : '') +
+        '</li>';
+      }).join('') + '</ol></section>').join('');
+    h += '<div class="rv-go"><button id="rvExReset">この課の答えを消して最初から</button>' + (sg ? '<button id="rvBook">答えの音声つきで1問ずつ解く</button>' : '') + '</div>';
   }
   const last = theater.k + 1 >= theater.list.length;
   h += '<div class="rv-go">' + (rv.tab !== 'ex' && tabs.length > 1 ? '<button class="primary" id="rvNextTab">次：' + esc(tabs[Math.min(tabs.findIndex(t => t[0] === rv.tab) + 1, tabs.length - 1)][1].replace(/ \d+$/, '')) + '</button>' : '') +
@@ -5838,6 +5907,7 @@ function paintReview(){
   el.innerHTML =
     '<div class="th-top"><b>' + esc(r.x.L.title) + '</b><span class="th-n">この課で習ったこと</span><button class="th-x" id="thClose">閉じる</button></div>' +
     '<div class="rv" id="rvBox"><div class="rv-in"><div class="rv-tabs">' + tabs.map(([k, n]) => '<button data-rvtab="' + k + '" class="' + (k === rv.tab ? 'on' : '') + '">' + n + '</button>').join('') + '</div>' + h + '</div></div>';
+  $('#rvBox').scrollTop = keepTop;
   $('#thClose').onclick = closeTheater;
   el.querySelectorAll('[data-rvtab]').forEach(b => b.onclick = () => { rv.tab = b.dataset.rvtab; paintReview(); $('#rvBox').scrollTop = 0; });
   el.querySelectorAll('[data-say]').forEach(b => b.onclick = () => rvSpeak(b.dataset.say));
@@ -5846,8 +5916,21 @@ function paintReview(){
   $('#rvWatch').onclick = () => { theater.rv = null; theaterPlay(theater.k); };
   const nl = $('#rvNextLesson'); if(nl) nl.onclick = () => { theater.rv = null; theaterPlay(theater.k + 1); };
   const ws = $('#rvWStart'); if(ws) ws.onclick = () => { rv.wq = rvWordQuiz(voc); paintReview(); };
-  el.querySelectorAll('[data-wch]').forEach(b => b.onclick = () => { const q = rv.wq; q.picked = +b.dataset.wch; if(q.ch[q.picked] === q.list[q.i].ja) q.ok++; paintReview(); });
-  const wn = $('#rvWNext'); if(wn) wn.onclick = () => { const q = rv.wq; q.i++; q.picked = null; if(q.i < q.list.length) q.ch = rvChoices(q.list[q.i], q.pool); paintReview(); };
+  el.querySelectorAll('[data-wch]').forEach(b => b.onclick = () => {
+    const q = rv.wq; if(q.picked != null) return;
+    q.picked = +b.dataset.wch;
+    const ok = rvWordPick(q); paintReview();
+    if(ok) setTimeout(() => { if(theater && theater.rv && theater.rv.wq === q && q.picked != null){ rvWordNext(q); paintReview(); } }, 700);
+  });
+  const wn = $('#rvWNext'); if(wn) wn.onclick = () => { rvWordNext(rv.wq); paintReview(); };
+  el.querySelectorAll('[data-exck]').forEach(b => b.onclick = () => rvExCheck(lid, b.dataset.exck));
+  el.querySelectorAll('[data-exin]').forEach(i => {
+    i.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); rvExCheck(lid, i.dataset.exin); } };
+    i.oninput = () => { const st = rvExStore(lid); st[i.dataset.exin] = Object.assign(st[i.dataset.exin] || {}, {typed: i.value}); rvExSave(lid, st); };   // 描き直しても書きかけが消えないように
+  });
+  el.querySelectorAll('[data-exshow]').forEach(b => b.onclick = () => { const st = rvExStore(lid); const k = b.dataset.exshow; st[k] = Object.assign(st[k] || {}, {shown: true, typed: (el.querySelector('[data-exin="' + k + '"]') || {}).value || (st[k] || {}).typed || ''}); rvExSave(lid, st); paintReview(); });
+  el.querySelectorAll('[data-exself]').forEach(b => b.onclick = () => { const [k, m] = b.dataset.exself.split('|'); const st = rvExStore(lid); st[k] = Object.assign(st[k] || {}, {mark: m}); rvExSave(lid, st); paintReview(); });
+  const er = $('#rvExReset'); if(er) er.onclick = () => { rvExSave(lid, {}); paintReview(); };
   const bk = $('#rvBook'); if(bk) bk.onclick = () => { const sg = rvBookStage(lid); closeTheater(); if(sg) startStage(sg.id); };
 }
 /* 単語の音：教材の項目に同じ語があればその音、無ければ端末の声 */
@@ -5857,14 +5940,44 @@ function rvSpeak(t){
   if(hit){ say(hit); return; }
   speakText(t);
 }
-function rvChoices(w, pool){
-  const others = shuffled(pool.filter(x => x.ja && x.ja !== w.ja).map(x => x.ja)).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
-  return shuffled([w.ja, ...others]);
+function rvChoices(w, pool, key = 'ja'){
+  const others = shuffled(pool.filter(x => x[key] && x[key] !== w[key]).map(x => x[key])).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
+  return shuffled([w[key], ...others]);
 }
+/* 単語は覚えるまで繰り返す（本人 2026-11-20「選択肢を選ぶ暗記のやり方を何度も繰り返して定着させたい」）。
+   ⭕ 1語につき2回続けて当てたら「覚えた」。1回目は ベトナム語→意味、2回目は 意味→ベトナム語。
+   ⭕ 外したら0に戻し、2つ後にもう一度出す。当てたら4つ後に出す（すぐ同じ語が続かないように） */
 function rvWordQuiz(voc){
   const pool = Object.values(textbook).flatMap(t => t.vocab || []).filter(x => x.vi && x.ja);
-  const list = shuffled(voc.filter(x => x.vi && x.ja));
-  return {list, pool, i: 0, ok: 0, picked: null, ch: list.length ? rvChoices(list[0], pool) : []};
+  const queue = shuffled(voc.filter(x => x.vi && x.ja));
+  const q = {queue, pool, hit: new Map(), done: 0, total: queue.length, miss: 0, picked: null, dir: 'vj', ch: []};
+  rvWordSet(q); return q;
+}
+function rvWordSet(q){
+  if(!q.queue.length) return;
+  const w = q.queue[0]; q.dir = (q.hit.get(w.vi) || 0) >= 1 ? 'jv' : 'vj';
+  q.ch = rvChoices(w, q.pool, q.dir === 'jv' ? 'vi' : 'ja'); q.picked = null;
+}
+function rvWordPick(q){
+  const w = q.queue[0], right = q.dir === 'jv' ? w.vi : w.ja, ok = q.ch[q.picked] === right;
+  if(ok) q.hit.set(w.vi, (q.hit.get(w.vi) || 0) + 1); else { q.hit.set(w.vi, 0); q.miss++; }
+  return ok;
+}
+function rvWordNext(q){
+  const w = q.queue.shift(), n = q.hit.get(w.vi) || 0;
+  if(n >= 2) q.done++;
+  else q.queue.splice(Math.min(n ? 4 : 2, q.queue.length), 0, w);
+  rvWordSet(q);
+}
+function rvExCheck(lid, k){
+  const tb = textbook[lid], [s, n] = k.split('-').map(Number);
+  const x = (tb.exercises || []).find(e => +e.sec === s)?.items.find(i => +i.n === n); if(!x) return;
+  const inp = document.querySelector('[data-exin="' + k + '"]'), typed = inp ? inp.value : '';
+  const st = rvExStore(lid);
+  st[k] = {typed, shown: true, mark: rvViAnswer(x) ? rvGrade(x, typed) : (st[k] || {}).mark || null};
+  rvExSave(lid, st); paintReview();
+  const nx = document.querySelectorAll('[data-exin]'), arr = [...nx], i = arr.findIndex(e => e.dataset.exin === k);
+  if(arr[i + 1]) arr[i + 1].focus();
 }
 /* 字幕の区間：書き起こしの区間ごとに、同じ文の教材の項目（直した文）があればその文と訳を使う。
    ⛔ 書き起こしは、日本語の読み上げを化けさせている。冒頭の「文法編」は Vũng bó hèn、訳の読み上げは Konnichiwa・Kanojo wa aruite… になる。
