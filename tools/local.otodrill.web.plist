@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  音声ドリル：Mac にログインしているあいだ、ページ（http://localhost:8790/）をいつも配る。
+  ○ 2026-11-22 から。Claude もダブルクリックも要らない（本人「Claude なしで自分でサーバーを立てられるように」）
+  ○ 落ちたら launchd が起こし直す（KeepAlive）
+  入れるとき：
+      cp tools/local.otodrill.web.plist ~/Library/LaunchAgents/
+      launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.otodrill.web.plist
+  止めるとき：launchctl bootout gui/$(id -u)/local.otodrill.web
+  × 8790 は Claude の試験用サーバー（mindmap-試験）にも使っていた。2026-11-22 に試験のほうを 8811 へ移した
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>local.otodrill.web</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/zuho/Programming/oto-drill/tools/serve_page.py</string>
+    <string>8790</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/zuho/Programming/oto-drill</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/otodrill-web.log</string>
+  <key>StandardErrorPath</key><string>/tmp/otodrill-web.log</string>
+</dict>
+</plist>
