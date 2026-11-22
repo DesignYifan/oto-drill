@@ -1594,7 +1594,70 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .rv-exs .self{display:flex; gap:6px; flex-wrap:wrap} .rv-exs .self button{height:36px; padding:0 14px; background:#2A2A30; color:#FAFAFA; box-shadow:none; border-radius:8px; font-size:14px}
 .rv-exs .self button.on{background:#FAFAFA; color:#0E0E10}
 .rv-score{font-size:14px; color:#C8C8D0}
-@media (max-width:520px){ .rv-ch{grid-template-columns:1fr} .rv-tabs button{font-size:13px} }
+/* 解いた回数と正答の記録（本人 2026-11-22「何回解いたかとか正答数を記録して、後からどこで間違えたのか分かるように。単語も」） */
+.rv-hist{font-size:12px; color:#A0A0A8; line-height:1.5}
+.rv-hist b{font-weight:600; color:#F2A0A0}
+.rv-filter{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.rv-filter button{height:36px; padding:0 14px; background:#1E1E22; color:#C8C8D0; box-shadow:none; border-radius:8px; font-size:13px}
+.rv-filter button.on{background:#FAFAFA; color:#0E0E10; font-weight:600}
+#theater .rv-filter button.on:hover{background:#E4E4E8; color:#0E0E10}
+.rv-say .rv-hist{margin-top:2px}
+/* 書き写す（本人 2026-11-22「テキストをそのまま書き写す、ディクテーションというか、タイピングのやつが欲しい」）。
+   見て写す／聴いて書く を切り替える。1語打ち終えるごとに色。声調の記号だけ違う語は「おしい」で先へ進める */
+.dc{background:#17171B; border-radius:12px; padding:18px 16px; display:flex; flex-direction:column; gap:14px}
+.dc-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; color:#A0A0A8}
+.dc-head .sp{flex:1}
+.dc-mode{display:flex; background:#0E0E10; border-radius:8px; padding:2px}
+.dc-mode button{height:32px; padding:0 12px; background:transparent; color:#C8C8D0; box-shadow:none; border-radius:6px; font-size:13px}
+.dc-mode button.on{background:#FAFAFA; color:#0E0E10; font-weight:600}
+#theater .dc-mode button.on:hover{background:#E4E4E8; color:#0E0E10}
+.dc-tgt{font-size:24px; line-height:1.7; font-weight:500}
+.dc-tgt span{border-radius:4px; padding:0 2px}
+.dc-tgt .cur{box-shadow:inset 0 -2px 0 #FAFAFA}
+.dc-ja{font-size:14px; color:#A0A0A8; margin-top:-8px}
+.dc-hide{font-size:15px; color:#A0A0A8; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.dc-tgt .ok, .dc-live .ok{color:#7ED6A0} .dc-tgt .near, .dc-live .near{background:#3A3420; color:#F2D27A} .dc-tgt .bad, .dc-live .bad{background:#3A1F22; color:#FF9A9A}
+.dc input{width:100%; height:52px; padding:0 14px; font-size:20px; background:#0E0E10; color:#FAFAFA; border:1px solid #3A3A42; border-radius:8px}
+.dc input:focus{outline:none; border-color:#8A8A94}
+.dc-live{font-size:18px; line-height:1.8; min-height:32px; display:flex; flex-wrap:wrap; gap:4px 6px}
+.dc-live span{padding:0 6px; border-radius:6px}
+.dc-btns{display:flex; gap:8px; flex-wrap:wrap}
+.dc-btns button{height:40px; padding:0 14px; background:#2A2A30; color:#FAFAFA; box-shadow:none; border-radius:8px; font-size:14px}
+.dc-btns button.primary{background:#FAFAFA; color:#0E0E10; font-weight:600}
+.dc-res{display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:10px; background:#202026}
+.dc-res.ok{background:#1A2E22} .dc-res.mid{background:#2E2A1A} .dc-res.ng{background:#2E1A1C}
+.dc-diff{font-size:20px; line-height:2.1; display:flex; flex-wrap:wrap; gap:2px 6px}
+.dc-diff .w{display:inline-flex; flex-direction:column; align-items:center; padding:0 6px; border-radius:6px}
+.dc-diff .w small{font-size:11px; line-height:1.3; color:#C8C8D0}
+.dc-diff .ok{color:#7ED6A0} .dc-diff .near{background:#3A3420; color:#F2D27A} .dc-diff .wrong, .dc-diff .miss{background:#3A1F22; color:#FF9A9A} .dc-diff .extra{color:#8A8A94; text-decoration:line-through}
+.dc-opt{font-size:12px; color:#A0A0A8; display:flex; align-items:center; gap:6px}
+.dc-opt input{width:auto; height:auto; flex:none; margin:0}
+.dc-list{display:flex; flex-direction:column; gap:6px}
+.dc-list button{display:flex; justify-content:space-between; gap:12px; align-items:flex-start; text-align:left; height:auto; padding:10px 12px; background:#17171B; color:#E4E4E8; box-shadow:none; border-radius:8px; font-size:15px; line-height:1.5}
+.dc-list button.now{outline:1px solid #8A8A94}
+.dc-list button .rv-hist{white-space:nowrap}
+@media (max-width:520px){ .rv-ch{grid-template-columns:1fr} .rv-tabs{overflow-x:auto; gap:6px} .rv-tabs button{font-size:13px; flex:1 0 auto; padding:0 8px} .dc-tgt{font-size:20px} .dc-list button{flex-direction:column; gap:4px} .dc-list button .rv-hist{white-space:normal} }
+/* 会話を観るの全文（本人 2026-11-22「字幕が出るのはいいんだけど、全文がバッて見えてると便利」）。
+   広い画面は右の列、狭い画面は絵の下。いまの行が光り、押すとそこから流れる。下の「全文」で出し入れ */
+.th-body{flex:1; min-height:0; display:flex}
+.th-body .th-stage{flex:1}
+.th-all{position:relative; width:min(400px, 38%); overflow-y:auto; border-left:1px solid #2A2A30; padding:12px 12px 24px; display:flex; flex-direction:column; gap:4px; -webkit-overflow-scrolling:touch}
+.theater.no-all .th-all{display:none}
+.th-all button{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; height:auto; padding:8px 10px; background:transparent; color:#C8C8D0; box-shadow:none; border-radius:8px; font-size:16px; line-height:1.5}
+.th-all button small{font-size:13px; color:#8A8A94}
+.th-all button.n{font-size:12px; color:#8A8A94; padding:6px 10px 2px}
+.th-all button.on{background:#24242A; color:#FAFAFA}
+.th-all button.on small{color:#C8C8D0}
+#theater .th-all button:hover{background:#1E1E22}
+#theater .th-all button.on:hover{background:#2A2A30}
+@media (max-width:820px){
+  .th-body{flex-direction:column}
+  .th-body .th-stage{flex:0 0 auto; height:min(38vh, 56vw)}
+  .theater.no-all .th-body .th-stage{flex:1; height:auto}
+  .th-all{width:auto; flex:1; border-left:0; border-top:1px solid #2A2A30}
+  .th-sub{bottom:8px}
+  .theater:not(.no-all) .th-sub{display:none}   /* 狭い画面で全文を出しているときは、絵の上の字幕は出さない（絵がほぼ隠れるため。いまの行は真下の全文で光る） */
+}
 .th-bar{padding-bottom:max(16px, env(safe-area-inset-bottom))} .th-top{padding-top:max(12px, env(safe-area-inset-top))}
 @media (max-width:820px){
   .dock-row{flex-wrap:wrap}
@@ -2383,6 +2446,9 @@ paintSetSum();
 
 document.addEventListener('keydown', e=>{
   if(e.target === $('#filter')) return;
+  // ⛔ 書く欄で打っているときは、空白（再生／停止）・R（頭から）・矢印を取らない。
+  //    会話を観る画面の書く欄（書き写す・練習問題）で空白が消え、語が全部つながっていた（2026-11-22 に見つけた）
+  if(e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]')) return;
   if(mode !== 'listen') return;   // 練習と見渡すのキーは、その側で受ける
   const k = e.key;
   if(k === ' '){ e.preventDefault(); toggle(); }
@@ -5282,7 +5348,8 @@ $('#recChip').addEventListener('click', async ()=> {
 })();
 // 試験の口：?test のときだけ、フォルダの代わりにブラウザの内部の保存領域（OPFS）を渡せる。⛔ ふだんは出ない
 if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, loadFiles, openDir, shelf: () => LIB && LIB.books.map(b => b.folder), emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
-  miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li) };   // 段5のつまずき・範囲を試す口
+  miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li),
+  watch: lid => openTheater(lessonData().findIndex(x => x.L.id === lid), false), th: () => theater, at: t => { audio.currentTime = t; }, review: tab => { openReview(); theater.rv.tab = tab; paintReview(); }, rvStats };   // 会話を観る・書き写す・記録を試す口（2026-11-22）   // 段5のつまずき・範囲を試す口
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
 
@@ -5788,6 +5855,7 @@ function theaterPlay(k){
 }
 function theaterEnded(){
   if(!theater) return false;
+  if(theater.rv) return true;   // 書き写すで1文を鳴らしていて、音声の終わりまで来ただけ（タブを まとめ に戻さない）
   const r = theater.list[theater.k];
   if(r && textbook[r.x.L.id]){ openReview(); return true; }   // 誌面の中身がある課は、次へ進まず「この課で習ったこと」へ（本人 2026-11-19）
   if(theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); }
@@ -5838,6 +5906,68 @@ function openReview(){
   paintReview();
 }
 function closeReview(){ if(!theater) return; theater.rv = null; paintTheater(); }
+/* ---- 解いた回数と正答の記録（2026-11-22） ----
+   本人「練習問題とか、何回解いたかとか、正答数みたいなのを記録しておいてくれると、後からどこで間違えたのかが分かる。単語もそう」。
+   ⭕ 1回答えるごとに出来事 rv を1つ残す（emit。記録のフォルダを選んでいれば Mac と iPhone で同じ記録になる）。
+     q＝ex（練習問題）／w（単語）／dc（書き写す）、l＝課、i＝問題の番号・語・文、r＝ok／mid／ng、y＝書いた答え・選んだ答え。
+   ⭕ 「合っていた（訳し方の違い）」で直したときは fix を付け、その前の1回の結果を ok に置き換える（回数は増やさない） */
+function rvRecord(t, lid, i, r, y, fix){
+  if(!r) return;
+  emit('rv', Object.assign({b: bookId, q: t, l: lid, i: String(i), r, y: String(y || '').slice(0, 300)}, fix ? {fix: 1} : {}));
+}
+function rvStats(t, lid){
+  const m = new Map();
+  evOwn.concat(evOthers).filter(e => e.k === 'rv' && e.q === t && (lid == null || e.l === lid)).sort((a, b) => a.t - b.t).forEach(e => {
+    const s = m.get(e.i) || {n: 0, ok: 0, mid: 0, ng: 0, last: null, ys: []};
+    if(e.fix && s.last){ s[s.last.r]--; s.ok++; s.last = Object.assign({}, s.last, {r: 'ok'}); }
+    else { s.n++; s[e.r] = (s[e.r] || 0) + 1; s.last = e; if(e.r !== 'ok' && e.y) s.ys.push(e.y); }
+    m.set(e.i, s);
+  });
+  return m;
+}
+function rvHistLine(s, unit){
+  if(!s || !s.n) return '';
+  return '<div class="rv-hist">これまで ' + s.n + (unit || '回') + '・正解 ' + s.ok + (s.mid ? '・おしい ' + s.mid : '') + (s.ng ? '・<b>違う ' + s.ng + '</b>' : '') +
+    (s.last && s.last.r !== 'ok' && s.last.y ? '　前回：' + esc(s.last.y) : '') + '</div>';
+}
+/* ---- 書き写す（2026-11-22） ----
+   本人「4つの中に、テキストをそのまま書き写す、ディクテーションというか、タイピングのやつが欲しい。本文を書きたい」。
+   本人が選んだ形（2026-11-22）：見て写す／聴いて書く の両方（見て写すが先）・語ごとに色・声調の記号だけ違う語は「おしい」で先へ進む。
+   ⭕ 本文＝会話を観るの字幕と同じ文（theaterSubs のベトナム語の行）。文ごとにその区間の音を鳴らせる。
+   ⭕ 1語打ち終える（空白を打つ）たびに、その語に色を付ける。打っている途中の語は色を付けない（Telex は a→á のように後から形が変わるため） */
+function dcLines(r){ return theaterSubs(r).filter(x => x.v && !x.n); }
+function dcCmp(t, y){
+  if(!y) return '';
+  const T = wparts(t), Y = wparts(y);
+  return T.base !== Y.base ? 'bad' : (T.shape === Y.shape && T.tone === Y.tone) ? 'ok' : 'near';
+}
+let dcStop = 0;
+function dcPlay(x){
+  if(!x) return;
+  clearTimeout(dcStop);
+  audio.currentTime = Math.max(0, x.s - 0.05);
+  audio.play().catch(() => {});
+  const stop = () => { if(audio.currentTime >= x.e + 0.1 || audio.paused){ audio.pause(); return; } dcStop = setTimeout(stop, 60); };
+  dcStop = setTimeout(stop, 60);
+}
+function dcLive(lines, d){
+  const x = lines[d.i]; if(!x) return;
+  const typed = d.typed || '', ys = words(typed), T = words(x.v);
+  const doneN = /\s$/.test(typed) ? ys.length : Math.max(0, ys.length - 1);
+  const tg = $('#dcTgt');
+  if(tg) tg.innerHTML = T.map((w, j) => '<span class="' + (j < doneN ? dcCmp(w, ys[j] || '') : j === doneN ? 'cur' : '') + '">' + esc(w) + '</span>').join(' ');
+  const lv = $('#dcLive');
+  if(lv) lv.innerHTML = ys.slice(0, doneN).map((w, j) => '<span class="' + (T[j] ? dcCmp(T[j], w) : 'bad') + '">' + esc(w) + '</span>').join('');
+}
+function dcFinish(lid, lines, d){
+  const x = lines[d.i], typed = (d.typed || '').trim(); if(!x || !typed) return;
+  const res = checkTyped(x.v, typed);
+  const r = res.every(z => z.k === 'ok') ? 'ok' : res.every(z => z.k === 'ok' || z.k === 'near') ? 'mid' : 'ng';
+  d.res = {r, res}; d.round = d.round || {};
+  d.round[d.i] = r;
+  res.filter(z => z.k === 'near').forEach(z => (d.near = d.near || []).push(z));
+  rvRecord('dc', lid, norm(x.v), r, typed);
+}
 function rvMD(t){   // 誌面の説明（md）を小さく描く：表・箇条・太字・段落
   const inl = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
   const out = []; let tb = null, ul = null;
@@ -5895,9 +6025,9 @@ function paintReview(){
   const el = $('#theater'), r = theater.list[theater.k], lid = r.x.L.id, tb = textbook[lid], rv = theater.rv;
   const keepTop = $('#rvBox') ? $('#rvBox').scrollTop : 0;   // 答えを確かめて描き直しても、読んでいた位置に留まる
   const fs = tb.formulas || [], voc = tb.vocab || [], exs = tb.exercises || [];
-  const nEx = exs.reduce((a, e) => a + (e.items || []).length, 0);
-  const tabs = [['sum', 'まとめ'], ['f', '文法' + (fs.length ? ' ' + fs.length : '')], ['w', '単語' + (voc.length ? ' ' + voc.length : '')], ['ex', '練習問題' + (nEx ? ' ' + nEx : '')]]
-    .filter(([k]) => k === 'sum' || (k === 'f' && fs.length) || (k === 'w' && voc.length) || (k === 'ex' && nEx));
+  const nEx = exs.reduce((a, e) => a + (e.items || []).length, 0), lines = dcLines(r);
+  const tabs = [['sum', 'まとめ'], ['f', '文法' + (fs.length ? ' ' + fs.length : '')], ['w', '単語' + (voc.length ? ' ' + voc.length : '')], ['dc', '書き写す' + (lines.length ? ' ' + lines.length : '')], ['ex', '練習問題' + (nEx ? ' ' + nEx : '')]]
+    .filter(([k]) => k === 'sum' || (k === 'f' && fs.length) || (k === 'w' && voc.length) || (k === 'dc' && lines.length) || (k === 'ex' && nEx));
   let h = '';
   if(rv.tab === 'sum'){
     h += '<h2>' + esc(tb.unit || '') + '　' + esc(tb.title || '') + '</h2>';
@@ -5934,16 +6064,50 @@ function paintReview(){
     }else if(q){
       h += '<div class="rv-q"><div class="qv">' + q.total + '語 覚えました</div><div class="qn">間違えた回数 ' + q.miss + '。どの語も、意味からもベトナム語からも2回続けて当てるまで出しました</div><div class="rv-go"><button class="primary" id="rvWStart">もう一度</button></div></div>';
     }
-    h += '<section><h3>この課の単語</h3><div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : ''))).join('') + '</div></section>';
+    const wst = rvStats('w', null);   // 語の記録は課をまたいで1つ（同じ語が別の課に出ても続きから数える）
+    const wbad = voc.filter(w => { const s = wst.get(w.vi); return s && s.ng; }).length;
+    h += '<section><h3>この課の単語</h3>' + (wbad ? '<div class="rv-hist" style="margin-bottom:8px">外したことのある語 ' + wbad + '</div>' : '') +
+      '<div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : '')).replace('</button>', rvHistLine(wst.get(w.vi)) + '</button>')).join('') + '</div></section>';
+  }else if(rv.tab === 'dc'){
+    const d = rv.dc || (rv.dc = {i: Math.min(+load('dc:pos:' + lid, 0) || 0, lines.length), typed: '', res: null});
+    const mode = load('dc:mode', 'see'), dst = rvStats('dc', lid);
+    if(d.i >= lines.length){
+      const rd = Object.values(d.round || {}), c = r0 => rd.filter(z => z === r0).length;
+      h += '<div class="dc"><h2>本文を最後まで書き写しました</h2>' +
+        (rd.length ? '<p>今回 ' + rd.length + '文：正解 ' + c('ok') + '・おしい ' + c('mid') + '・違う語あり ' + c('ng') + '</p>' : '') +
+        ((d.near || []).length ? '<section><h3>声調の記号だけ違った語</h3><div class="dc-diff">' + d.near.map(z => '<span class="w near">' + esc(z.t) + '<small>' + esc(z.y) + '</small></span>').join('') + '</div></section>' : '') +
+        '<div class="dc-btns"><button class="primary" id="dcAgain">最初からもう一度</button></div></div>';
+    }else{
+      const x = lines[d.i], showT = mode === 'see' || d.res || d.peek;
+      const word = z => z.k === 'ok' ? '<span class="w ok">' + esc(z.t) + '</span>' : z.k === 'extra' ? '<span class="w extra">' + esc(z.y) + '</span>'
+        : '<span class="w ' + z.k + '">' + esc(z.t) + '<small>' + (z.k === 'miss' ? '抜け' : esc(z.y)) + '</small></span>';
+      h += '<div class="dc">' +
+        '<div class="dc-head"><div class="dc-mode"><button data-dcmode="see" class="' + (mode === 'see' ? 'on' : '') + '">見て写す</button><button data-dcmode="hear" class="' + (mode === 'hear' ? 'on' : '') + '">聴いて書く</button></div><span class="sp"></span><span>' + (d.i + 1) + ' / ' + lines.length + '文</span></div>' +
+        '<div class="rv-meter"><i style="width:' + Math.round(d.i / lines.length * 100) + '%"></i></div>' +
+        (d.res ? '' : showT ? '<div class="dc-tgt" id="dcTgt" lang="' + LP.code + '">' + esc(x.v) + '</div>' + (theater.ja && x.j ? '<div class="dc-ja">' + esc(x.j) + '</div>' : '')
+          : '<div class="dc-hide">音を聴いて、聞こえた文を打ちます<button id="dcPeek">文を見る</button></div>') +
+        (d.res ? '<div class="dc-res ' + d.res.r + '"><b>' + {ok: '正解', mid: 'おしい：声調の記号だけ違う語があります', ng: '違う語があります'}[d.res.r] + '</b><div class="dc-diff" lang="' + LP.code + '">' + d.res.res.map(word).join('') + '</div>' + (x.j ? '<div class="dc-ja" style="margin:0">' + esc(x.j) + '</div>' : '') + '</div>'
+          : '<input id="dcIn" lang="' + LP.code + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="' + (mode === 'see' ? '上の文を書き写す' : '聞こえた文を書く') + '">' + (mode === 'hear' ? '<div class="dc-live" id="dcLive" lang="' + LP.code + '"></div>' : '')) +   // 見て写すでは上の文の語に色が付くので、打った語の列は出さない
+        '<div class="dc-btns">' + (d.res ? (d.res.r === 'ng' ? '<button class="primary" id="dcRetry">もう一度打つ</button><button id="dcNext">次の文</button>' : '<button class="primary" id="dcNext">次の文</button><button id="dcRetry">もう一度打つ</button>')
+          : '<button class="primary" id="dcCheck">確かめる（Enter）</button>') + '<button id="dcPlay">この文を聴く</button></div>' +
+        (LP.inputMethod === 'telex' && !d.res ? '<label class="dc-opt"><input type="checkbox" id="dcTelex"' + (load('telex', true) ? ' checked' : '') + '> 画面の Telex で打つ（aa→â　dd→đ　s f r x j で声調）。Mac や iPhone のベトナム語入力で打つときは外す</label>' : '') +
+        rvHistLine(dst.get(norm(x.v))) +
+      '</div>';
+    }
+    h += '<section><h3>本文</h3><div class="dc-list">' + lines.map((x, j) => '<button data-dcgo="' + j + '" class="' + (j === d.i ? 'now' : '') + '"><span' + (mode === 'see' ? ' lang="' + LP.code + '"' : '') + '>' + (mode === 'see' ? esc(x.v) : '文 ' + (j + 1)) + '</span>' + rvHistLine(dst.get(norm(x.v))) + '</button>').join('') + '</div></section>';
   }else if(rv.tab === 'ex'){
     const sg = rvBookStage(lid);
     /* ⭕ ここで解く：問題ごとに書く欄と「確かめる」を置く（本人 2026-11-20「インプットできる枠がないと正誤を測れない」）。
        ⭕ 書いた答えと印は端末に残る（rvEx.<課>）。音声つきで1問ずつ解く前からの頁は、下のボタンで残してある */
     const st = rvExStore(lid), all = exs.flatMap(e => (e.items || []).map(x => ({e, x, k: e.sec + '-' + x.n})));
     const nOk = all.filter(o => (st[o.k] || {}).mark === 'ok').length, nDone = all.filter(o => (st[o.k] || {}).mark).length;
-    h += '<div class="rv-score">' + nDone + ' / ' + all.length + '問 答えた　正解 ' + nOk + '</div>';
-    h += exs.map(e => '<section class="rv-exs"><h3>' + esc(e.label || '練習') + '</h3>' + (e.instr ? '<div class="ins">' + esc(e.instr) + '</div>' : '') +
-      '<ol>' + (e.items || []).map(x => {
+    const xst = rvStats('ex', lid), missed = k => { const z = xst.get(k); return z && (z.ng || z.mid); };
+    const nMiss = all.filter(o => missed(o.k)).length;
+    h += '<div class="rv-score">' + nDone + ' / ' + all.length + '問 答えた　正解 ' + nOk + (nMiss ? '　これまでに間違えたことのある問題 ' + nMiss : '') + '</div>';
+    if(nMiss) h += '<div class="rv-filter"><button data-exf="all" class="' + (rv.exMiss ? '' : 'on') + '">全部</button><button data-exf="miss" class="' + (rv.exMiss ? 'on' : '') + '">間違えたことのある問題だけ（' + nMiss + '）</button></div>';
+    h += exs.map(e => { const its = (e.items || []).filter(x => !rv.exMiss || missed(e.sec + '-' + x.n)); if(!its.length) return '';
+      return '<section class="rv-exs"><h3>' + esc(e.label || '練習') + '</h3>' + (e.instr ? '<div class="ins">' + esc(e.instr) + '</div>' : '') +
+      '<ol>' + its.map(x => {
         const k = e.sec + '-' + x.n, s = st[k] || {}, vi = rvViAnswer(x);
         const msg = {ok: '正解', mid: '声調の記号だけ違います', ng: '違います'}[s.mark] || '';
         return '<li><div><span>(' + x.n + ')</span>' + esc(x.q || '') + '</div>' +
@@ -5952,8 +6116,9 @@ function paintReview(){
           (s.shown ? '<div class="res ' + (s.mark || '') + '">' + (vi && msg ? '<b>' + msg + '</b>\n' : '') + '答え：' + esc(String(x.a || '').split(' / ').join(' ／ ')) + '</div>' +
             '<div class="self">' + (vi ? (s.mark === 'ok' ? '' : '<button data-exself="' + k + '|ok">合っていた（訳し方の違い）</button>') :
               [['ok', '○ 合っていた'], ['mid', '△ 少し違う'], ['ng', '× 違った']].map(([m, n]) => '<button data-exself="' + k + '|' + m + '" class="' + (s.mark === m ? 'on' : '') + '">' + n + '</button>').join('')) + '</div>' : '') +
+          rvHistLine(xst.get(k)) +
         '</li>';
-      }).join('') + '</ol></section>').join('');
+      }).join('') + '</ol></section>'; }).join('');
     h += '<div class="rv-go"><button id="rvExReset">この課の答えを消して最初から</button>' + (sg ? '<button id="rvBook">答えの音声つきで1問ずつ解く</button>' : '') + '</div>';
   }
   const last = theater.k + 1 >= theater.list.length;
@@ -5974,7 +6139,8 @@ function paintReview(){
   el.querySelectorAll('[data-wch]').forEach(b => b.onclick = () => {
     const q = rv.wq; if(q.picked != null) return;
     q.picked = +b.dataset.wch;
-    const ok = rvWordPick(q); paintReview();
+    const w0 = q.queue[0], ok = rvWordPick(q);
+    rvRecord('w', lid, w0.vi, ok ? 'ok' : 'ng', q.ch[q.picked]); paintReview();
     if(ok) setTimeout(() => { if(theater && theater.rv && theater.rv.wq === q && q.picked != null){ rvWordNext(q); paintReview(); } }, 700);
   });
   const wn = $('#rvWNext'); if(wn) wn.onclick = () => { rvWordNext(rv.wq); paintReview(); };
@@ -5984,9 +6150,42 @@ function paintReview(){
     i.oninput = () => { const st = rvExStore(lid); st[i.dataset.exin] = Object.assign(st[i.dataset.exin] || {}, {typed: i.value}); rvExSave(lid, st); };   // 描き直しても書きかけが消えないように
   });
   el.querySelectorAll('[data-exshow]').forEach(b => b.onclick = () => { const st = rvExStore(lid); const k = b.dataset.exshow; st[k] = Object.assign(st[k] || {}, {shown: true, typed: (el.querySelector('[data-exin="' + k + '"]') || {}).value || (st[k] || {}).typed || ''}); rvExSave(lid, st); paintReview(); });
-  el.querySelectorAll('[data-exself]').forEach(b => b.onclick = () => { const [k, m] = b.dataset.exself.split('|'); const st = rvExStore(lid); st[k] = Object.assign(st[k] || {}, {mark: m}); rvExSave(lid, st); paintReview(); });
+  el.querySelectorAll('[data-exself]').forEach(b => b.onclick = () => { const [k, m] = b.dataset.exself.split('|'); const st = rvExStore(lid);
+    const [s0, n0] = k.split('-').map(Number), x = (tb.exercises || []).find(e => +e.sec === s0)?.items.find(i => +i.n === n0);
+    if(x && rvViAnswer(x)) rvRecord('ex', lid, k, 'ok', (st[k] || {}).typed, true);   // 自動の採点を「合っていた」に直した：前の1回を正解に置き換える
+    else if((st[k] || {}).mark !== m) rvRecord('ex', lid, k, m, (st[k] || {}).typed);
+    st[k] = Object.assign(st[k] || {}, {mark: m}); rvExSave(lid, st); paintReview(); });
   const er = $('#rvExReset'); if(er) er.onclick = () => { rvExSave(lid, {}); paintReview(); };
   const bk = $('#rvBook'); if(bk) bk.onclick = () => { const sg = rvBookStage(lid); closeTheater(); if(sg) startStage(sg.id); };
+  el.querySelectorAll('[data-exf]').forEach(b => b.onclick = () => { rv.exMiss = b.dataset.exf === 'miss'; paintReview(); });
+  if(rv.tab === 'dc') dcWire(lid, lines);
+}
+function dcWire(lid, lines){
+  const rv = theater.rv, d = rv.dc; if(!d) return;
+  const again = (focus) => { rv.dcFocus = focus; paintReview(); };
+  const go = i => { clearTimeout(dcStop); audio.pause(); d.i = i; d.typed = ''; d.res = null; d.peek = false; save('dc:pos:' + lid, i); again(true);
+    if(load('dc:mode', 'see') === 'hear' && lines[i]) dcPlay(lines[i]); };
+  const inp = $('#dcIn');
+  if(inp){
+    inp.value = d.typed || ''; dcLive(lines, d);
+    inp.oninput = e => {
+      if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){ const v = telexLine(inp.value); if(v !== inp.value) inp.value = v; }
+      d.typed = inp.value; dcLive(lines, d);
+    };
+    inp.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); d.typed = inp.value; if(d.typed.trim()){ dcFinish(lid, lines, d); again(true); } } };
+    if(rv.dcFocus) inp.focus();
+  }else if(rv.dcFocus){ const p = $('#dcNext') && $('#dcRetry') && (d.res && d.res.r === 'ng' ? $('#dcRetry') : $('#dcNext')); if(p) p.focus(); }
+  rv.dcFocus = false;
+  const on = (id, f) => { const b = $(id); if(b) b.onclick = f; };
+  on('#dcCheck', () => { d.typed = inp ? inp.value : d.typed; if(d.typed.trim()){ dcFinish(lid, lines, d); again(true); } else if(inp) inp.focus(); });
+  on('#dcNext', () => go(d.i + 1));
+  on('#dcRetry', () => { d.typed = ''; d.res = null; again(true); });
+  on('#dcPlay', () => { dcPlay(lines[d.i]); const i2 = $('#dcIn'); if(i2) i2.focus(); });
+  on('#dcPeek', () => { d.peek = true; again(true); });
+  on('#dcAgain', () => { rv.dc = {i: 0, typed: '', res: null}; save('dc:pos:' + lid, 0); again(true); });
+  const tx = $('#dcTelex'); if(tx) tx.onchange = e => { save('telex', e.target.checked); const i2 = $('#dcIn'); if(i2) i2.focus(); };
+  document.querySelectorAll('[data-dcmode]').forEach(b => b.onclick = () => { save('dc:mode', b.dataset.dcmode); d.peek = false; again(true); });
+  document.querySelectorAll('[data-dcgo]').forEach(b => b.onclick = () => { go(+b.dataset.dcgo); $('#rvBox').scrollTop = 0; });
 }
 /* 単語の音：教材の項目に同じ語があればその音、無ければ端末の声 */
 function rvSpeak(t){
@@ -6030,6 +6229,7 @@ function rvExCheck(lid, k){
   const inp = document.querySelector('[data-exin="' + k + '"]'), typed = inp ? inp.value : '';
   const st = rvExStore(lid);
   st[k] = {typed, shown: true, mark: rvViAnswer(x) ? rvGrade(x, typed) : (st[k] || {}).mark || null};
+  if(rvViAnswer(x)) rvRecord('ex', lid, k, st[k].mark, typed);   // 日本語で答える問題は、自分で ○△× を付けたときに残す
   rvExSave(lid, st); paintReview();
   const nx = document.querySelectorAll('[data-exin]'), arr = [...nx], i = arr.findIndex(e => e.dataset.exin === k);
   if(arr[i + 1]) arr[i + 1].focus();
@@ -6070,10 +6270,10 @@ function paintTheater(){
       (textbook[id] ? '<button class="th-rv" id="thRv">この課で習ったこと</button>' : '') +
       '<button class="th-x" id="thClose">閉じる</button>' +
     '</div>' +
-    '<div class="th-stage">' +
+    '<div class="th-body"><div class="th-stage">' +
       (vid ? '<video id="thVid" src="' + vid + '" muted playsinline preload="auto"></video>' : pic ? '<img src="' + pic + '" alt="">' : '<div class="th-none">この課の絵はまだありません</div>') +
       '<div class="th-sub" id="thSub" aria-live="polite"></div>' +
-    '</div>' +
+    '</div><div class="th-all" id="thAll" aria-label="本文の全文"></div></div>' +
     '<div class="th-bar">' +
       '<button id="thPrev"' + (theater.k === 0 ? ' disabled' : '') + '>前の課</button>' +
       '<button class="primary" id="thPlay">' + (audio.paused ? '再生' : '一時停止') + '</button>' +
@@ -6081,13 +6281,17 @@ function paintTheater(){
       '<span class="clock" id="thCur">0:00</span><input type="range" id="thSeek" min="0" max="1000" value="0" aria-label="再生位置"><span class="clock" id="thDur">0:00</span>' +
       thRateSelect() +
       '<label><input type="checkbox" id="thJa"' + (theater.ja ? ' checked' : '') + '> 訳</label>' +
+      '<label><input type="checkbox" id="thAllOn"' + (load('theater:all', true) ? ' checked' : '') + '> 全文</label>' +
     '</div>';
+  el.classList.toggle('no-all', !load('theater:all', true));
+  paintTheaterAll();
   $('#thClose').onclick = closeTheater;
   const rvb = $('#thRv'); if(rvb) rvb.onclick = openReview;
   $('#thPrev').onclick = () => theaterPlay(theater.k - 1);
   $('#thNext').onclick = () => theaterPlay(theater.k + 1);
   $('#thPlay').onclick = () => { if(audio.paused) audio.play().catch(() => {}); else audio.pause(); };
-  $('#thJa').onchange = e => { theater.ja = e.target.checked; save('theater:ja', theater.ja); paintTheaterSub(); };
+  $('#thJa').onchange = e => { theater.ja = e.target.checked; save('theater:ja', theater.ja); paintTheaterAll(); paintTheaterSub(); };
+  $('#thAllOn').onchange = e => { save('theater:all', e.target.checked); el.classList.toggle('no-all', !e.target.checked); theater.ci = -1; paintTheaterSub(); };
   $('#thSeek').oninput = e => { if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; };
   const pk = $('#thPick'); if(pk) pk.onchange = e => { clearTimeout(gapTimer); theaterPlay(+e.target.value); };
   $('#thRate').onchange = e => { setRate(+e.target.value); e.target.blur(); };
@@ -6101,6 +6305,24 @@ function thRateSelect(){
   return '<select id="thRate" class="th-rate" aria-label="再生速度">' +
     rs.map(r => '<option value="' + r + '"' + (r === rate ? ' selected' : '') + '>' + r + '×</option>').join('') + '</select>';
 }
+/* 全文の列：字幕と同じ区間を全部並べる。押すとその行から流れる */
+function paintTheaterAll(){
+  const L = $('#thAll'); if(!L || !theater) return;
+  L.innerHTML = (theater.subs || []).map((x, i) => x.n ? '<button class="n" data-thi="' + i + '" lang="ja">' + esc(x.n) + '</button>'
+    : '<button data-thi="' + i + '"><span lang="' + LP.code + '">' + esc(x.v) + '</span>' + (theater.ja && x.j ? '<small lang="ja">' + esc(x.j) + '</small>' : '') + '</button>').join('');
+  L.querySelectorAll('[data-thi]').forEach(b => b.onclick = () => { const x = theater.subs[+b.dataset.thi]; audio.currentTime = Math.max(0, x.s); audio.play().catch(() => {}); });
+  theater.ci = -1;
+}
+function markTheaterAll(t){
+  const L = $('#thAll'); if(!L || !theater || $('#theater').classList.contains('no-all')) return;
+  let ci = -1; (theater.subs || []).forEach((x, i) => { if(t >= x.s - 0.15) ci = i; });   // いま流れている行（行と行のあいだは、直前の行のまま）
+  if(ci === theater.ci) return;
+  theater.ci = ci;
+  L.querySelectorAll('.on').forEach(b => b.classList.remove('on'));
+  const b = L.querySelector('[data-thi="' + ci + '"]'); if(!b) return;
+  b.classList.add('on');
+  L.scrollTo({top: b.offsetTop - L.clientHeight / 2 + b.offsetHeight / 2, behavior: 'smooth'});   // ⭕ 動かすのは全文の列だけ（ページは動かさない）
+}
 function paintTheaterSub(){
   if(!theater) return;
   const box = $('#thSub'); if(!box) return;
@@ -6109,6 +6331,7 @@ function paintTheaterSub(){
   const html = !c ? '' : c.n ? '<span class="n" lang="ja">' + esc(c.n) + '</span>'
     : '<span class="v" lang="' + LP.code + '">' + esc(c.v) + '</span>' + (theater.ja && c.j ? '<br><span class="j" lang="ja">' + esc(c.j) + '</span>' : '');
   if(box.dataset.h !== html){ box.dataset.h = html; box.innerHTML = html; }
+  markTheaterAll(t);
   syncTheaterVideo(t);
   const b = $('#thPlay'); if(b) b.textContent = audio.paused ? '再生' : '一時停止';
   if(audio.duration){ $('#thSeek').value = Math.round(t / audio.duration * 1000); $('#thCur').textContent = fmt(t); $('#thDur').textContent = fmt(audio.duration); }
