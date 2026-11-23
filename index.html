@@ -1793,6 +1793,15 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .theater .th-top select{box-shadow:none; height:40px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; padding:0 16px}
 .theater .th-top .th-n{color:rgba(244,247,240,.66)}
 .theater .th-top button, .theater .th-bar button, .theater .th-bar .th-rate{height:40px; padding:0 16px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
+#rvBox .exord{display:flex; flex-direction:column; gap:10px; margin-top:4px}
+#rvBox .exord .gq-ask{font-size:13px; color:var(--_ad-muted)}
+#rvBox .exord .rv-go{margin:0; display:flex; flex-direction:row; flex-wrap:wrap; gap:8px}
+#rvBox .exord .rv-go button{height:44px; padding:0 18px; flex:none; border-radius:100px}
+#rvBox .exord .rv-go .exsay{margin-left:auto}
+#rvBox .rv-exs .self{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+#rvBox .exord-ok{font-size:13px; color:var(--_ad-ok); margin:2px 0 6px}
+#rvBox .rv-exs button.exsay, #rvBox .rv-exs .qq button.exsay{display:inline-flex; align-items:center; gap:6px; background:#0F1712; color:var(--_ad-text); border:1px solid var(--_ad-line2); font-weight:400}
+#rvBox .exsay .ic{width:16px; height:16px}
 .notepad{z-index:95} .npslash{z-index:96}
 .notepad .npsize button{color:var(--ui-text-fgColor)}   /* 選んだ大きさが白地に白で見えなかった */   /* メモは会話を観る画面（z-index 90）の上にも出す */
 .theater .th-top .th-memo{margin-left:auto; display:inline-flex; align-items:center; gap:6px}
@@ -6362,7 +6371,7 @@ function paintReview(){
       '<div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : '') + (w.extra ? '　（文に出た語' + (w.ex ? '：' + w.ex : '') + '）' : '')).replace('</button>', rvHistLine(wst.get(w.vi)) + rvwWhen(w.vi) + '</button>')).join('') + '</div></section>';
   }else if(rv.tab === 'dc'){
     const d = rv.dc || (rv.dc = {i: Math.min(+load('dc:pos:' + lid, 0) || 0, lines.length), typed: '', res: null});
-    const mode = load('dc:mode', 'see'), dst = rvStats('dc', lid);
+    const mode = 'see', dst = rvStats('dc', lid);   // ⭕ 書き写すは見て写すだけ（本人 2026-11-23「書き写すの時はもう基本聞くんじゃなくて書き写しでいい。練習問題の時に聞きたい」）。聴くのは練習問題へ移した
     if(d.i >= lines.length){
       const rd = Object.values(d.round || {}), c = r0 => rd.filter(z => z === r0).length;
       h += '<div class="dc"><h2>本文を最後まで書き写しました</h2>' +
@@ -6373,7 +6382,7 @@ function paintReview(){
       const x = lines[d.i], showT = mode === 'see' || d.res || d.peek;
       const word = dcWord;
       h += '<div class="dc">' +
-        '<div class="dc-head"><div class="dc-mode"><button data-dcmode="see" class="' + (mode === 'see' ? 'on' : '') + '">見て写す</button><button data-dcmode="hear" class="' + (mode === 'hear' ? 'on' : '') + '">聴いて書く</button></div><span class="sp"></span><span>' + (d.i + 1) + ' / ' + lines.length + '文</span></div>' +
+        '<div class="dc-head"><span>本文を見て書き写す</span><span class="sp"></span><span>' + (d.i + 1) + ' / ' + lines.length + '文</span></div>' +
         '<div class="rv-meter"><i style="width:' + Math.round(d.i / lines.length * 100) + '%"></i></div>' +
         (d.res ? '' : showT ? '<div class="dc-tgt" id="dcTgt" lang="' + LP.code + '">' + esc(x.v) + '</div>' + (theater.ja && x.j ? '<div class="dc-ja">' + esc(x.j) + '</div>' : '')
           : '<div class="dc-hide">音を聴いて、聞こえた文を打ちます<button id="dcPeek">文を見る</button></div>') +
@@ -6402,9 +6411,11 @@ function paintReview(){
       return '<section class="rv-exs"><h3>' + esc(e.label || '練習') + '</h3>' + (e.instr ? '<div class="ins">' + esc(e.instr) + '</div>' : '') +
       '<ol>' + its.map(x => {
         const k = e.sec + '-' + x.n, s = st[k] || {}, vi = rvViAnswer(x);
+        const ord = vi && !s.shown && exNeedOrder(k, x, xst.get(k));
         return '<li><div><span>(' + x.n + ')</span>' + esc(x.q || '') + '</div>' +
-          '<div class="qq"><input data-exin="' + k + '" value="' + esc(s.typed || '') + '" placeholder="' + (vi ? 'ベトナム語で書く' : '日本語で書く') + '" autocomplete="off" autocapitalize="off" spellcheck="false"' + (vi ? ' lang="' + LP.code + '"' : '') + '>' +
-          '<button data-exck="' + k + '">確かめる</button></div>' +
+          (ord ? exOrdHTML(k, x) :
+          exOrdNote(k) + '<div class="qq"><input data-exin="' + k + '" value="' + esc(s.typed || '') + '" placeholder="' + (vi ? 'ベトナム語で書く' : '日本語で書く') + '" autocomplete="off" autocapitalize="off" spellcheck="false"' + (vi ? ' lang="' + LP.code + '"' : '') + '>' +
+          '<button data-exck="' + k + '">確かめる</button>' + (vi ? '<button class="exsay" data-exsay="' + k + '" title="答えの音声を聴く"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /><path d="M16 9a5 5 0 0 1 0 6" /><path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></svg><span>聴く</span></button>' : '') + '</div>') +
           (s.shown ? rvResBox(x, s) +
             '<div class="self">' + (vi ? (s.mark === 'ok' ? '' : '<button data-exself="' + k + '|ok">合っていた（訳し方の違い）</button>') :
               [['ok', '○ 合っていた'], ['mid', '△ 少し違う'], ['ng', '× 違った']].map(([m, n]) => '<button data-exself="' + k + '|' + m + '" class="' + (s.mark === m ? 'on' : '') + '">' + n + '</button>').join('')) + '</div>' : '') +
@@ -6461,12 +6472,13 @@ function paintReview(){
   const bk = $('#rvBook'); if(bk) bk.onclick = () => { const sg = rvBookStage(lid); closeTheater(); if(sg) startStage(sg.id); };
   el.querySelectorAll('[data-exf]').forEach(b => b.onclick = () => { rv.exMiss = b.dataset.exf === 'miss'; paintReview(); });
   if(rv.tab === 'dc') dcWire(lid, lines);
+  if(rv.tab === 'ex') exOrdWire(lid);
 }
 function dcWire(lid, lines){
   const rv = theater.rv, d = rv.dc; if(!d) return;
   const again = (focus) => { rv.dcFocus = focus; paintReview(); };
   const go = i => { clearTimeout(dcStop); audio.pause(); d.i = i; d.typed = ''; d.res = null; d.peek = false; save('dc:pos:' + lid, i); again(true);
-    if(load('dc:mode', 'see') === 'hear' && lines[i]) dcPlay(lines[i]); };
+  };
   const inp = $('#dcIn');
   if(inp){
     inp.value = d.typed || ''; dcLive(lines, d);
@@ -6512,7 +6524,7 @@ const rtDayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + St
 const RT_KIND = {ex: '練習問題', dc: '書き写す', w: '単語', g: '文法', ans: '練習'};
 const RT_TYPE = {tone: '声調', shape: '母音・子音の記号（â ă ơ ư đ など）', miss: '抜けた語', extra: '余計な語', wrong: '違う語・言い方', order: '語順', mean: '意味の取り違え'};
 const RT_TIP = {
-  tone: '声調の記号を落とす・取り違えるのが多い日でした。書き写すの「聴いて書く」で、声調だけに気をつけて1課ぶん通すと効きます。',
+  tone: '声調の記号を落とす・取り違えるのが多い日でした。練習問題の「聴く」で答えの音を聞き、声調だけに気をつけて打ち直すと効きます。',
   shape: 'â・ă・ơ・ư・đ などの記号が抜けています。Telex なら aa→â・aw→ă・ow→ơ・uw→ư・dd→đ。声調より先に母音の形を決めてから打つと減ります。',
   miss: '短い語（được・các・rất など）が抜けています。打つ前に一度、文を口で言ってから打つと抜けにくくなります。',
   extra: '答えに無い語を足しています。日本語に引っぱられて語を足していないか、文法タブの並べ替えで型を確かめると効きます。',
@@ -6748,7 +6760,7 @@ function rvWordNext(q){
    本人「間違えたところを、何が違ったか・何が惜しいかが分かるようにして、次の会話に行く前に定着できるようにしたい。難易度が高くても一生懸命解く」。
    ⭕ 1問ずつ、空の欄から。答えは確かめるまで見せない。正解したら抜け、おしい・違うは2問あとにもう一度出る。全部正解で終わり */
 function rvReBegin(lid, keys, gate){
-  theater.rv.exRe = {q: keys.slice(), total: keys.length, done: 0, cur: null, gate};
+  theater.rv.exRe = {q: keys.slice(), total: keys.length, done: 0, cur: null, gate}; theater.rv.exOrd = {};   // 解き直しは、もう一度並べるところから
   paintReview(); $('#rvBox').scrollTop = 0; setTimeout(() => { const i = $('#reIn'); if(i) i.focus(); }, 0);
 }
 function rvRetryHtml(lid, re){
@@ -6761,8 +6773,9 @@ function rvRetryHtml(lid, re){
   h += '<div class="dc-head"><span>解き直し</span><span class="sp"></span><span>残り ' + re.q.length + '問・済 ' + re.done + ' / ' + re.total + '</span></div>' +
     '<div class="rv-meter"><i style="width:' + Math.round(re.done / re.total * 100) + '%"></i></div>' +
     '<section class="rv-exs"><div class="ins">' + esc((e.label || '練習') + '　' + (e.instr || '')) + '</div><ol><li><div><span>(' + x.n + ')</span>' + esc(x.q || '') + '</div>' +
-    (c ? rvResBox(x, {typed: c.typed, mark: c.r}) + '<div class="self">' + (c.r !== 'ok' ? '<button id="reFix">合っていた（訳し方の違い）</button>' : '') + '</div>'
-       : '<div class="qq"><input id="reIn" lang="' + LP.code + '" placeholder="ベトナム語で書く（Enter で確かめる）" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button id="reCk">確かめる</button></div>') +
+    (c ? rvResBox(x, {typed: c.typed, mark: c.r}) + '<div class="self">' + (c.r !== 'ok' ? '<button id="reFix">合っていた（訳し方の違い）</button>' : '') + '<button class="exsay" data-exsay="' + k + '" title="答えの音声を聴く"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /><path d="M16 9a5 5 0 0 1 0 6" /><path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></svg><span>聴く</span></button>' + '</div>'
+       : exNeedOrder(k, x, null) ? exOrdHTML(k, x)
+       : exOrdNote(k) + '<div class="qq"><input id="reIn" lang="' + LP.code + '" placeholder="ベトナム語で書く（Enter で確かめる）" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button id="reCk">確かめる</button>' + '<button class="exsay" data-exsay="' + k + '" title="答えの音声を聴く"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /><path d="M16 9a5 5 0 0 1 0 6" /><path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></svg><span>聴く</span></button>' + '</div>') +
     rvHistLine(rvStats('ex', lid).get(k)) + '</li></ol></section>' +
     '<div class="dc-btns">' + (c ? '<button class="primary" id="reNext">' + (c.r === 'ok' ? '次へ（Enter）' : 'あとでもう一度（Enter）') + '</button>' : '') + '<button id="reQuit">' + (re.gate ? '解き直さずに次の課へ' : 'やめて一覧へ') + '</button></div>';
   return h + '</div>';
@@ -6786,6 +6799,65 @@ function rvRetryWire(lid){
   }
   const nx = $('#reNext'); if(nx){ nx.onclick = next; nx.focus(); nx.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); next(); } }; }
   const fx = $('#reFix'); if(fx) fx.onclick = () => { rvRecord('ex', lid, k, 'ok', re.cur.typed, true); const st = rvExStore(lid); st[k] = Object.assign(st[k] || {}, {mark: 'ok'}); rvExSave(lid, st); re.cur.r = 'ok'; paintReview(); };
+}
+/* 練習問題は「並べる → 打つ」（本人 2026-11-23「まず選択式で並べさせて、単語とかを覚えてから書く方がいい。わかんない時、本当にわかんないから」）。
+   ⭕ 並べるのは、ベトナム語で答える3語以上の問題で、前回まだ合っていないものだけ。前回合った問題は打つだけ（分かっているものを並べさせない）。
+   ⭕ 並べたあとは文を隠して打つ。並べる段は記録に残さない（試すのは打つほう）。「並べずに書く」で飛ばせる。
+   ⭕ 答えの音声（本人「この練習問題の時に聞きたい」）：教材の音声の区間があればそれ。答えの語が区間の文に入っていない所（番号がずれている所）は使わず、端末の声で読む */
+const exLw = t => words(String(t || '').normalize('NFC').toLowerCase().replace(/[\/〜]/g, ' '));
+function exAlts(x){ return String(x.a || '').split(' / ').map(a => words(a.replace(/〜/g, ' '))).filter(a => a.length); }
+function exNeedOrder(k, x, stat){
+  const rv = theater.rv, o = (rv.exOrd || {})[k], a = exAlts(x)[0] || [];
+  if(o && o.done) return false;
+  if(a.length < 3) return false;
+  return !(stat && stat.last && stat.last.r === 'ok');
+}
+function exOrd(k, x){
+  const rv = theater.rv; rv.exOrd = rv.exOrd || {};
+  let o = rv.exOrd[k];
+  if(!o){ const w = exAlts(x)[0]; let sh = shuffled(w.map((v, i) => i)); if(sh.every((v, i) => v === i) && w.length > 1) sh = sh.reverse(); o = rv.exOrd[k] = {w, tiles: sh, pick: [], res: null, done: false}; }
+  return o;
+}
+function exOrdHTML(k, x){
+  const L = LP.code, o = exOrd(k, x), w = o.w;
+  return '<div class="exord">' +
+    '<div class="gq-ask">語を並べて文にする（並べたら、見ずに打ちます）</div>' +
+    '<div class="gq-line" lang="' + L + '">' + (o.pick.length ? o.pick.map((i, j) => '<button data-oun="' + k + '|' + j + '"' + (o.res ? ' disabled' : '') + '>' + esc(w[i]) + '</button>').join('') : '<span class="gq-ph">下の語を順に押す</span>') + '</div>' +
+    '<div class="gq-tiles" lang="' + L + '">' + o.tiles.map(i => '<button data-oti="' + k + '|' + i + '"' + (o.pick.includes(i) || o.res ? ' disabled class="used"' : '') + '>' + esc(w[i]) + '</button>').join('') + '</div>' +
+    (o.res === 'ng' ? '<div class="gq-why"><b class="ng">ちがいます</b><span lang="' + L + '">' + esc(String(x.a || '').split(' / ').join(' ／ ')) + '</span></div>' : '') +
+    '<div class="rv-go">' + (o.res === 'ng' ? '<button class="primary" data-oagain="' + k + '">もう一度並べる</button><button data-oskip="' + k + '">見ずに打つへ</button>'
+      : '<button class="primary" data-ock="' + k + '"' + (o.pick.length === w.length ? '' : ' disabled') + '>確かめる</button><button data-oskip="' + k + '">並べずに書く</button>') +
+      '<button class="exsay" data-exsay="' + k + '" title="答えの音声を聴く"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /><path d="M16 9a5 5 0 0 1 0 6" /><path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></svg><span>聴く</span></button>' + '</div></div>';
+}
+function exOrdNote(k){ const o = (theater.rv.exOrd || {})[k]; return o && o.done && o.res === 'ok' ? '<div class="exord-ok">並べられました。次は見ずに打ちます</div>' : ''; }
+function exAudio(lid, k){
+  const [s0, n0] = k.split('-').map(Number), {x} = rvExItem(lid, k); if(!x) return null;
+  const alts = exAlts(x).map(a => exLw(a.join(' ')));
+  for(const [id, v] of Object.entries(bookEx)){
+    if(!id.startsWith(lid + '.ex.')) continue;
+    const it = (v.items || []).find(i => +i.sec === s0 && +i.n === n0);
+    if(!it || it.start == null || !(it.end > it.start)) continue;
+    const au = exLw(String(it.answer || '').replace(/\n/g, ' '));
+    if(alts.some(a => { let j = 0; au.forEach(w => { if(j < a.length && w === a[j]) j++; }); return a.length && j === a.length; })) return {src: v.track, start: it.start, end: it.end, deck: {}};
+  }
+  return null;
+}
+function exSay(lid, k){
+  const a = exAudio(lid, k); if(a){ say(a); return; }
+  const {x} = rvExItem(lid, k); if(x) speakText(String(x.a || '').split(' / ')[0].replace(/〜/g, ''));
+}
+function exOrdWire(lid){
+  const rv = theater.rv, el = $('#theater'), item = k => rvExItem(lid, k).x;
+  const focusIn = k => setTimeout(() => { const i = document.querySelector('[data-exin="' + k + '"]') || $('#reIn'); if(i) i.focus(); }, 0);
+  el.querySelectorAll('[data-oti]').forEach(b => b.onclick = () => { const [k, i] = b.dataset.oti.split('|'); exOrd(k, item(k)).pick.push(+i); paintReview(); });
+  el.querySelectorAll('[data-oun]').forEach(b => b.onclick = () => { const [k, j] = b.dataset.oun.split('|'); exOrd(k, item(k)).pick.splice(+j, 1); paintReview(); });
+  el.querySelectorAll('[data-ock]').forEach(b => b.onclick = () => { const k = b.dataset.ock, x = item(k), o = exOrd(k, x);
+    const y = o.pick.map(i => o.w[i]).join(' ').toLowerCase();
+    o.res = exAlts(x).some(a => a.join(' ').toLowerCase() === y) ? 'ok' : 'ng';
+    if(o.res === 'ok'){ o.done = true; paintReview(); focusIn(k); } else paintReview(); });
+  el.querySelectorAll('[data-oagain]').forEach(b => b.onclick = () => { const k = b.dataset.oagain; delete rv.exOrd[k]; exOrd(k, item(k)); paintReview(); });
+  el.querySelectorAll('[data-oskip]').forEach(b => b.onclick = () => { const k = b.dataset.oskip, o = exOrd(k, item(k)); o.done = true; o.res = o.res === 'ok' ? 'ok' : null; paintReview(); focusIn(k); });
+  el.querySelectorAll('[data-exsay]').forEach(b => b.onclick = () => { exSay(lid, b.dataset.exsay); b.blur(); });
 }
 function rvExCheck(lid, k){
   const tb = textbook[lid], [s, n] = k.split('-').map(Number);
