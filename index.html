@@ -1726,6 +1726,26 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 #rvBox .dc-list button.now{outline:1px solid var(--_ad-mint)}
 #rvBox details{border-top-color:var(--_ad-line)} #rvBox td, #rvBox th{border-color:var(--_ad-line)} #rvBox th{background:var(--_ad-card2)}
 
+
+/* 振り返り（2026-11-23） */
+.rt{display:flex; flex-direction:column; gap:24px; text-align:left}
+.rt-days{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px}
+.rt-days button{flex:none; display:flex; flex-direction:column; align-items:center; gap:0; height:auto; padding:8px 16px; border-radius:16px; font-size:14px; line-height:1.4}
+.rt-days button small{font-size:11px; color:var(--ui-text-muted-fgColor)}
+.rt-days button.on{background:var(--ui-primary-bgColor); color:var(--ui-primary-onEmphasis-fgColor)} .rt-days button.on small{color:inherit}
+.rt-sec{display:flex; flex-direction:column; gap:12px} .rt-sec h3{margin:0; font-size:17px}
+.rt-kinds{display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:8px}
+.rt-kinds div{display:flex; flex-direction:column; gap:4px; padding:12px 16px; border:1px solid var(--ui-outline-borderColor); border-radius:16px}
+.rt-kinds span{font-size:13px; color:var(--ui-text-muted-fgColor)}
+.rt-types{border-collapse:collapse; font-size:14px; width:auto; min-width:min(100%, 420px)} .rt-types td, .rt-types th{padding:8px 16px 8px 0; text-align:left; border-bottom:1px solid var(--ui-outline-borderColor)} .rt-types th{font-weight:500; color:var(--ui-text-muted-fgColor); font-size:12px}
+.rt-tips{display:flex; flex-direction:column; gap:8px} .rt-tips p{margin:0; font-size:14px; line-height:1.7} .rt-tips b{margin-right:8px}
+.rt-item{display:flex; flex-direction:column; gap:8px; padding:16px; border:1px solid var(--ui-outline-borderColor); border-radius:16px}
+.rt-h{display:flex; justify-content:space-between; gap:12px; font-size:12px}
+.rt-kind{color:var(--ui-text-muted-fgColor)} .rt-ok{color:#17723F} .rt-ng{color:#B4232A}
+.rt-q{font-size:15px; font-weight:500} .rt-a, .rt-why, .rt-tries{font-size:13px; color:var(--ui-text-muted-fgColor); line-height:1.7}
+.rt .dc-diff{font-size:18px; gap:4px 12px} .rt .why{margin:0; padding-left:18px; font-size:13px; line-height:1.7}
+.rt .dc-diff .ok{color:#17723F} .rt .dc-diff .near{color:#7A5400; background:#FFF4D6} .rt .dc-diff .wrong, .rt .dc-diff .miss{color:#A3161D; background:#FDECEC} .rt .dc-diff i{font-style:normal}
+.rt .why b.near{color:#7A5400} .rt .why b.ng{color:#B4232A} .rt .why b{margin-right:8px}
 /* 文法を確かめる（2026-11-23） */
 #rvBox .gq{align-items:stretch; text-align:left}
 #rvBox .gq .qn{text-align:left}
@@ -4885,7 +4905,7 @@ function renderBook(){
   html += '<div class="bhead"><h2>' + esc(title) + '</h2>' +
     (book && book.answers && bview !== 'paper' ? '<span class="bnote">答え：' + esc(book.answers) + '</span>' : '') + '</div>';
   html += reviewHTML();
-  html += '<div class="seg wf bviews">' + [['lesson','課']].concat(formulas.length ? [['formula','公式']] : [], [['progress','進み具合'], ['grammar','文法'], ['vocab','語彙']])
+  html += '<div class="seg wf bviews">' + [['lesson','課']].concat(formulas.length ? [['formula','公式']] : [], [['progress','進み具合'], ['grammar','文法'], ['vocab','語彙'], ['retro','振り返り']])
     .map(([k, l]) => '<button data-bv="' + k + '"' + (bview === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>';
 
   const defs = paperDefs(), last = paperLatest();
@@ -4971,6 +4991,7 @@ function renderBook(){
     ld.forEach((x, li) => { html += sec(x.L.title, G.out[li]); });
     html += sec('課の分からないもの', G.rest);
   }
+  else if(bview === 'retro') html += retroHTML();
   else if(bview === 'vocab'){
     const V = vocab();
     const vf = load('b:vf', '');
@@ -5307,6 +5328,7 @@ function wireBook(box){
     b.querySelector('small').textContent = 'このフォルダは開き直せません。「フォルダを選ぶ」から選んでください';
   }));
   box.querySelectorAll('[data-bv]').forEach(b => b.addEventListener('click', ()=>{ bview = b.dataset.bv; save('b:view', bview); renderBook(); }));
+  box.querySelectorAll('[data-rday]').forEach(b => b.addEventListener('click', ()=>{ retroDay = b.dataset.rday; renderBook(); }));
   box.querySelectorAll('.addex').forEach(f => f.addEventListener('submit', e=>{
     e.preventDefault();
     const own = load('paperdef:' + bookId, {});
@@ -6461,6 +6483,105 @@ function rvChoices(w, pool, key = 'ja'){
 /* 単語は覚えるまで繰り返す（本人 2026-11-20「選択肢を選ぶ暗記のやり方を何度も繰り返して定着させたい」）。
    ⭕ 1語につき2回続けて当てたら「覚えた」。1回目は ベトナム語→意味、2回目は 意味→ベトナム語。
    ⭕ 外したら0に戻し、2つ後にもう一度出す。当てたら4つ後に出す（すぐ同じ語が続かないように） */
+/* ---- 振り返り（本人 2026-11-23「私がやった内容ってちゃんとデータとして残るんだよね。どういう間違いだったのかとかを、やった日ごとで、内容をちゃんと精査して、振り返って、フィードバックができるように」） ----
+   ⭕ 記録（端末ごとの出来事。同期をオンにすると vault の 音声ドリル/記録/ に残る）から、日ごとに組み直す。新しい記録は要らない。
+   ⭕ 打った答えは、いまの答え合わせ（語ごと・〜は自由・言い方の幅）で見直して、間違いを型に分ける：声調／母音・子音の記号／抜けた語／余計な語／違う語／語順／意味の取り違え。
+   ⭕ 同じ日に後で直したものは「あとで正解」。まだ直っていないものと、それがいつ・どこで戻ってくるかを出す。前に記録のある日と比べる */
+let retroDay = null;
+const rtDayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const RT_KIND = {ex: '練習問題', dc: '書き写す', w: '単語', g: '文法', ans: '練習'};
+const RT_TYPE = {tone: '声調', shape: '母音・子音の記号（â ă ơ ư đ など）', miss: '抜けた語', extra: '余計な語', wrong: '違う語・言い方', order: '語順', mean: '意味の取り違え'};
+const RT_TIP = {
+  tone: '声調の記号を落とす・取り違えるのが多い日でした。書き写すの「聴いて書く」で、声調だけに気をつけて1課ぶん通すと効きます。',
+  shape: 'â・ă・ơ・ư・đ などの記号が抜けています。Telex なら aa→â・aw→ă・ow→ơ・uw→ư・dd→đ。声調より先に母音の形を決めてから打つと減ります。',
+  miss: '短い語（được・các・rất など）が抜けています。打つ前に一度、文を口で言ってから打つと抜けにくくなります。',
+  extra: '答えに無い語を足しています。日本語に引っぱられて語を足していないか、文法タブの並べ替えで型を確かめると効きます。',
+  wrong: '別の語・別の言い方になっています。下の一覧で、どの語と取り違えたかを見てください。',
+  order: '語の並びが違います。文法タブの「並べ替え」で同じ型を何度か作ると定着します。',
+  mean: '語の意味を取り違えています。外した語は単語の復習に入っていて、時期が来ると出ます。'
+};
+function retroEvents(){ return evOwn.concat(evOthers).filter(e => (e.k === 'rv' || (e.k === 'ans' && !/^rv[wg]:/.test(String(e.i || '')))) && (!e.b || !bookId || e.b === bookId)); }
+function retroTypes(d){
+  const T = {}, add = k => { T[k] = (T[k] || 0) + 1; };
+  const miss = d.res.filter(z => z.k === 'miss').map(z => wparts(z.t).base), extra = d.res.filter(z => z.k === 'extra').map(z => wparts(z.y).base);
+  d.res.forEach(z => {
+    if(z.k === 'near'){ const a = wparts(z.t), b = wparts(z.y); if(a.tone !== b.tone) add('tone'); if(a.shape !== b.shape) add('shape'); }
+    else if(z.k === 'wrong') add('wrong');
+    else if(z.k === 'miss') add(extra.includes(wparts(z.t).base) ? 'order' : 'miss');
+    else if(z.k === 'extra' && !miss.includes(wparts(z.y).base)) add('extra');
+  });
+  return T;
+}
+function retroItem(e){
+  const q = e.k === 'ans' ? 'ans' : e.q, r = e.k === 'ans' ? (e.o ? 'ok' : (e.n ? 'mid' : 'ng')) : e.r;
+  const o = {key: q + '|' + (e.l || '') + '|' + e.i, q, r, y: e.y || '', t: e.t, lid: e.l};
+  if(q === 'ex'){ const x = (rvExItem(e.l, e.i) || {}).x; if(!x) return null; o.prompt = x.q; o.ans = x.a; if(rvViAnswer(x) && e.y) o.d = rvDiff(x, e.y); }
+  else if(q === 'dc'){ o.prompt = '書き写す'; o.ans = e.i; if(e.y) o.d = rvDiff({a: e.i}, e.y); }
+  else if(q === 'w'){ const w = rvVocAll().find(v => v.vi === e.i); o.prompt = e.i; o.ans = w ? w.vi + '＝' + w.ja : e.i; o.mean = true; }
+  else if(q === 'g'){
+    const id = String(e.i), m = id.match(/^rvg:(\d+):(.+)$/); if(!m) return null;
+    const n = +m[1], rest = m[2];
+    if(rest.startsWith('b:')){ const vi = rest.slice(2).replace(/:(order|type)$/, ''); o.prompt = (rest.endsWith(':order') ? '並べ替え：' : '打つ：') + '公式 ' + n; o.ans = vi; if(rest.endsWith(':type') && e.y) o.d = rvDiff({a: vi}, e.y); else if(rest.endsWith(':order')) o.order = true; }
+    else { const k = +(rest.match(/(\d+)$/) || [0, 0])[1], xs = gquiz.filter(x => x.lid === e.l && x.n === n), x = xs[k]; if(!x) return null; o.prompt = x.q; o.ans = x.choices[x.a]; o.why = x.why; o.mean = true; }
+  }
+  else { const it = itemById(e.i); o.prompt = it ? it.show : e.i; o.ans = it ? it.show : ''; o.skill = e.s; }
+  if(o.d && o.d.r) o.r = o.d.r;   // ⭕ 打った答えは、いまの答え合わせで見直す（前の決まりで「違う」にされた〜の名前などは、ここで合いになる）
+  return o;
+}
+function retroDays(){
+  const by = new Map();
+  retroEvents().forEach(e => { const k = rtDayKey(e.t); (by.get(k) || by.set(k, []).get(k)).push(e); });
+  return [...by.entries()].sort((a, b) => a[0] < b[0] ? 1 : -1);
+}
+function retroDay1(evs){
+  const items = new Map(), kinds = {}, types = {};
+  evs.slice().sort((a, b) => a.t - b.t).forEach(e => {
+    if(e.fix){ const k = e.q + '|' + (e.l || '') + '|' + e.i, it = items.get(k); if(it){ it.last = 'ok'; it.fixed = true; } return; }
+    const o = retroItem(e); if(!o) return;
+    const K = kinds[o.q] = kinds[o.q] || {n: 0, ok: 0}; K.n++; if(o.r === 'ok') K.ok++;
+    const it = items.get(o.key) || {first: o, tries: [], last: null};
+    it.tries.push(o); it.last = o.r; items.set(o.key, it);
+    if(o.r !== 'ok'){
+      if(o.d) Object.entries(retroTypes(o.d)).forEach(([k, v]) => types[k] = (types[k] || 0) + v);
+      else if(o.mean) types.mean = (types.mean || 0) + 1;
+      else if(o.order) types.order = (types.order || 0) + 1;
+    }
+  });
+  return {items, kinds, types};
+}
+function retroHTML(){
+  const days = retroDays();
+  if(!days.length) return '<p class="pnote" style="text-align:left">まだ記録がありません。練習問題・書き写す・単語・文法を解くと、ここに日ごとに並びます。</p>';
+  const cur = retroDay && days.some(d => d[0] === retroDay) ? retroDay : days[0][0];
+  const i = days.findIndex(d => d[0] === cur), D = retroDay1(days[i][1]), P = days[i + 1] ? retroDay1(days[i + 1][1]) : null;
+  const fmtDay = k => { const [y, m, d] = k.split('-').map(Number); return m + '/' + d + '（' + '日月火水木金土'[new Date(y, m - 1, d).getDay()] + '）'; };
+  let h = '<div class="rt"><div class="rt-days">' + days.slice(0, 30).map(([k, ev]) => '<button data-rday="' + k + '"' + (k === cur ? ' class="on"' : '') + '>' + fmtDay(k) + '<small>' + ev.length + '</small></button>').join('') + '</div>';
+  // 解いた量
+  h += '<section class="rt-sec"><h3>' + fmtDay(cur) + ' に解いたもの</h3><div class="rt-kinds">' + Object.entries(D.kinds).map(([k, v]) => '<div><b>' + (RT_KIND[k] || k) + '</b><span>' + v.n + '回・正解 ' + v.ok + '（' + Math.round(v.ok / v.n * 100) + '%）</span></div>').join('') + '</div></section>';
+  // 間違いの型
+  const tk = Object.entries(D.types).sort((a, b) => b[1] - a[1]);
+  if(tk.length){
+    h += '<section class="rt-sec"><h3>間違いの型</h3><table class="rt-types"><tr><th></th><th>この日</th>' + (P ? '<th>前の日（' + fmtDay(days[i + 1][0]) + '）</th>' : '') + '</tr>' +
+      tk.map(([k, v]) => '<tr><td>' + RT_TYPE[k] + '</td><td>' + v + '</td>' + (P ? '<td>' + (P.types[k] || 0) + '</td>' : '') + '</tr>').join('') + '</table>' +
+      '<div class="rt-tips">' + tk.slice(0, 2).map(([k]) => '<p><b>' + RT_TYPE[k] + '</b>' + RT_TIP[k] + '</p>').join('') + '</div></section>';
+  }else h += '<section class="rt-sec"><h3>間違いの型</h3><p class="pnote" style="text-align:left">この日は間違いがありませんでした。</p></section>';
+  // 間違えたもの
+  const bad = [...D.items.values()].filter(it => it.tries.some(o => o.r !== 'ok'));
+  const still = bad.filter(it => it.last !== 'ok');
+  h += '<section class="rt-sec"><h3>間違えたもの　' + bad.length + '問' + (still.length ? '（まだ直っていない ' + still.length + '）' : '（全部あとで直した）') + '</h3>';
+  h += bad.map(it => {
+    const o = it.tries.find(z => z.r !== 'ok'), lastOk = it.last === 'ok', L = LP.code;
+    const back = lastOk ? '<span class="rt-ok">' + (it.fixed ? '合っていたに直した' : 'あとで正解') + '</span>'
+      : '<span class="rt-ng">まだ' + (o.q === 'ex' ? '（次の課の前の解き直しに出ます）' : o.q === 'w' || o.q === 'g' ? '（復習の時期に出ます）' : '') + '</span>';
+    return '<div class="rt-item"><div class="rt-h"><span class="rt-kind">' + (RT_KIND[o.q] || o.q) + (o.lid ? '・' + esc(String(o.lid).replace(/^zero\.g0?/, 'UNIT ')) : '') + '</span>' + back + '</div>' +
+      '<div class="rt-q">' + esc(o.prompt || '') + '</div>' +
+      (o.d ? '<div class="dc-diff" lang="' + L + '">' + o.d.res.map(dcWord).join('') + '</div>' + rvWhy(o.d)
+        : o.mean ? '<div class="rt-a">選んだ：<span lang="' + L + '">' + esc(o.y) + '</span>　正しくは：<span lang="' + L + '">' + esc(o.ans) + '</span></div>' + (o.why ? '<div class="rt-why">' + esc(o.why) + '</div>' : '')
+        : '<div class="rt-a">' + (o.y ? (o.order ? '並べた：' : '書いた：') + '<span>' + esc(o.y) + '</span>　' : '') + '正しくは：<span>' + esc(o.ans || '') + '</span></div>') +
+      (it.tries.length > 1 ? '<div class="rt-tries">この日 ' + it.tries.length + '回：' + it.tries.map(z => z.r === 'ok' ? '○' : z.r === 'mid' ? '△' : '×').join(' ') + '</div>' : '') + '</div>';
+  }).join('') + '</section></div>';
+  return h;
+}
 /* ---- 文法を確かめる（本人 2026-11-23「その文法がどういう意味をしてるかの4択と、その文法を使って文を作るのくらいはあってもいい」） ----
    ⭕ 1つの公式につき：意味の4択（この文の意味は？／この意味の正しい文は？。grammar_quiz.json）と、例文を「並べ替え → 日本語を見て打つ」。
    ⭕ 単語と同じく間隔をあけて出す。初めての問いと時期が来た問いだけ。記録は srs の 'rvg:…'。
