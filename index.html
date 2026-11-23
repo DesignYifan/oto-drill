@@ -1647,9 +1647,8 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 /* この課で習ったこと：Adify の色味（本人 2026-11-23「もうちょっとスタイリッシュに」→ 見本3案から案B「薄い光とガラス」）。
    色は Figma の Adify から実測：地 #090B0A・光 #2C877C／#A1FF02・カード #0C1310 の 70%・主の色 ミント #C5E5B2。
    答え合わせは面で塗らず、語の色と下線の形で分ける（合う＝実線・おしい＝破線・違う＝二重線・自由＝点線）。ミントの面は操作と選択だけに使う */
-.theater:has(#rvBox){background:radial-gradient(ellipse 620px 460px at 0% 0%, rgba(161,255,2,.10), transparent 70%), radial-gradient(ellipse 620px 820px at 100% 30%, rgba(44,135,124,.30), transparent 70%), radial-gradient(ellipse 680px 520px at 8% 90%, rgba(44,135,124,.18), transparent 70%), #090B0A}
-.theater:has(#rvBox) .th-top button{background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
-#theater:has(#rvBox) .th-top button:hover{background:rgba(197,229,178,.10)}
+.theater .th-top button{background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
+#theater .th-top button:hover{background:rgba(197,229,178,.10)}
 #rvBox{--_ad-bg:#090B0A; --_ad-card:rgba(12,19,16,.70); --_ad-card2:rgba(12,19,16,.50); --_ad-line:rgba(197,229,178,.14); --_ad-line2:rgba(197,229,178,.26); --_ad-mint:#C5E5B2; --_ad-ink:#0B120E; --_ad-text:#F4F7F0; --_ad-muted:rgba(244,247,240,.66);
   --_ad-ok:#83D6A3; --_ad-near:#EFCF7E; --_ad-ng:#FFA8A7; --_ad-free:#B9C0B6;
   background:transparent;
@@ -1748,6 +1747,62 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
   .theater:not(.no-all) .th-sub{display:none}   /* 狭い画面で全文を出しているときは、絵の上の字幕は出さない（絵がほぼ隠れるため。いまの行は真下の全文で光る） */
 }
 .th-bar{padding-bottom:max(16px, env(safe-area-inset-bottom))} .th-top{padding-top:max(12px, env(safe-area-inset-top))}
+/* 会話を観る（動画）も Adify の色味に（本人 2026-11-23「一連の動画を見て、進めてるところは全部この見栄えに」）。課の一覧などほかの画面は変えない */
+.theater{background-color:#090B0A; background-image:radial-gradient(ellipse 620px 460px at 0% 0%, rgba(161,255,2,.10), transparent 70%), radial-gradient(ellipse 620px 820px at 100% 30%, rgba(44,135,124,.30), transparent 70%), radial-gradient(ellipse 680px 520px at 8% 90%, rgba(44,135,124,.18), transparent 70%); color:#F4F7F0; font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif}
+.theater .th-top select{box-shadow:none; height:40px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; padding:0 16px}
+.theater .th-top .th-n{color:rgba(244,247,240,.66)}
+.theater .th-top button, .theater .th-bar button, .theater .th-bar .th-rate{height:40px; padding:0 16px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
+.theater .th-bar button.primary{background:#C5E5B2; color:#0B120E; border-color:#C5E5B2; font-weight:600}
+#theater .th-bar button:hover, #theater .th-top button:hover{background:#18241C; color:#F4F7F0; border-color:rgba(197,229,178,.26)}
+#theater .th-bar button.primary:hover{background:#D3EDC4; color:#0B120E; border-color:#D3EDC4}
+#theater .th-bar button:disabled{opacity:.4}
+.theater :focus-visible{outline:2px solid #C5E5B2; outline-offset:3px}
+.theater .th-bar .clock{color:rgba(244,247,240,.66)}
+.theater .th-bar label{color:rgba(244,247,240,.8)}
+.theater .th-bar input[type=range], .theater .th-bar input[type=checkbox]{accent-color:#C5E5B2}
+.theater .th-stage img, .theater .th-stage video{border-radius:24px}
+.theater .th-sub .v, .theater .th-sub .j{background:rgba(9,11,10,.62); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-radius:16px; padding:4px 16px}
+.theater .th-stage .th-none{color:rgba(244,247,240,.66)}
+.theater .th-all{border-left-color:rgba(197,229,178,.14); gap:4px}
+.theater .th-all button{color:rgba(244,247,240,.8); border-radius:16px; padding:8px 12px; border:1px solid transparent}
+.theater .th-all button small{color:rgba(244,247,240,.6)}
+.theater .th-all button.n{color:rgba(244,247,240,.6)}
+.theater .th-all button.on{background:#0F1712; color:#F4F7F0; border-color:rgba(197,229,178,.26)}
+.theater .th-all button.on small{background:#0F1712; color:#DFF1D7}
+#theater .th-all button:hover{background:rgba(197,229,178,.06)}
+#theater .th-all button.on:hover{background:rgba(12,19,16,.85)}
+.theater .th-bar{flex-direction:column; align-items:stretch; gap:8px}
+.th-seek{display:flex; align-items:center; gap:12px}
+.th-seek input[type=range]{flex:1; min-width:0}
+.th-nav{display:flex; align-items:center; justify-content:center; gap:8px; flex:1}
+.th-opt{display:flex; align-items:center; gap:12px}
+.theater .th-bar{display:grid; grid-template-columns:1fr auto; grid-template-areas:"seek seek" "nav opt"; align-items:center; column-gap:16px; row-gap:8px}
+.th-seek{grid-area:seek} .th-nav{grid-area:nav; justify-content:flex-start} .th-opt{grid-area:opt}
+.theater .th-bar button{display:inline-flex; align-items:center; gap:6px}
+.theater .th-bar button .ic{flex:none}
+.theater .th-bar #thPlay{min-width:104px; justify-content:center}
+.theater .th-seek input[type=range]::-webkit-slider-runnable-track{height:4px; border-radius:2px; background:rgba(197,229,178,.18)}
+.theater .th-seek input[type=range]::-moz-range-track{height:4px; border-radius:2px; background:rgba(197,229,178,.18)}
+.theater .th-seek input[type=range]::-webkit-slider-thumb{width:16px; height:16px; margin-top:-6px; border-radius:50%; background:#C5E5B2}
+.theater .th-seek input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:#C5E5B2}
+.th-pick{background:#0F1712; border-radius:100px; position:relative; display:flex; align-items:center; flex:1; min-width:0; max-width:420px}
+.th-pick .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%)}
+.theater .th-top .th-pick select{appearance:none; -webkit-appearance:none; width:100%; max-width:none; padding:0 40px 0 16px; font-weight:600; cursor:pointer}
+.th-pick .ic{background:#0F1712; position:absolute; right:14px; pointer-events:none; color:#C5E5B2}
+@media (max-width:820px){
+  .theater .th-bar{grid-template-columns:1fr; grid-template-areas:"seek" "nav" "opt"}
+  .theater .th-bar .clock{display:inline}
+  .th-nav{justify-content:space-between; gap:4px}
+  .theater .th-nav button{flex:1; flex-direction:column; justify-content:center; gap:0; height:52px; padding:0 4px; border-radius:16px; font-size:11px; line-height:1.3}
+  .theater .th-nav #thLn, .theater .th-nav #thNext{flex-direction:column-reverse}
+  .theater .th-nav #thPlay{height:52px; font-size:14px}
+  .theater .th-seek input[type=range]{order:0}
+  .theater .th-nav #thPlay{flex:1.6; min-width:0}
+  .th-opt{justify-content:center; flex-wrap:wrap}
+  .theater .th-top{flex-wrap:wrap}
+  .theater .th-top .th-pick{flex:1 0 100%; max-width:none; order:2}
+}
+@media (max-width:820px){ .theater .th-all{border-top-color:rgba(197,229,178,.14)} .theater .th-stage img, .theater .th-stage video{border-radius:0} }
 @media (max-width:820px){
   .dock-row{flex-wrap:wrap}
   .dock-row .spacer.fp{order:-1; flex:1 0 100%; justify-content:stretch}
@@ -2540,6 +2595,7 @@ document.addEventListener('keydown', e=>{
   if(e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]')) return;
   if(mode !== 'listen') return;   // 練習と見渡すのキーは、その側で受ける
   const k = e.key;
+  if(theater && !theater.rv && (k === 'ArrowLeft' || k === 'ArrowRight')){ e.preventDefault(); const d = k === 'ArrowLeft' ? -1 : 1; if(e.shiftKey) theaterPlay(theater.k + d); else thLine(d); return; }   // 会話を観る：← → は文、Shift で課
   if(k === ' '){ e.preventDefault(); toggle(); }
   else if(flow && (k === 'ArrowLeft' || k === 'ArrowRight')){ e.preventDefault(); e.shiftKey ? flowGo(k === 'ArrowLeft' ? -1 : 1) : step(k === 'ArrowLeft' ? -5 : 5); }
   else if(k === 'ArrowLeft'){  e.preventDefault(); if(e.shiftKey){ const j = stepTrack(idx, -1); if(j >= 0) play(j, true); } else step(-5); }
@@ -5939,7 +5995,7 @@ function mainTracks(){
   return lessonData().map((x, li) => ({li, x, t: x.tracks[0]})).filter(r => r.t && tracks.indexOf(r.t) >= 0);
 }
 function openTheater(li, all){
-  const list = all ? mainTracks() : mainTracks().filter(r => r.li === li);
+  const list = mainTracks();   // ⭕ 1課から開いても、ほかの課へ移れるように全部の課を持つ（本人 2026-11-23「別のユニットからやり直す…戻ったり進んだりができない」）。続けて次の課へ流れるのは all のときだけ
   if(!list.length){ toast('この課にはメインの音声がありません'); return; }
   if(flow) stopFlow();
   let k = Math.max(0, list.findIndex(r => r.li === li));
@@ -5960,12 +6016,24 @@ function theaterPlay(k){
   paintTheater();
   play(tracks.indexOf(r.t), true);
 }
+/* 前の文・次の文（本人 2026-11-23「途中のカットとか…戻ったり進んだりするのってできない」）。
+   前の文：いまの文に入って1秒を過ぎていれば、その文の頭へ。1秒以内なら1つ前の文へ。最初の文より前は課の頭へ。
+   次の文：次の文の頭へ。最後の文のあとは次の課へ */
+function thLine(d){
+  if(!theater) return;
+  const L = (theater.subs || []), t = audio.currentTime;
+  let ci = -1; L.forEach((x, i) => { if(t >= x.s - 0.15) ci = i; });
+  let to;
+  if(d < 0){ to = ci >= 0 && t - L[ci].s > 1 ? ci : ci - 1; if(to < 0){ audio.currentTime = 0; audio.play().catch(() => {}); return; } }
+  else { to = ci + 1; if(to >= L.length){ if(theater.k + 1 < theater.list.length) theaterPlay(theater.k + 1); return; } }
+  audio.currentTime = Math.max(0, L[to].s); audio.play().catch(() => {});
+}
 function theaterEnded(){
   if(!theater) return false;
   if(theater.rv) return true;   // 書き写すで1文を鳴らしていて、音声の終わりまで来ただけ（タブを まとめ に戻さない）
   const r = theater.list[theater.k];
   if(r && textbook[r.x.L.id]){ openReview(); return true; }   // 誌面の中身がある課は、次へ進まず「この課で習ったこと」へ（本人 2026-11-19）
-  if(theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); }
+  if(theater.all && theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); }
   else toast(theater.all ? '全部の課の会話を観終えました' : 'この課の会話を観終えました');
   return true;
 }
@@ -6464,7 +6532,7 @@ function paintTheater(){
   const vid = unitVideo(id), pic = unitPic(id);
   el.innerHTML =
     '<div class="th-top">' +
-      (theater.list.length > 1 ? '<select id="thPick" aria-label="課を選ぶ">' + theater.list.map((q, i) => '<option value="' + i + '"' + (i === theater.k ? ' selected' : '') + '>' + esc(q.x.L.title) + '</option>').join('') + '</select>'
+      (theater.list.length > 1 ? '<label class="th-pick"><span class="sr">課を選ぶ</span><select id="thPick" aria-label="課を選ぶ">' + theater.list.map((q, i) => '<option value="' + i + '"' + (i === theater.k ? ' selected' : '') + '>' + esc(q.x.L.title) + '</option>').join('') + '</select><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m6 9 6 6 6-6" /></svg></label>'
         : '<b>' + esc(r.x.L.title) + '</b>') +
       '<span class="th-n">' + (theater.k + 1) + ' / ' + theater.list.length + '　' + esc(r.t.name) + '</span>' +
       (textbook[id] ? '<button class="th-rv" id="thRv">この課で習ったこと</button>' : '') +
@@ -6475,14 +6543,19 @@ function paintTheater(){
       '<div class="th-sub" id="thSub" aria-live="polite"></div>' +
     '</div><div class="th-all" id="thAll" aria-label="本文の全文"></div></div>' +
     '<div class="th-bar">' +
-      '<button id="thPrev"' + (theater.k === 0 ? ' disabled' : '') + '>前の課</button>' +
+      '<div class="th-seek"><span class="clock" id="thCur">0:00</span><input type="range" id="thSeek" min="0" max="1000" value="0" aria-label="再生位置"><span class="clock" id="thDur">0:00</span></div>' +
+      '<div class="th-nav">' +
+      '<button id="thPrev" title="前の課（Shift + ←）"' + (theater.k === 0 ? ' disabled' : '') + '><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432z" /><path d="M3 20V4" /></svg><span>前の課</span></button>' +
+      '<button id="thLp" title="前の文（←）"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m15 18-6-6 6-6" /></svg><span>前の文</span></button>' +
       '<button class="primary" id="thPlay">' + (audio.paused ? '再生' : '一時停止') + '</button>' +
-      '<button id="thNext"' + (theater.k + 1 >= theater.list.length ? ' disabled' : '') + '>次の課</button>' +
-      '<span class="clock" id="thCur">0:00</span><input type="range" id="thSeek" min="0" max="1000" value="0" aria-label="再生位置"><span class="clock" id="thDur">0:00</span>' +
+      '<button id="thLn" title="次の文（→）"><span>次の文</span><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m9 18 6-6-6-6" /></svg></button>' +
+      '<button id="thNext" title="次の課（Shift + →）"' + (theater.k + 1 >= theater.list.length ? ' disabled' : '') + '><span>次の課</span><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M21 4v16" /><path d="M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z" /></svg></button>' +
+      '</div><div class="th-opt">' +
+      '<button id="thTop" title="この課の最初から"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg><span>最初から</span></button>' +
       thRateSelect() +
       '<label><input type="checkbox" id="thJa"' + (theater.ja ? ' checked' : '') + '> 訳</label>' +
       '<label><input type="checkbox" id="thAllOn"' + (load('theater:all', true) ? ' checked' : '') + '> 全文</label>' +
-    '</div>';
+    '</div></div>';
   el.classList.toggle('no-all', !load('theater:all', true));
   paintTheaterAll();
   $('#thClose').onclick = closeTheater;
@@ -6490,6 +6563,9 @@ function paintTheater(){
   $('#thPrev').onclick = () => theaterPlay(theater.k - 1);
   $('#thNext').onclick = () => theaterPlay(theater.k + 1);
   $('#thPlay').onclick = () => { if(audio.paused) audio.play().catch(() => {}); else audio.pause(); };
+  $('#thLp').onclick = () => thLine(-1);
+  $('#thLn').onclick = () => thLine(1);
+  $('#thTop').onclick = () => { audio.currentTime = 0; audio.play().catch(() => {}); };
   $('#thJa').onchange = e => { theater.ja = e.target.checked; save('theater:ja', theater.ja); paintTheaterAll(); paintTheaterSub(); };
   $('#thAllOn').onchange = e => { save('theater:all', e.target.checked); el.classList.toggle('no-all', !e.target.checked); theater.ci = -1; paintTheaterSub(); };
   $('#thSeek').oninput = e => { if(audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; };
