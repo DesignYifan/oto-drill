@@ -1635,7 +1635,7 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .dc-res.ok{background:#1A2E22} .dc-res.mid{background:#2E2A1A} .dc-res.ng{background:#2E1A1C}
 .dc-diff{font-size:20px; line-height:2.1; display:flex; flex-wrap:wrap; gap:2px 6px}
 .dc-diff .w{display:inline-flex; flex-direction:column; align-items:center; padding:0 6px; border-radius:6px}
-.dc-diff .w small{font-size:11px; line-height:1.3; color:#C8C8D0}
+.dc-diff .w small{font-size:11px; line-height:1.3; color:#C8C8D0} .dc-diff .w i{font-style:normal}
 .dc-diff .ok{color:#7ED6A0} .dc-diff .near{background:#3A3420; color:#F2D27A} .dc-diff .wrong, .dc-diff .miss{background:#3A1F22; color:#FF9A9A} .dc-diff .extra{color:#8A8A94; text-decoration:line-through}
 .dc-opt{font-size:12px; color:#A0A0A8; display:flex; align-items:center; gap:6px}
 .dc-opt input{width:auto; height:auto; flex:none; margin:0}
@@ -1644,6 +1644,88 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .dc-list button.now{outline:1px solid #8A8A94}
 .dc-list button .rv-hist{white-space:nowrap}
 @media (max-width:520px){ .rv-ch{grid-template-columns:1fr} .rv-tabs{overflow-x:auto; gap:6px} .rv-tabs button{font-size:13px; flex:1 0 auto; padding:0 8px} .dc-tgt{font-size:20px} .dc-list button{flex-direction:column; gap:4px} .dc-list button .rv-hist{white-space:normal} }
+/* この課で習ったこと：Adify の色味（本人 2026-11-23「もうちょっとスタイリッシュに」→ 見本3案から案B「薄い光とガラス」）。
+   色は Figma の Adify から実測：地 #090B0A・光 #2C877C／#A1FF02・カード #0C1310 の 70%・主の色 ミント #C5E5B2。
+   答え合わせは面で塗らず、語の色と下線の形で分ける（合う＝実線・おしい＝破線・違う＝二重線・自由＝点線）。ミントの面は操作と選択だけに使う */
+.theater:has(#rvBox){background:radial-gradient(ellipse 620px 460px at 0% 0%, rgba(161,255,2,.10), transparent 70%), radial-gradient(ellipse 620px 820px at 100% 30%, rgba(44,135,124,.30), transparent 70%), radial-gradient(ellipse 680px 520px at 8% 90%, rgba(44,135,124,.18), transparent 70%), #090B0A}
+.theater:has(#rvBox) .th-top button{background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
+#theater:has(#rvBox) .th-top button:hover{background:rgba(197,229,178,.10)}
+#rvBox{--_ad-bg:#090B0A; --_ad-card:rgba(12,19,16,.70); --_ad-card2:rgba(12,19,16,.50); --_ad-line:rgba(197,229,178,.14); --_ad-line2:rgba(197,229,178,.26); --_ad-mint:#C5E5B2; --_ad-ink:#0B120E; --_ad-text:#F4F7F0; --_ad-muted:rgba(244,247,240,.66);
+  --_ad-ok:#83D6A3; --_ad-near:#EFCF7E; --_ad-ng:#FFA8A7; --_ad-free:#B9C0B6;
+  background:transparent;
+  color:var(--_ad-text); font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Noto Sans JP", sans-serif}
+#rvBox.rv{padding-top:0}
+#rvBox .rv-tabbar{position:sticky; top:0; z-index:2; margin:0 -16px; padding:8px 16px 12px; background:linear-gradient(#090B0A 78%, rgba(9,11,10,0)); -webkit-mask-image:linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent); mask-image:linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent)}
+#rvBox .rv-tabs{position:static; background:rgba(12,19,16,.9); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px); padding:4px; margin-top:4px; border:1px solid var(--_ad-line); border-radius:100px; gap:4px}
+#rvBox :focus-visible{outline:2px solid var(--_ad-mint); outline-offset:3px}
+#rvBox .rv-tabs button{height:40px; background:transparent; color:var(--_ad-muted); border-radius:100px; font-weight:500}
+#rvBox .rv-tabs button.on{background:var(--_ad-mint); color:var(--_ad-ink); font-weight:600}
+#theater #rvBox .rv-tabs button:hover{background:rgba(197,229,178,.08); color:var(--_ad-text)}
+#theater #rvBox .rv-tabs button.on:hover{background:#D3EDC4; color:var(--_ad-ink)}
+#rvBox h2{font-weight:600; letter-spacing:-.01em} #rvBox h3{color:var(--_ad-text); font-size:22px; font-weight:600; letter-spacing:-.01em; margin:12px 0 0}
+#rvBox p{color:rgba(244,247,240,.86)}
+/* 面：半透明のカード・大きな角・細い線 */
+#rvBox .rv-lead, #rvBox .rv-f, #rvBox .rv-q, #rvBox .dc, #rvBox .rv-exs li{background:var(--_ad-card); border:1px solid var(--_ad-line); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px)}
+#rvBox .rv-f, #rvBox .rv-q, #rvBox .dc{border-radius:24px; padding:20px}
+#rvBox .rv-lead{border-radius:24px}
+#rvBox .rv-pts p, #rvBox .rv-line, #rvBox .rv-say, #rvBox .rv-f .pat, #rvBox .dc-list button{background:var(--_ad-card2); border:1px solid var(--_ad-line); border-radius:14px}
+#theater #rvBox li:hover{background:var(--_ad-card)}
+#rvBox .rv-hist, #rvBox .rv-f .no, #rvBox .rv-q .qn, #rvBox .dc-head, #rvBox .dc-ja, #rvBox .rv-say small, #rvBox .rv-line small{color:var(--_ad-muted)}
+#rvBox .rv-hist b{color:var(--_ad-ng)}
+/* ボタン：主はミントの丸い帯、副は暗い面に細い線 */
+#rvBox button{border-radius:100px}
+#rvBox .rv-go button, #rvBox .dc-btns button, #rvBox .rv-exs .qq button, #rvBox .rv-exs .self button, #rvBox .rv-ch button, #rvBox .rv-filter button{background:rgba(12,19,16,.85); color:var(--_ad-text); border:1px solid var(--_ad-line2)}
+#rvBox .rv-go button.primary, #rvBox .dc-btns button.primary, #rvBox .rv-exs .qq button{background:var(--_ad-mint); color:var(--_ad-ink); border-color:var(--_ad-mint); font-weight:600}
+#theater #rvBox button:hover{background:rgba(197,229,178,.10); color:var(--_ad-text); border-color:var(--_ad-line2)}
+#theater #rvBox .rv-go button.primary:hover, #theater #rvBox .dc-btns button.primary:hover, #theater #rvBox .rv-exs .qq button:hover{background:#D3EDC4; color:var(--_ad-ink); border-color:#D3EDC4}
+#rvBox .rv-ch button{border-radius:16px}
+#rvBox .rv-ch button.ok, #theater #rvBox .rv-ch button.ok:hover{background:rgba(131,214,163,.10); border-color:var(--_ad-ok); color:var(--_ad-text)}
+#rvBox .rv-ch button.ng, #theater #rvBox .rv-ch button.ng:hover{background:rgba(255,168,167,.08); border-color:var(--_ad-ng); color:var(--_ad-text)}
+#rvBox .rv-filter button.on, #rvBox .dc-mode button.on, #rvBox .rv-exs .self button.on{background:var(--_ad-mint); color:var(--_ad-ink); border-color:var(--_ad-mint)}
+#theater #rvBox .rv-filter button.on:hover, #theater #rvBox .dc-mode button.on:hover{background:#D3EDC4; color:var(--_ad-ink)}
+#rvBox .dc-mode{background:rgba(9,11,10,.7); border:1px solid var(--_ad-line); border-radius:100px; padding:4px} #rvBox .dc-mode button{border-radius:100px}
+#rvBox .rv-meter{height:4px; background:rgba(197,229,178,.12)} #rvBox .rv-meter i{background:var(--_ad-mint)}
+/* 入力欄 */
+#rvBox .rv-exs input, #rvBox .dc input{background:rgba(9,11,10,.82); color:var(--_ad-text); border:1px solid var(--_ad-line2); border-radius:16px; padding:0 16px}
+#rvBox .rv-exs input{height:48px} #rvBox .rv-exs .qq button{height:48px; padding:0 20px}
+#rvBox .rv-exs input:focus, #rvBox .dc input:focus{border-color:var(--_ad-mint); box-shadow:0 0 0 3px rgba(197,229,178,.14)}
+#rvBox input::placeholder{color:var(--_ad-muted)}
+/* 練習問題 */
+#rvBox .rv-score{color:var(--_ad-muted); font-size:14px}
+#rvBox .rv-exs .ins{color:var(--_ad-muted)}
+#rvBox .rv-exs ol{gap:12px}
+#rvBox .rv-exs li{border-radius:24px; padding:20px 24px; gap:12px; font-size:16px}
+#rvBox .rv-exs li > div:first-child{font-weight:500}
+#rvBox .rv-exs li span{color:var(--_ad-muted); font-variant-numeric:tabular-nums}
+#rvBox .rv-exs .res, #rvBox .rv-exs .res.ok, #rvBox .rv-exs .res.mid, #rvBox .rv-exs .res.ng, #rvBox .dc-res, #rvBox .dc-res.ok, #rvBox .dc-res.mid, #rvBox .dc-res.ng{background:transparent; padding:4px 0 0; border-radius:0; gap:12px}
+#rvBox .rv-exs .res > b:first-child, #rvBox .dc-res > b:first-child{align-self:flex-start; display:inline-flex; align-items:center; gap:8px; padding:4px 12px; border:1px solid var(--_ad-line2); border-radius:100px; background:rgba(9,11,10,.6); font-size:13px; font-weight:600; line-height:1.5}
+#rvBox .rv-exs .res > b:first-child::before, #rvBox .dc-res > b:first-child::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
+#rvBox .res.ok > b:first-child, #rvBox .dc-res.ok > b:first-child{color:var(--_ad-ok)} #rvBox .res.mid > b:first-child, #rvBox .dc-res.mid > b:first-child{color:var(--_ad-near)} #rvBox .res.ng > b:first-child, #rvBox .dc-res.ng > b:first-child{color:var(--_ad-ng)}
+#rvBox .rv-exs .res .why{list-style:none; padding:0; gap:8px; color:var(--_ad-muted); font-size:14px}
+#rvBox .rv-exs .res .why li{background:none; border:0; padding:0; border-radius:0; -webkit-backdrop-filter:none; backdrop-filter:none; font-size:14px}
+#rvBox .rv-exs .res .why b{font-weight:600} #rvBox .rv-exs .res .why b.near{color:var(--_ad-near)} #rvBox .rv-exs .res .why b.ng{color:var(--_ad-ng)}
+#rvBox .rv-exs .res .ans{color:var(--_ad-muted); font-size:14px}
+#rvBox .rv-exs .res .ans::before{content:""; display:block; height:1px; margin-bottom:12px; background:var(--_ad-line)}
+#rvBox .dc-opt{align-items:flex-start} #rvBox .dc-opt input{margin-top:3px}
+#rvBox .re-gate{background:var(--_ad-card); border:1px solid var(--_ad-line); border-radius:20px; padding:12px 16px; color:var(--_ad-text)}
+/* 語ごとの答え合わせ：面で塗らず、色と下線の形で */
+#rvBox .dc-diff{gap:8px 16px; line-height:1.6; font-size:22px}
+#rvBox .rv-exs .res .dc-diff{font-size:22px; line-height:1.6}
+#rvBox .dc-diff .w{padding:0; border-radius:0; background:none; align-items:flex-start; gap:0}
+#rvBox .dc-diff .w small{color:var(--_ad-muted); font-size:12px}
+#rvBox .dc-diff i{font-style:normal; text-underline-offset:7px; padding-bottom:8px}
+#rvBox .dc-diff .ok{color:var(--_ad-ok)} #rvBox .dc-diff .ok i{text-decoration:underline 1px}
+#rvBox .dc-diff .near{color:var(--_ad-near); background:none} #rvBox .dc-diff .near i{text-decoration:underline dashed 2px}
+#rvBox .dc-diff .wrong, #rvBox .dc-diff .miss{color:var(--_ad-ng); background:none} #rvBox .dc-diff .wrong i, #rvBox .dc-diff .miss i{text-decoration:underline double 3px}
+#rvBox .dc-diff .free{color:var(--_ad-text)} #rvBox .dc-diff .free i{text-decoration:underline dotted 1.5px}
+#rvBox .dc-diff .extra{color:var(--_ad-free); text-decoration:none} #rvBox .dc-diff .extra i{text-decoration:line-through 1px}
+#rvBox .dc-tgt .near, #rvBox .dc-live .near{background:none; color:var(--_ad-near); text-decoration:underline dashed 2px; text-underline-offset:6px}
+#rvBox .dc-tgt .bad, #rvBox .dc-live .bad{background:none; color:var(--_ad-ng); text-decoration:underline double 3px; text-underline-offset:6px}
+#rvBox .dc-tgt .ok, #rvBox .dc-live .ok{color:var(--_ad-ok)}
+#rvBox .dc-tgt .cur{box-shadow:inset 0 -2px 0 var(--_ad-mint)}
+#rvBox .dc-list button.now{outline:1px solid var(--_ad-mint)}
+#rvBox details{border-top-color:var(--_ad-line)} #rvBox td, #rvBox th{border-color:var(--_ad-line)} #rvBox th{background:var(--_ad-card2)}
+@media (max-width:520px){ #rvBox .rv-tabs{border-radius:20px} #rvBox .rv-exs li{padding:16px} #rvBox .rv-exs .qq{flex-direction:column} #rvBox .dc-diff, #rvBox .rv-exs .res .dc-diff{font-size:19px; gap:8px 12px} }
 /* 会話を観るの全文（本人 2026-11-22「字幕が出るのはいいんだけど、全文がバッて見えてると便利」）。
    広い画面は右の列、狭い画面は絵の下。いまの行が光り、押すとそこから流れる。下の「全文」で出し入れ */
 .th-body{flex:1; min-height:0; display:flex}
@@ -4002,9 +4084,9 @@ function checkTyped(target, typed){
 const eqW = (a, b) => a.base === b.base || a.base === '〜';
 /* 語ごとの答え合わせを1語ずつ描く（書き写す・練習問題で同じ見た目） */
 function dcWord(z){
-  return z.k === 'ok' ? '<span class="w ok">' + esc(z.t) + '</span>' : z.k === 'extra' ? '<span class="w extra">' + esc(z.y) + '</span>'
-    : z.k === 'free' ? '<span class="w ok">' + esc(z.y) + '<small>自由</small></span>'
-    : '<span class="w ' + z.k + '">' + esc(z.t) + '<small>' + (z.k === 'miss' ? '抜け' : esc(z.y)) + '</small></span>';
+  return z.k === 'ok' ? '<span class="w ok"><i>' + esc(z.t) + '</i></span>' : z.k === 'extra' ? '<span class="w extra"><i>' + esc(z.y) + '</i></span>'
+    : z.k === 'free' ? '<span class="w free"><i>' + esc(z.y) + '</i><small>自由</small></span>'
+    : '<span class="w ' + z.k + '"><i>' + esc(z.t) + '</i><small>' + (z.k === 'miss' ? '抜け' : esc(z.y)) + '</small></span>';
 }
 /* 「おしい」語が、声調と母音の記号のどちらで違うかを言う */
 const TONE_NAME = {'': '平らに（記号なし）', '́': '上がる（´）', '̀': '下がる（`）', '̉': '下がって上がる（ˀ）', '̃': '揺れて上がる（~）', '̣': '短く落ちる（下の点）'};
@@ -6194,7 +6276,7 @@ function paintReview(){
     '<button id="rvWatch">もう一度会話を観る</button>' + (last ? '' : '<button id="rvNextLesson">次の課の会話を観る</button>') + '</div>';
   el.innerHTML =
     '<div class="th-top"><b>' + esc(r.x.L.title) + '</b><span class="th-n">この課で習ったこと</span><button class="th-x" id="thClose">閉じる</button></div>' +
-    '<div class="rv" id="rvBox"><div class="rv-in"><div class="rv-tabs">' + tabs.map(([k, n]) => '<button data-rvtab="' + k + '" class="' + (k === rv.tab ? 'on' : '') + '">' + n + '</button>').join('') + '</div>' + h + '</div></div>';
+    '<div class="rv" id="rvBox"><div class="rv-in"><div class="rv-tabbar"><div class="rv-tabs">' + tabs.map(([k, n]) => '<button data-rvtab="' + k + '" class="' + (k === rv.tab ? 'on' : '') + '">' + n + '</button>').join('') + '</div></div>' + h + '</div></div>';
   $('#rvBox').scrollTop = keepTop;
   $('#thClose').onclick = closeTheater;
   el.querySelectorAll('[data-rvtab]').forEach(b => b.onclick = () => { rv.tab = b.dataset.rvtab; paintReview(); $('#rvBox').scrollTop = 0; });
