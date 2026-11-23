@@ -1590,6 +1590,13 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .rv-exs input:focus{outline:none; border-color:#8A8A94}
 .rv-exs .qq button{height:44px; padding:0 14px; background:#2A2A30; color:#FAFAFA; box-shadow:none; border-radius:8px; font-size:14px; white-space:nowrap}
 .rv-exs .res{font-size:14px; line-height:1.6; padding:8px 12px; border-radius:8px; background:#202026; white-space:pre-line}
+.rv-exs .res{display:flex; flex-direction:column; gap:6px; white-space:normal}
+.rv-exs .res .dc-diff{font-size:17px; line-height:1.9}
+.rv-exs .res .why{margin:0; padding-left:18px; font-size:13px; color:#E0E0E6; display:flex; flex-direction:column; gap:2px}
+.rv-exs .res .why li{display:list-item; padding:0; background:none; border-radius:0; font-size:13px; line-height:1.6; gap:0}
+.rv-exs .res .why b{margin-right:8px} .rv-exs .res .why b.near{color:#F2D27A} .rv-exs .res .why b.ng{color:#FF9A9A}
+.rv-exs .res .ans{font-size:13px; color:#C8C8D0}
+.re{display:flex; flex-direction:column; gap:12px} .re-gate{margin:0; padding:10px 14px; background:#202026; border-radius:10px; font-size:14px}
 .rv-exs .res.ok{background:#1F3A2A} .rv-exs .res.mid{background:#3A3420} .rv-exs .res.ng{background:#3A1F22}
 .rv-exs .self{display:flex; gap:6px; flex-wrap:wrap} .rv-exs .self button{height:36px; padding:0 14px; background:#2A2A30; color:#FAFAFA; box-shadow:none; border-radius:8px; font-size:14px}
 .rv-exs .self button.on{background:#FAFAFA; color:#0E0E10}
@@ -3967,12 +3974,12 @@ function checkTyped(target, typed){
   // 文字（記号なし）で並びを合わせる（LCS）
   const n = T.length, m = Y.length, L = Array.from({length:n+1}, ()=> new Array(m+1).fill(0));
   for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--)
-    L[i][j] = T[i].base === Y[j].base ? L[i+1][j+1] + 1 : Math.max(L[i+1][j], L[i][j+1]);
+    L[i][j] = eqW(T[i], Y[j]) ? L[i+1][j+1] + 1 : Math.max(L[i+1][j], L[i][j+1]);
   const res = []; let i = 0, j = 0;
   while(i < n || j < m){
-    if(i < n && j < m && T[i].base === Y[j].base){
+    if(i < n && j < m && eqW(T[i], Y[j])){
       const exact = T[i].shape === Y[j].shape && T[i].tone === Y[j].tone;
-      res.push({t:words(target)[i], y:words(typed)[j], k: exact ? 'ok' : 'near'}); i++; j++;
+      res.push({t:words(target)[i], y:words(typed)[j], k: T[i].base === '〜' ? 'free' : exact ? 'ok' : 'near'}); i++; j++;
     }else if(j < m && (i >= n || L[i][j+1] >= L[i+1][j])){
       res.push({t:null, y:words(typed)[j], k:'extra'}); j++;
     }else{
@@ -3983,11 +3990,29 @@ function checkTyped(target, typed){
   const out = [];
   for(const r of res){
     const prev = out[out.length-1];
+    if(prev && prev.k === 'free' && r.k === 'extra'){ prev.y += ' ' + r.y; continue; }   // 〜 の穴に入れた2語目以降（名前が2語のとき）
     if(prev && ((prev.k === 'miss' && r.k === 'extra') || (prev.k === 'extra' && r.k === 'miss'))){
-      out[out.length-1] = {t: prev.t || r.t, y: prev.y || r.y, k:'wrong'};
+      const t = prev.t || r.t, y = prev.y || r.y;
+      out[out.length-1] = t === '〜' ? {t: y, y, k:'free'} : {t, y, k:'wrong'};
     }else out.push(r);
   }
   return out;
+}
+/* ⭕ 答えの「〜」は名前などを自分で入れる穴。何の語が入っても合いにする（本人 2026-11-23「私の名前を書いたがためにダメだったっていうだけ」） */
+const eqW = (a, b) => a.base === b.base || a.base === '〜';
+/* 語ごとの答え合わせを1語ずつ描く（書き写す・練習問題で同じ見た目） */
+function dcWord(z){
+  return z.k === 'ok' ? '<span class="w ok">' + esc(z.t) + '</span>' : z.k === 'extra' ? '<span class="w extra">' + esc(z.y) + '</span>'
+    : z.k === 'free' ? '<span class="w ok">' + esc(z.y) + '<small>自由</small></span>'
+    : '<span class="w ' + z.k + '">' + esc(z.t) + '<small>' + (z.k === 'miss' ? '抜け' : esc(z.y)) + '</small></span>';
+}
+/* 「おしい」語が、声調と母音の記号のどちらで違うかを言う */
+const TONE_NAME = {'': '平らに（記号なし）', '́': '上がる（´）', '̀': '下がる（`）', '̉': '下がって上がる（ˀ）', '̃': '揺れて上がる（~）', '̣': '短く落ちる（下の点）'};
+function nearWhy(z){
+  const a = wparts(z.t), b = wparts(z.y), why = [];
+  if(a.shape !== b.shape) why.push('母音・子音の記号（' + b.shape + ' → ' + a.shape + '）');
+  if(a.tone !== b.tone) why.push('声調が ' + (TONE_NAME[b.tone] || b.tone) + ' → ' + (TONE_NAME[a.tone] || a.tone));
+  return why.join('、');
 }
 
 /* Telex：aa→â aw→ă ee→ê oo→ô ow→ơ uw→ư w→ư dd→đ、語の終わりの s f r x j で声調 */
@@ -5349,7 +5374,7 @@ $('#recChip').addEventListener('click', async ()=> {
 // 試験の口：?test のときだけ、フォルダの代わりにブラウザの内部の保存領域（OPFS）を渡せる。⛔ ふだんは出ない
 if(new URLSearchParams(location.search).has('test')) window.__otoTest = { useDir: async h => { recDir = h; await syncRecords(); }, loadFiles, openDir, shelf: () => LIB && LIB.books.map(b => b.folder), emit, state: () => ({srs, hist: hist.length, typed: [...typed], dev: DEV, info: recInfo, pend: evPend.length}),
   miss: {get: () => misses, set: m => { misses = m; save('miss:log', m); }, n: () => ansN}, scope: li => scopeOf(li),
-  watch: lid => openTheater(lessonData().findIndex(x => x.L.id === lid), false), th: () => theater, at: t => { audio.currentTime = t; }, review: tab => { openReview(); theater.rv.tab = tab; paintReview(); }, rvStats };   // 会話を観る・書き写す・記録を試す口（2026-11-22）   // 段5のつまずき・範囲を試す口
+  watch: (lid, all) => openTheater(lessonData().findIndex(x => x.L.id === lid), !!all), th: () => theater, at: t => { audio.currentTime = t; }, review: tab => { openReview(); theater.rv.tab = tab; paintReview(); }, rvStats };   // 会話を観る・書き写す・記録を試す口（2026-11-22）   // 段5のつまずき・範囲を試す口
 // ほかの端末で進めた分を、画面に戻ってきたときに読み直す
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && recDir) syncRecords(); });
 
@@ -6007,13 +6032,54 @@ function rvAnswers(x){
   return [...out];
 }
 const rvViAnswer = x => VI_MARK.test(String(x.a || '')) || /^[\sa-z.,?!\/　]+$/i.test(String(x.a || ''));
-function rvGrade(x, typed){
-  const ans = rvAnswers(x), k = rvKey(typed);
-  if(!k) return null;
-  if(ans.some(a => rvKey(a) === k)) return 'ok';
-  if(ans.some(a => rvBare(a) === rvBare(typed))) return 'mid';
-  return 'ng';
+/* ⭕ 語ごとに比べて、いちばん近い答えで採点する（本人 2026-11-23「何が間違えてたのか、何が惜しいのかがちゃんとわかるように」）。
+   ok＝全部合う／mid＝声調・記号だけ違う語がある／ng＝違う語・抜け・余りがある。
+   ⭕ 言い方の幅：答えの「〜」は自由。「người Nhật」は「người Nhật Bản」でも合い */
+const RV_ALT = [[/\bNhật\b(?! Bản)/g, 'Nhật Bản']]
+  .concat(['chị', 'bạn', 'em', 'ông', 'bà'].map(p => [/(^|\s)anh(?= |\?|$)(?! ấy)/gi, '$1' + p]))   // 相手を呼ぶ語は相手の性別・年齢で変わる（anh ⇄ chị・bạn…）。「anh ấy／chị ấy（彼・彼女）」は変えない
+  .concat(['anh', 'bạn', 'em', 'ông', 'bà'].map(p => [/(^|\s)chị(?= |\?|$)(?! ấy)/gi, '$1' + p]));
+function rvDiff(x, typed){
+  if(!rvKey(typed)) return null;
+  const cand = new Set(rvAnswers(x).map(a => a.replace(/［例］/g, '').trim()).filter(Boolean));
+  [...cand].forEach(a => RV_ALT.forEach(([re, to]) => { const b = a.replace(re, to); if(b !== a) cand.add(b); }));
+  const orig = new Set(rvAnswers(x).map(a => a.replace(/［例］/g, '').trim()));
+  let best = null;
+  for(const a of cand){
+    const res = checkTyped(a, typed), c = k => res.filter(z => z.k === k).length;
+    const sc = (c('ok') + c('free')) * 2 + c('near') - c('wrong') * 2 - c('miss') * 2 - c('extra') * 2;
+    if(!best || sc > best.sc) best = {a, res, sc, alt: !orig.has(a), r: c('wrong') + c('miss') + c('extra') ? 'ng' : c('near') ? 'mid' : 'ok'};
+  }
+  return best;
 }
+function rvGrade(x, typed){ const d = rvDiff(x, typed); return d ? d.r : null; }
+/* 何が違ったかを、語ごとに日本語で並べる */
+function rvWhy(d){
+  const out = []; let g = null;
+  const flush = () => { if(!g) return; const t = g.t.join(' '), y = g.y.join(' ');
+    out.push(t && y ? '<li><b class="ng">' + esc(y) + ' → ' + esc(t) + '</b>' + (g.t.length > 1 || g.y.length > 1 ? '言い方が違う' : '違う語') + '</li>'
+      : t ? '<li><b class="ng">' + esc(t) + '</b>が抜けている</li>' : '<li><b class="ng">' + esc(y) + '</b>は答えに無い語</li>'); g = null; };
+  d.res.forEach(z => {
+    if(z.k === 'wrong' || z.k === 'miss' || z.k === 'extra'){ g = g || {t: [], y: []}; if(z.t && z.k !== 'extra') g.t.push(z.t); if(z.y && z.k !== 'miss') g.y.push(z.y); return; }
+    flush();
+    if(z.k === 'near') out.push('<li><b class="near">' + esc(z.y) + ' → ' + esc(z.t) + '</b>' + esc(nearWhy(z)) + '</li>');
+  });
+  flush();
+  return out.length ? '<ul class="why">' + out.join('') + '</ul>' : '';
+}
+/* 答えを確かめたあとの箱（一覧と解き直しで同じ） */
+function rvResBox(x, s){
+  const vi = rvViAnswer(x), d = vi ? rvDiff(x, s.typed) : null;
+  const msg = {ok: '正解', mid: 'おしい：声調・記号だけ違う語があります', ng: '違う語があります'}[s.mark] || '';
+  return '<div class="res ' + (s.mark || '') + '">' + (vi && msg ? '<b>' + msg + '</b>' : '') +
+    (d && s.mark !== 'ok' ? '<div class="dc-diff" lang="' + LP.code + '">' + d.res.map(dcWord).join('') + '</div>' + rvWhy(d) : '') +
+    '<div class="ans">' + (d && d.res.some(z => z.k === 'free') && s.mark === 'ok' ? '〜 のところは自由（名前など）。' : '') + (d && d.alt ? '教科書と違う言い方ですが、通じる形なので「' + esc(d.a) + '」と比べました。' : '') + '教科書の答え：' + esc(String(x.a || '').split(' / ').join(' ／ ')) + '</div></div>';
+}
+/* いま間違えたままの問題（ベトナム語で答えるもの）。次の課へ行く前に解き直す */
+function rvMissNow(lid){
+  const tb = textbook[lid], st = rvExStore(lid);
+  return (tb.exercises || []).flatMap(e => (e.items || []).filter(x => rvViAnswer(x)).map(x => e.sec + '-' + x.n)).filter(k => st[k] && st[k].shown && st[k].mark && st[k].mark !== 'ok');
+}
+function rvExItem(lid, k){ const [s0, n0] = k.split('-').map(Number), e = (textbook[lid].exercises || []).find(e => +e.sec === s0); return {e, x: e && (e.items || []).find(i => +i.n === n0)}; }
 function rvExStore(lid){ try{ return JSON.parse(localStorage.getItem('rvEx.' + lid) || '{}'); }catch(e){ return {}; } }
 function rvExSave(lid, st){ try{ localStorage.setItem('rvEx.' + lid, JSON.stringify(st)); }catch(e){} }
 function rvBookStage(lid){
@@ -6079,8 +6145,7 @@ function paintReview(){
         '<div class="dc-btns"><button class="primary" id="dcAgain">最初からもう一度</button></div></div>';
     }else{
       const x = lines[d.i], showT = mode === 'see' || d.res || d.peek;
-      const word = z => z.k === 'ok' ? '<span class="w ok">' + esc(z.t) + '</span>' : z.k === 'extra' ? '<span class="w extra">' + esc(z.y) + '</span>'
-        : '<span class="w ' + z.k + '">' + esc(z.t) + '<small>' + (z.k === 'miss' ? '抜け' : esc(z.y)) + '</small></span>';
+      const word = dcWord;
       h += '<div class="dc">' +
         '<div class="dc-head"><div class="dc-mode"><button data-dcmode="see" class="' + (mode === 'see' ? 'on' : '') + '">見て写す</button><button data-dcmode="hear" class="' + (mode === 'hear' ? 'on' : '') + '">聴いて書く</button></div><span class="sp"></span><span>' + (d.i + 1) + ' / ' + lines.length + '文</span></div>' +
         '<div class="rv-meter"><i style="width:' + Math.round(d.i / lines.length * 100) + '%"></i></div>' +
@@ -6096,7 +6161,8 @@ function paintReview(){
     }
     h += '<section><h3>本文</h3><div class="dc-list">' + lines.map((x, j) => '<button data-dcgo="' + j + '" class="' + (j === d.i ? 'now' : '') + '"><span' + (mode === 'see' ? ' lang="' + LP.code + '"' : '') + '>' + (mode === 'see' ? esc(x.v) : '文 ' + (j + 1)) + '</span>' + rvHistLine(dst.get(norm(x.v))) + '</button>').join('') + '</div></section>';
   }else if(rv.tab === 'ex'){
-    const sg = rvBookStage(lid);
+    const sg = rvBookStage(lid), re = rv.exRe;
+    if(re){ h += rvRetryHtml(lid, re); }else{
     /* ⭕ ここで解く：問題ごとに書く欄と「確かめる」を置く（本人 2026-11-20「インプットできる枠がないと正誤を測れない」）。
        ⭕ 書いた答えと印は端末に残る（rvEx.<課>）。音声つきで1問ずつ解く前からの頁は、下のボタンで残してある */
     const st = rvExStore(lid), all = exs.flatMap(e => (e.items || []).map(x => ({e, x, k: e.sec + '-' + x.n})));
@@ -6104,22 +6170,24 @@ function paintReview(){
     const xst = rvStats('ex', lid), missed = k => { const z = xst.get(k); return z && (z.ng || z.mid); };
     const nMiss = all.filter(o => missed(o.k)).length;
     h += '<div class="rv-score">' + nDone + ' / ' + all.length + '問 答えた　正解 ' + nOk + (nMiss ? '　これまでに間違えたことのある問題 ' + nMiss : '') + '</div>';
+    if(LP.inputMethod === 'telex') h += '<label class="dc-opt"><input type="checkbox" id="exTelex"' + (load('telex', true) ? ' checked' : '') + '> 画面の Telex で打つ（aa→â　dd→đ　s f r x j で声調）。Mac や iPhone のベトナム語入力で打つときは外す</label>';
     if(nMiss) h += '<div class="rv-filter"><button data-exf="all" class="' + (rv.exMiss ? '' : 'on') + '">全部</button><button data-exf="miss" class="' + (rv.exMiss ? 'on' : '') + '">間違えたことのある問題だけ（' + nMiss + '）</button></div>';
     h += exs.map(e => { const its = (e.items || []).filter(x => !rv.exMiss || missed(e.sec + '-' + x.n)); if(!its.length) return '';
       return '<section class="rv-exs"><h3>' + esc(e.label || '練習') + '</h3>' + (e.instr ? '<div class="ins">' + esc(e.instr) + '</div>' : '') +
       '<ol>' + its.map(x => {
         const k = e.sec + '-' + x.n, s = st[k] || {}, vi = rvViAnswer(x);
-        const msg = {ok: '正解', mid: '声調の記号だけ違います', ng: '違います'}[s.mark] || '';
         return '<li><div><span>(' + x.n + ')</span>' + esc(x.q || '') + '</div>' +
           '<div class="qq"><input data-exin="' + k + '" value="' + esc(s.typed || '') + '" placeholder="' + (vi ? 'ベトナム語で書く' : '日本語で書く') + '" autocomplete="off" autocapitalize="off" spellcheck="false"' + (vi ? ' lang="' + LP.code + '"' : '') + '>' +
           '<button data-exck="' + k + '">確かめる</button></div>' +
-          (s.shown ? '<div class="res ' + (s.mark || '') + '">' + (vi && msg ? '<b>' + msg + '</b>\n' : '') + '答え：' + esc(String(x.a || '').split(' / ').join(' ／ ')) + '</div>' +
+          (s.shown ? rvResBox(x, s) +
             '<div class="self">' + (vi ? (s.mark === 'ok' ? '' : '<button data-exself="' + k + '|ok">合っていた（訳し方の違い）</button>') :
               [['ok', '○ 合っていた'], ['mid', '△ 少し違う'], ['ng', '× 違った']].map(([m, n]) => '<button data-exself="' + k + '|' + m + '" class="' + (s.mark === m ? 'on' : '') + '">' + n + '</button>').join('')) + '</div>' : '') +
           rvHistLine(xst.get(k)) +
         '</li>';
       }).join('') + '</ol></section>'; }).join('');
-    h += '<div class="rv-go"><button id="rvExReset">この課の答えを消して最初から</button>' + (sg ? '<button id="rvBook">答えの音声つきで1問ずつ解く</button>' : '') + '</div>';
+    const mn = rvMissNow(lid).length;
+    h += '<div class="rv-go">' + (mn ? '<button class="primary" id="rvReStart">間違えた ' + mn + '問を解き直す</button>' : '') + '<button id="rvExReset">この課の答えを消して最初から</button>' + (sg ? '<button id="rvBook">答えの音声つきで1問ずつ解く</button>' : '') + '</div>';
+    }
   }
   const last = theater.k + 1 >= theater.list.length;
   h += '<div class="rv-go">' + (rv.tab !== 'ex' && tabs.length > 1 ? '<button class="primary" id="rvNextTab">次：' + esc(tabs[Math.min(tabs.findIndex(t => t[0] === rv.tab) + 1, tabs.length - 1)][1].replace(/ \d+$/, '')) + '</button>' : '') +
@@ -6134,7 +6202,13 @@ function paintReview(){
   el.querySelectorAll('[data-fprac]').forEach(b => b.onclick = () => { const n = +b.dataset.fprac, s = formulaSets(lid).find(x => x.f.n === n); closeTheater(); if(s) startStage(lid + '|' + s.set.id); });
   const nt = $('#rvNextTab'); if(nt) nt.onclick = () => { const i = tabs.findIndex(t => t[0] === rv.tab); rv.tab = tabs[Math.min(i + 1, tabs.length - 1)][0]; paintReview(); $('#rvBox').scrollTop = 0; };
   $('#rvWatch').onclick = () => { theater.rv = null; theaterPlay(theater.k); };
-  const nl = $('#rvNextLesson'); if(nl) nl.onclick = () => { theater.rv = null; theaterPlay(theater.k + 1); };
+  const nl = $('#rvNextLesson'); if(nl) nl.onclick = () => {
+    const mk = rvMissNow(lid);
+    if(mk.length && !rv.reSkip && !(rv.exRe && !rv.exRe.q.length)){ rv.tab = 'ex'; rvReBegin(lid, mk, true); return; }   // ⭕ 次の課の前に、間違えた問題を解き直す（本人 2026-11-23「次の会話に行く前に定着ができるように」）
+    theater.rv = null; theaterPlay(theater.k + 1); };
+  const rs = $('#rvReStart'); if(rs) rs.onclick = () => rvReBegin(lid, rvMissNow(lid), false);
+  if(rv.tab === 'ex' && rv.exRe) rvRetryWire(lid);
+  const et = $('#exTelex'); if(et) et.onchange = () => save('telex', et.checked);
   const ws = $('#rvWStart'); if(ws) ws.onclick = () => { rv.wq = rvWordQuiz(voc); paintReview(); };
   el.querySelectorAll('[data-wch]').forEach(b => b.onclick = () => {
     const q = rv.wq; if(q.picked != null) return;
@@ -6147,7 +6221,8 @@ function paintReview(){
   el.querySelectorAll('[data-exck]').forEach(b => b.onclick = () => rvExCheck(lid, b.dataset.exck));
   el.querySelectorAll('[data-exin]').forEach(i => {
     i.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); rvExCheck(lid, i.dataset.exin); } };
-    i.oninput = () => { const st = rvExStore(lid); st[i.dataset.exin] = Object.assign(st[i.dataset.exin] || {}, {typed: i.value}); rvExSave(lid, st); };   // 描き直しても書きかけが消えないように
+    i.oninput = e => { if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true) && rvViAnswer(rvExItem(lid, i.dataset.exin).x || {})){ const v = telexLine(i.value); if(v !== i.value) i.value = v; }
+      const st = rvExStore(lid); st[i.dataset.exin] = Object.assign(st[i.dataset.exin] || {}, {typed: i.value}); rvExSave(lid, st); };   // 描き直しても書きかけが消えないように
   });
   el.querySelectorAll('[data-exshow]').forEach(b => b.onclick = () => { const st = rvExStore(lid); const k = b.dataset.exshow; st[k] = Object.assign(st[k] || {}, {shown: true, typed: (el.querySelector('[data-exin="' + k + '"]') || {}).value || (st[k] || {}).typed || ''}); rvExSave(lid, st); paintReview(); });
   el.querySelectorAll('[data-exself]').forEach(b => b.onclick = () => { const [k, m] = b.dataset.exself.split('|'); const st = rvExStore(lid);
@@ -6222,6 +6297,49 @@ function rvWordNext(q){
   if(n >= 2) q.done++;
   else q.queue.splice(Math.min(n ? 4 : 2, q.queue.length), 0, w);
   rvWordSet(q);
+}
+/* ---- 間違えた問題の解き直し（2026-11-23） ----
+   本人「間違えたところを、何が違ったか・何が惜しいかが分かるようにして、次の会話に行く前に定着できるようにしたい。難易度が高くても一生懸命解く」。
+   ⭕ 1問ずつ、空の欄から。答えは確かめるまで見せない。正解したら抜け、おしい・違うは2問あとにもう一度出る。全部正解で終わり */
+function rvReBegin(lid, keys, gate){
+  theater.rv.exRe = {q: keys.slice(), total: keys.length, done: 0, cur: null, gate};
+  paintReview(); $('#rvBox').scrollTop = 0; setTimeout(() => { const i = $('#reIn'); if(i) i.focus(); }, 0);
+}
+function rvRetryHtml(lid, re){
+  let h = '<div class="re">';
+  if(re.gate) h += '<p class="re-gate">次の課へ進む前に、この課で間違えた ' + re.total + '問を解き直します。</p>';
+  if(!re.q.length){
+    return h + '<h2>間違えた問題を全部書けました</h2><p>' + re.total + '問。これで次の課へ進めます。</p><div class="dc-btns"><button id="reBack">一覧へ戻る</button></div></div>';
+  }
+  const k = re.q[0], {e, x} = rvExItem(lid, k), c = re.cur;
+  h += '<div class="dc-head"><span>解き直し</span><span class="sp"></span><span>残り ' + re.q.length + '問・済 ' + re.done + ' / ' + re.total + '</span></div>' +
+    '<div class="rv-meter"><i style="width:' + Math.round(re.done / re.total * 100) + '%"></i></div>' +
+    '<section class="rv-exs"><div class="ins">' + esc((e.label || '練習') + '　' + (e.instr || '')) + '</div><ol><li><div><span>(' + x.n + ')</span>' + esc(x.q || '') + '</div>' +
+    (c ? rvResBox(x, {typed: c.typed, mark: c.r}) + '<div class="self">' + (c.r !== 'ok' ? '<button id="reFix">合っていた（訳し方の違い）</button>' : '') + '</div>'
+       : '<div class="qq"><input id="reIn" lang="' + LP.code + '" placeholder="ベトナム語で書く（Enter で確かめる）" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button id="reCk">確かめる</button></div>') +
+    rvHistLine(rvStats('ex', lid).get(k)) + '</li></ol></section>' +
+    '<div class="dc-btns">' + (c ? '<button class="primary" id="reNext">' + (c.r === 'ok' ? '次へ（Enter）' : 'あとでもう一度（Enter）') + '</button>' : '') + '<button id="reQuit">' + (re.gate ? '解き直さずに次の課へ' : 'やめて一覧へ') + '</button></div>';
+  return h + '</div>';
+}
+function rvRetryWire(lid){
+  const rv = theater.rv, re = rv.exRe, k = re.q[0];
+  const back = () => { rv.exRe = null; paintReview(); };
+  const b = $('#reBack'); if(b) b.onclick = back;
+  const quit = $('#reQuit'); if(quit) quit.onclick = () => { if(re.gate){ rv.reSkip = true; rv.exRe = null; theater.rv = null; theaterPlay(theater.k + 1); } else back(); };
+  const inp = $('#reIn');
+  const check = () => { const typed = inp.value; if(!typed.trim()) return; const {x} = rvExItem(lid, k), r = rvGrade(x, typed);
+    re.cur = {typed, r}; rvRecord('ex', lid, k, r, typed);
+    const st = rvExStore(lid); st[k] = {typed, shown: true, mark: r}; rvExSave(lid, st); paintReview(); };
+  const next = () => { const c = re.cur; if(!c) return; re.cur = null; const kk = re.q.shift();
+    if(c.r === 'ok'){ re.done++; } else re.q.splice(Math.min(2, re.q.length), 0, kk);
+    paintReview(); setTimeout(() => { const i = $('#reIn'); if(i) i.focus(); }, 0); };
+  if(inp){
+    inp.oninput = e => { if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){ const v = telexLine(inp.value); if(v !== inp.value) inp.value = v; } };
+    inp.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); check(); } };
+    $('#reCk').onclick = check;
+  }
+  const nx = $('#reNext'); if(nx){ nx.onclick = next; nx.focus(); nx.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); next(); } }; }
+  const fx = $('#reFix'); if(fx) fx.onclick = () => { rvRecord('ex', lid, k, 'ok', re.cur.typed, true); const st = rvExStore(lid); st[k] = Object.assign(st[k] || {}, {mark: 'ok'}); rvExSave(lid, st); re.cur.r = 'ok'; paintReview(); };
 }
 function rvExCheck(lid, k){
   const tb = textbook[lid], [s, n] = k.split('-').map(Number);
