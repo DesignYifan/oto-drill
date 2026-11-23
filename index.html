@@ -1793,6 +1793,12 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .theater .th-top select{box-shadow:none; height:40px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; padding:0 16px}
 .theater .th-top .th-n{color:rgba(244,247,240,.66)}
 .theater .th-top button, .theater .th-bar button, .theater .th-bar .th-rate{height:40px; padding:0 16px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
+.notepad{z-index:95} .npslash{z-index:96}
+.notepad .npsize button{color:var(--ui-text-fgColor)}   /* 選んだ大きさが白地に白で見えなかった */   /* メモは会話を観る画面（z-index 90）の上にも出す */
+.theater .th-top .th-memo{margin-left:auto; display:inline-flex; align-items:center; gap:6px}
+.theater .th-top .th-memo ~ .th-x{margin-left:0}
+.theater .th-top button.th-memo.on{background:rgba(197,229,178,.16); border-color:#C5E5B2}
+@media (max-width:600px){ body:has(#theater:not([hidden])) .notepad{bottom:8px} }
 .theater .th-top button.go{background:#C5E5B2; color:#0B120E; border-color:#C5E5B2; font-weight:600}
 #theater .th-top button.go:hover{background:#D3EDC4; color:#0B120E}
 .theater .th-bar button.primary{background:#C5E5B2; color:#0B120E; border-color:#C5E5B2; font-weight:600}
@@ -5787,6 +5793,7 @@ async function renameNote(to){
 async function setWriting(on, quiet){
   $('#notepad').hidden = !on;
   $('#noteBtn').classList.toggle('on', on); $('#noteBtn').setAttribute('aria-pressed', String(on));
+  const tm = $('#thMemo'); if(tm){ tm.classList.toggle('on', on); tm.setAttribute('aria-pressed', String(on)); }
   save('writing', on);
   if(!on){ closeSlash(); noteFlush(); return; }
   placeMemo();
@@ -5797,6 +5804,10 @@ async function setWriting(on, quiet){
   const a = visTx(); if(a.length && !quiet) setCaret(a[a.length - 1], null);
 }
 $('#noteBtn').addEventListener('click', e => { setWriting($('#notepad').hidden); e.currentTarget.blur(); });
+/* 会話を観る画面と「この課で習ったこと」からも開く（本人 2026-11-23「間違えた時に書いて練習したい」）。
+   ⭕ 前はメモの窓が観る画面の後ろに隠れて出せなかった。窓は同じもの（ページ・Telex・同期もそのまま） */
+function memoBtnHTML(){ const on = !$('#notepad').hidden; return '<button class="th-memo' + (on ? ' on' : '') + '" id="thMemo" aria-pressed="' + on + '" aria-controls="notepad"><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg><span>メモ</span></button>'; }
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#thMemo'); if(b){ setWriting($('#notepad').hidden); b.blur(); } });
 /* 浮かぶ窓：どの画面の上にも出すため body の直下へ移す。位置・大きさ・文字の大きさは覚える */
 const memoBox = $('#notepad');
 document.body.appendChild(memoBox);
@@ -6408,7 +6419,7 @@ function paintReview(){
   h += '<div class="rv-go">' + (rv.tab !== 'ex' && tabs.length > 1 ? '<button class="primary" id="rvNextTab">次：' + esc(tabs[Math.min(tabs.findIndex(t => t[0] === rv.tab) + 1, tabs.length - 1)][1].replace(/ \d+$/, '')) + '</button>' : '') +
     '<button id="rvWatch">もう一度会話を観る</button>' + (last ? '' : '<button id="rvNextLesson">次の課の会話を観る</button>') + '</div>';
   el.innerHTML =
-    '<div class="th-top"><b>' + esc(r.x.L.title) + '</b><span class="th-n">この課で習ったこと</span><button class="th-x" id="thClose">閉じる</button></div>' +
+    '<div class="th-top"><b>' + esc(r.x.L.title) + '</b><span class="th-n">この課で習ったこと</span>' + memoBtnHTML() + '<button class="th-x" id="thClose">閉じる</button></div>' +
     '<div class="rv" id="rvBox"><div class="rv-in"><div class="rv-tabbar"><div class="rv-tabs">' + tabs.map(([k, n]) => '<button data-rvtab="' + k + '" class="' + (k === rv.tab ? 'on' : '') + '">' + n + '</button>').join('') + '</div></div>' + h + '</div></div>';
   $('#rvBox').scrollTop = keepTop;
   $('#thClose').onclick = closeTheater;
@@ -6821,7 +6832,7 @@ function paintTheater(){
         : '<b>' + esc(r.x.L.title) + '</b>') +
       '<span class="th-n">' + (theater.k + 1) + ' / ' + theater.list.length + '　' + esc(r.t.name) + '</span>' +
       (textbook[id] ? '<button class="th-rv' + (theater.laps ? ' go' : '') + '" id="thRv">' + (theater.laps ? 'この課で習ったことへ（' + theater.laps + '回聞いた）' : 'この課で習ったこと') + '</button>' : '') +
-      '<button class="th-x" id="thClose">閉じる</button>' +
+      memoBtnHTML() + '<button class="th-x" id="thClose">閉じる</button>' +
     '</div>' +
     '<div class="th-body"><div class="th-stage">' +
       (vid ? '<video id="thVid" src="' + vid + '" muted playsinline preload="auto"></video>' : pic ? '<img src="' + pic + '" alt="">' : '<div class="th-none">この課の絵はまだありません</div>') +
@@ -6918,6 +6929,7 @@ audio.addEventListener('ratechange', () => paintTheaterSub());
 audio.addEventListener('pause', () => paintTheaterSub());
 document.addEventListener('keydown', e => {
   if(!theater) return;
+  if(e.target.closest && e.target.closest('#notepad')) return;   // メモで打っているときは、空白で再生を止めない・Esc で観る画面を閉じない
   if(e.key === 'Escape'){ closeTheater(); e.preventDefault(); }
   else if(e.key === ' ' && !e.target.closest('input,select,textarea')){ if(audio.paused) audio.play().catch(() => {}); else audio.pause(); e.preventDefault(); e.stopPropagation(); }
 }, true);
