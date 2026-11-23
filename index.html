@@ -2732,6 +2732,7 @@ const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
 let gapsCfg = {};     // 穴埋めの穴にするもの（gaps.json：課ごとの要の句と新出の語。2026-11-08）
 let formulas = [];    // 文法編の公式（formulas.json：公式の番号・課・音声・例文の id。2026-11-08）
+let vocExtra = {};   // 課の文に出てくるのに単語の一覧に無い語（vocab_extra.json。本人 2026-11-23「寒いっていう単語は単語で勉強したい」）
 let gquiz = [];      // 文法の意味の4択（grammar_quiz.json：公式ごとに「この文の意味は？」「この意味の正しい文は？」。教科書から作るので公開しない。2026-11-23）
 let textbook = {};    // 課の id → 誌面から起こした課の中身（textbook.json：まとめ・公式・単語・練習問題。2026-11-19）
 let bookEx = {};      // 練習の id → 教科書の番号ごとの答えと区間（exercises.json。2026-11-07 課のウィザードの ④）
@@ -2770,6 +2771,8 @@ async function loadSidecars(files){
   textbook = {}; if(tbj){ const d = await read(tbj); textbook = (d && d.lessons) || {}; }
   const gqj = pick('grammar_quiz.json');
   gquiz = []; if(gqj){ const d = await read(gqj); gquiz = (d && d.items) || []; }
+  const vej = pick('vocab_extra.json');
+  vocExtra = {}; if(vej){ const d = await read(vej); vocExtra = (d && d.lessons) || {}; }
   mergeBookPrompts();
   const dr = pick('drills.json');
   if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
@@ -6265,7 +6268,7 @@ function paintReview(){
   if(!theater || !theater.rv) return;
   const el = $('#theater'), r = theater.list[theater.k], lid = r.x.L.id, tb = textbook[lid], rv = theater.rv;
   const keepTop = $('#rvBox') ? $('#rvBox').scrollTop : 0;   // 答えを確かめて描き直しても、読んでいた位置に留まる
-  const fs = tb.formulas || [], voc = tb.vocab || [], exs = tb.exercises || [];
+  const fs = tb.formulas || [], voc = rvVoc(lid), exs = tb.exercises || [];
   const nEx = exs.reduce((a, e) => a + (e.items || []).length, 0), lines = dcLines(r);
   const tabs = [['sum', 'まとめ'], ['f', '文法' + (fs.length ? ' ' + fs.length : '')], ['w', '単語' + (voc.length ? ' ' + voc.length : '')], ['dc', '書き写す' + (lines.length ? ' ' + lines.length : '')], ['ex', '練習問題' + (nEx ? ' ' + nEx : '')]]
     .filter(([k]) => k === 'sum' || (k === 'f' && fs.length) || (k === 'w' && voc.length) || (k === 'dc' && lines.length) || (k === 'ex' && nEx));
@@ -6314,7 +6317,7 @@ function paintReview(){
     const wst = rvStats('w', null);   // 語の記録は課をまたいで1つ（同じ語が別の課に出ても続きから数える）
     const wbad = voc.filter(w => { const s = wst.get(w.vi); return s && s.ng; }).length;
     h += '<section><h3>この課の単語</h3>' + (wbad ? '<div class="rv-hist" style="margin-bottom:8px">外したことのある語 ' + wbad + '</div>' : '') +
-      '<div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : '')).replace('</button>', rvHistLine(wst.get(w.vi)) + rvwWhen(w.vi) + '</button>')).join('') + '</div></section>';
+      '<div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : '') + (w.extra ? '　（文に出た語' + (w.ex ? '：' + w.ex : '') + '）' : '')).replace('</button>', rvHistLine(wst.get(w.vi)) + rvwWhen(w.vi) + '</button>')).join('') + '</div></section>';
   }else if(rv.tab === 'dc'){
     const d = rv.dc || (rv.dc = {i: Math.min(+load('dc:pos:' + lid, 0) || 0, lines.length), typed: '', res: null});
     const mode = load('dc:mode', 'see'), dst = rvStats('dc', lid);
@@ -6557,7 +6560,8 @@ function rvGramWire(lid, fs){
    ⭕ 1語は今までどおり、意味からもベトナム語からも当てるまで出す。終えたとき、1回目で当てていれば箱を1つ上げ、外していれば箱1（10分後）から。
    ⭕ 間は練習の復習と同じ WAIT（10分・1日・3日・7日・21日）。記録は srs の 'rvw:<語>' で、端末をまたいで記録の列に乗る */
 const rvwId = vi => 'rvw:' + vi;
-function rvVocAll(){ return Object.entries(textbook).flatMap(([lid, t]) => (t.vocab || []).filter(x => x.vi && x.ja).map(x => Object.assign({}, x, {lid}))); }
+function rvVoc(lid){ const t = textbook[lid] || {}, have = new Set((t.vocab || []).map(w => (w.vi || '').toLowerCase())); return (t.vocab || []).concat((vocExtra[lid] || []).filter(w => w.vi && w.ja && !have.has(w.vi.toLowerCase())).map(w => Object.assign({extra: 1}, w))); }   // 一覧の語のあとに、文に出てきた語
+function rvVocAll(){ return Object.keys(textbook).flatMap(lid => rvVoc(lid).filter(x => x.vi && x.ja).map(x => Object.assign({}, x, {lid}))); }
 function rvwDueList(voc, lid, dueOnly){
   const now = Date.now(), due = vi => { const r = srs[rvwId(vi)]; return !r || r.due <= now; };
   const seen = new Set(), mine = voc.filter(w => w.vi && w.ja && due(w.vi) && (!dueOnly || srs[rvwId(w.vi)]) && !seen.has(w.vi) && seen.add(w.vi));   // dueOnly＝「今日の復習」から開いたとき。初めての語は混ぜない
@@ -7153,7 +7157,7 @@ function openWordReview(){
   theater.subs = theaterSubs(list[k]);
   $('#theater').hidden = false;
   openReview(); theater.rv.tab = 'w';
-  const L = list[k].x.L.id; theater.rv.wq = rvWordQuiz((textbook[L].vocab || []), L, false, true);
+  const L = list[k].x.L.id; theater.rv.wq = rvWordQuiz(rvVoc(L), L, false, true);
   paintReview();
 }
 function reviewHTML(){ return reviewHTML0() + rvwReviewHTML(); }
