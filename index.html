@@ -1609,6 +1609,7 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .rv-filter button.on{background:#FAFAFA; color:#0E0E10; font-weight:600}
 #theater .rv-filter button.on:hover{background:#E4E4E8; color:#0E0E10}
 .rv-say .rv-hist{margin-top:2px}
+.rv-when{display:block; font-size:12px; color:rgba(244,247,240,.6); margin-top:2px} .rv-prev{display:inline-block; padding:0 8px; border:1px solid rgba(197,229,178,.26); border-radius:100px; font-size:11px}
 /* 書き写す（本人 2026-11-22「テキストをそのまま書き写す、ディクテーションというか、タイピングのやつが欲しい」）。
    見て写す／聴いて書く を切り替える。1語打ち終えるごとに色。声調の記号だけ違う語は「おしい」で先へ進める */
 .dc{background:#17171B; border-radius:12px; padding:18px 16px; display:flex; flex-direction:column; gap:14px}
@@ -1724,6 +1725,26 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 #rvBox .dc-tgt .cur{box-shadow:inset 0 -2px 0 var(--_ad-mint)}
 #rvBox .dc-list button.now{outline:1px solid var(--_ad-mint)}
 #rvBox details{border-top-color:var(--_ad-line)} #rvBox td, #rvBox th{border-color:var(--_ad-line)} #rvBox th{background:var(--_ad-card2)}
+
+/* 文法を確かめる（2026-11-23） */
+#rvBox .gq{align-items:stretch; text-align:left}
+#rvBox .gq .qn{text-align:left}
+#rvBox .gq-f{font-size:12px; color:var(--_ad-muted)}
+#rvBox .gq-ask{font-size:14px; color:var(--_ad-muted)}
+#rvBox .gq .qv{text-align:left; font-size:24px; font-weight:500; line-height:1.5}
+#rvBox .gq .gq-ja{font-size:20px}
+#rvBox .gq .rv-ch button{text-align:left; justify-content:flex-start}
+#rvBox .gq-line{min-height:56px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 12px; border:1px dashed var(--_ad-line2); border-radius:16px}
+#rvBox .gq-ph{font-size:13px; color:var(--_ad-muted)}
+#rvBox .gq-tiles{display:flex; flex-wrap:wrap; gap:8px}
+#rvBox .gq-line button, #rvBox .gq-tiles button{height:40px; padding:0 16px; font-size:17px; background:rgba(12,19,16,.85); color:var(--_ad-text); border:1px solid var(--_ad-line2)}
+#rvBox .gq-line button{background:rgba(197,229,178,.12); border-color:var(--_ad-mint)}
+#rvBox .gq-tiles button.used{opacity:.3}
+#rvBox .gq-why{display:flex; flex-direction:column; gap:4px; font-size:14px; color:rgba(244,247,240,.86); line-height:1.7}
+#rvBox .gq-why b.ok{color:var(--_ad-ok)} #rvBox .gq-why b.ng{color:var(--_ad-ng)}
+#rvBox .gq .rv-exs li{padding:0; border:0; background:none; -webkit-backdrop-filter:none; backdrop-filter:none}
+#rvBox .gq .rv-go{flex-direction:row; flex-wrap:wrap} #rvBox .gq .rv-go button{flex:1}
+#rvBox .gq button:disabled{cursor:default}
 @media (max-width:520px){ #rvBox .rv-tabs{border-radius:20px} #rvBox .rv-exs li{padding:16px} #rvBox .rv-exs .qq{flex-direction:column} #rvBox .dc-diff, #rvBox .rv-exs .res .dc-diff{font-size:19px; gap:8px 12px} }
 /* 会話を観るの全文（本人 2026-11-22「字幕が出るのはいいんだけど、全文がバッて見えてると便利」）。
    広い画面は右の列、狭い画面は絵の下。いまの行が光り、押すとそこから流れる。下の「全文」で出し入れ */
@@ -2711,6 +2732,7 @@ const unitVideo = id => picURL((pics.videos || {})[id]);   // 課の情景の動
 let guide = {};       // 課の id → 手引き（guide.json：聴く前に読む解説。2026-10-04）
 let gapsCfg = {};     // 穴埋めの穴にするもの（gaps.json：課ごとの要の句と新出の語。2026-11-08）
 let formulas = [];    // 文法編の公式（formulas.json：公式の番号・課・音声・例文の id。2026-11-08）
+let gquiz = [];      // 文法の意味の4択（grammar_quiz.json：公式ごとに「この文の意味は？」「この意味の正しい文は？」。教科書から作るので公開しない。2026-11-23）
 let textbook = {};    // 課の id → 誌面から起こした課の中身（textbook.json：まとめ・公式・単語・練習問題。2026-11-19）
 let bookEx = {};      // 練習の id → 教科書の番号ごとの答えと区間（exercises.json。2026-11-07 課のウィザードの ④）
 let drills = [];      // 文法を使う問い（drills.json。書き換える・質問に答える。確かめた物だけ）
@@ -2746,6 +2768,8 @@ async function loadSidecars(files){
   bookEx = {}; if(ej){ const d = await read(ej); bookEx = (d && d.exercises) || {}; }
   const tbj = pick('textbook.json');
   textbook = {}; if(tbj){ const d = await read(tbj); textbook = (d && d.lessons) || {}; }
+  const gqj = pick('grammar_quiz.json');
+  gquiz = []; if(gqj){ const d = await read(gqj); gquiz = (d && d.items) || []; }
   mergeBookPrompts();
   const dr = pick('drills.json');
   if(dr){ const d = await read(dr); drills = ((d && d.drills) || []).filter(x => x.checked === true); }   // ⛔ 確かめていない問いは出さない
@@ -4134,14 +4158,15 @@ function checkTyped(target, typed){
       out[out.length-1] = t === '〜' ? {t: y, y, k:'free'} : {t, y, k:'wrong'};
     }else out.push(r);
   }
-  return out;
+  // ⭕ 〜 を打たずに飛ばしても抜けにしない（本人 2026-11-23。名前の所を毎回打たせて「違う」にするのは無駄）
+  return out.map(z => z.k === 'miss' && z.t === '〜' ? {t: '〜', y: '', k: 'free'} : z);
 }
 /* ⭕ 答えの「〜」は名前などを自分で入れる穴。何の語が入っても合いにする（本人 2026-11-23「私の名前を書いたがためにダメだったっていうだけ」） */
 const eqW = (a, b) => a.base === b.base || a.base === '〜';
 /* 語ごとの答え合わせを1語ずつ描く（書き写す・練習問題で同じ見た目） */
 function dcWord(z){
   return z.k === 'ok' ? '<span class="w ok"><i>' + esc(z.t) + '</i></span>' : z.k === 'extra' ? '<span class="w extra"><i>' + esc(z.y) + '</i></span>'
-    : z.k === 'free' ? '<span class="w free"><i>' + esc(z.y) + '</i><small>自由</small></span>'
+    : z.k === 'free' ? '<span class="w free"><i>' + esc(z.y || '〜') + '</i><small>自由</small></span>'
     : '<span class="w ' + z.k + '"><i>' + esc(z.t) + '</i><small>' + (z.k === 'miss' ? '抜け' : esc(z.y)) + '</small></span>';
 }
 /* 「おしい」語が、声調と母音の記号のどちらで違うかを言う */
@@ -5403,7 +5428,7 @@ function rebuild(){
       r.seen++;
       if(e.o){ r.box = Math.min(MAXBOX, r.box + (e.g || 1)); } else { r.box = 0; r.miss++; }
       r.due = e.t + WAIT[r.box]; r.last = e.t; S[e.i] = r;
-      H.push([e.t, e.i, e.s, e.o, e.o ? 0 : (e.n ? 1 : 0), e.b || '']);
+      if(!/^rv[wg]:/.test(e.i)) H.push([e.t, e.i, e.s, e.o, e.o ? 0 : (e.n ? 1 : 0), e.b || '']);   // 単語・文法の復習の印は練習の履歴に混ぜない
     }
     else if(e.k === 'typed') e.w.forEach(w => TY.add(w));
     else if(e.k === 'paper') (P[e.b] = P[e.b] || []).push({l: e.l, ex: e.ex, n: e.n, r: e.r, t: e.t});
@@ -6256,6 +6281,9 @@ function paintReview(){
     if((tb.points || []).length) h += '<section><h3>学習のポイント</h3><div class="rv-pts">' + tb.points.map(p => '<p>' + esc(p) + '</p>').join('') + '</div></section>';
     if((tb.examples || []).length) h += '<section><h3>この課の例文</h3><div class="rv-ex">' + tb.examples.map(e => rvSay(e.vi, e.ja)).join('') + '</div></section>';
   }else if(rv.tab === 'f'){
+    if(!rv.gq) rv.gq = rvGramQuiz(lid, fs);
+    h += rvGramHTML(rv.gq, fs);
+    h += '<h3>この課の文法</h3>';
     h += fs.map(f => {
       const card = formulas.find(x => x.n === f.n);
       return '<div class="rv-f"><div class="no">公式 ' + f.n + '</div><div class="tt">' + esc(f.title || '') + '</div>' +
@@ -6267,23 +6295,26 @@ function paintReview(){
     }).join('');
     if((tb.columns || []).length) h += tb.columns.map(c => '<details><summary>' + esc(c.title || 'コラム') + '</summary><div class="md">' + rvMD(c.body) + '</div></details>').join('');
   }else if(rv.tab === 'w'){
-    if(!rv.wq && voc.length) rv.wq = rvWordQuiz(voc);
+    if(!rv.wq) rv.wq = rvWordQuiz(voc, lid);
     const q = rv.wq;
     if(q && q.queue.length){
       const w = q.queue[0], jv = q.dir === 'jv', right = jv ? w.vi : w.ja;
       const meter = '<div class="rv-meter"><i style="width:' + Math.round(q.done / q.total * 100) + '%"></i></div>';
-      h += '<div class="rv-q">' + meter + '<div class="qn">覚えた ' + q.done + ' / ' + q.total + '語　' + (jv ? 'ベトナム語を選ぶ' : '意味を選ぶ') + '</div>' +
+      h += '<div class="rv-q">' + meter + '<div class="qn">' + (q.free ? '全部の語　' : '今日の語　') + q.done + ' / ' + q.total + (q.nOther ? '（前の課の復習 ' + q.nOther + '）' : '') + '　' + (jv ? 'ベトナム語を選ぶ' : '意味を選ぶ') + (w.prev ? '　<span class="rv-prev">前の課の語</span>' : '') + '</div>' +
         '<div class="qv"' + (jv ? '' : ' lang="' + LP.code + '"') + '>' + esc(jv ? w.ja : w.vi) + '</div>' +
         '<div class="rv-ch">' + q.ch.map((c, k) => '<button data-wch="' + k + '"' + (jv ? ' lang="' + LP.code + '"' : '') + ' class="' + (q.picked == null ? '' : (c === right ? 'ok' : (k === q.picked ? 'ng' : ''))) + '"' + (q.picked == null ? '' : ' disabled') + '>' + esc(c) + '</button>').join('') + '</div>' +
         '<div class="fb">' + (q.picked == null ? '' : (q.ch[q.picked] === right ? 'あたり' : '答えは ' + esc(right) + '。少しあとでもう一度出ます')) + '</div>' +
         (q.picked != null && q.ch[q.picked] !== right ? '<div class="rv-go"><button class="primary" id="rvWNext">次へ</button></div>' : '') + '</div>';
     }else if(q){
-      h += '<div class="rv-q"><div class="qv">' + q.total + '語 覚えました</div><div class="qn">間違えた回数 ' + q.miss + '。どの語も、意味からもベトナム語からも2回続けて当てるまで出しました</div><div class="rv-go"><button class="primary" id="rvWStart">もう一度</button></div></div>';
+      const nx = voc.map(w => srs[rvwId(w.vi)]).filter(Boolean).map(r => r.due).filter(t => t > Date.now()).sort((a, b) => a - b)[0];
+      h += '<div class="rv-q"><div class="qv">' + (q.total ? '今日の ' + q.total + '語 おわり' : 'いま復習する語はありません') + '</div>' +
+        '<div class="qn">' + (q.total ? '間違えた回数 ' + q.miss + '。' : '') + 'もう覚えた語は、時期が来るまで出しません（10分・1日・3日・7日・21日と間をあけていきます）' + (nx ? '。この課の次は ' + untilText(nx) : '') + '</div>' +
+        '<div class="rv-go"><button id="rvWStart">全部の語をもう一度（復習の時期は変えない）</button></div></div>';
     }
     const wst = rvStats('w', null);   // 語の記録は課をまたいで1つ（同じ語が別の課に出ても続きから数える）
     const wbad = voc.filter(w => { const s = wst.get(w.vi); return s && s.ng; }).length;
     h += '<section><h3>この課の単語</h3>' + (wbad ? '<div class="rv-hist" style="margin-bottom:8px">外したことのある語 ' + wbad + '</div>' : '') +
-      '<div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : '')).replace('</button>', rvHistLine(wst.get(w.vi)) + '</button>')).join('') + '</div></section>';
+      '<div class="rv-voc">' + voc.map(w => rvSay(w.vi, w.ja + (w.hv ? '【' + w.hv + '】' : '')).replace('</button>', rvHistLine(wst.get(w.vi)) + rvwWhen(w.vi) + '</button>')).join('') + '</div></section>';
   }else if(rv.tab === 'dc'){
     const d = rv.dc || (rv.dc = {i: Math.min(+load('dc:pos:' + lid, 0) || 0, lines.length), typed: '', res: null});
     const mode = load('dc:mode', 'see'), dst = rvStats('dc', lid);
@@ -6359,7 +6390,8 @@ function paintReview(){
   const rs = $('#rvReStart'); if(rs) rs.onclick = () => rvReBegin(lid, rvMissNow(lid), false);
   if(rv.tab === 'ex' && rv.exRe) rvRetryWire(lid);
   const et = $('#exTelex'); if(et) et.onchange = () => save('telex', et.checked);
-  const ws = $('#rvWStart'); if(ws) ws.onclick = () => { rv.wq = rvWordQuiz(voc); paintReview(); };
+  if(rv.tab === 'f') rvGramWire(lid, fs);
+  const ws = $('#rvWStart'); if(ws) ws.onclick = () => { rv.wq = rvWordQuiz(voc, lid, true); paintReview(); };
   el.querySelectorAll('[data-wch]').forEach(b => b.onclick = () => {
     const q = rv.wq; if(q.picked != null) return;
     q.picked = +b.dataset.wch;
@@ -6426,10 +6458,129 @@ function rvChoices(w, pool, key = 'ja'){
 /* 単語は覚えるまで繰り返す（本人 2026-11-20「選択肢を選ぶ暗記のやり方を何度も繰り返して定着させたい」）。
    ⭕ 1語につき2回続けて当てたら「覚えた」。1回目は ベトナム語→意味、2回目は 意味→ベトナム語。
    ⭕ 外したら0に戻し、2つ後にもう一度出す。当てたら4つ後に出す（すぐ同じ語が続かないように） */
-function rvWordQuiz(voc){
-  const pool = Object.values(textbook).flatMap(t => t.vocab || []).filter(x => x.vi && x.ja);
-  const queue = shuffled(voc.filter(x => x.vi && x.ja));
-  const q = {queue, pool, hit: new Map(), done: 0, total: queue.length, miss: 0, picked: null, dir: 'vj', ch: []};
+/* ---- 文法を確かめる（本人 2026-11-23「その文法がどういう意味をしてるかの4択と、その文法を使って文を作るのくらいはあってもいい」） ----
+   ⭕ 1つの公式につき：意味の4択（この文の意味は？／この意味の正しい文は？。grammar_quiz.json）と、例文を「並べ替え → 日本語を見て打つ」。
+   ⭕ 単語と同じく間隔をあけて出す。初めての問いと時期が来た問いだけ。記録は srs の 'rvg:…'。
+   ⭕ 外したら理由を出し、2問あとにもう一度。打つ問いは練習問題と同じ語ごとの答え合わせ（〜・言い方の幅も同じ） */
+const rvgId = (n, k) => 'rvg:' + n + ':' + k;
+function rvGramTasks(lid, fs){
+  const out = [];
+  fs.forEach(f => {
+    gquiz.filter(x => x.lid === lid && x.n === f.n).forEach((x, i) => out.push({id: rvgId(f.n, x.kind + i), n: f.n, kind: 'mc', x}));
+    (f.examples || []).filter(e => e.vi && e.ja && !/〜|～|\.\.\./.test(e.vi) && words(e.vi).length >= 3 && words(e.vi).length <= 9).slice(0, 2)
+      .forEach(e => out.push({id: rvgId(f.n, 'b:' + e.vi), n: f.n, kind: 'order', e, alts: [...new Set((f.examples || []).filter(z => z.ja === e.ja && z.vi).map(z => z.vi))]}));   // 同じ意味の例文は、どの語順でも合い（Tên tôi là／Tôi tên là）
+  });
+  return out;
+}
+function rvGramQuiz(lid, fs, free){
+  const now = Date.now(), all = rvGramTasks(lid, fs);
+  const pick = free ? all : all.filter(t => { const r = srs[t.id]; return !r || r.due <= now; });
+  const q = {lid, queue: shuffled(pick), total: pick.length, done: 0, miss: 0, missed: new Set(), free: !!free, all: all.length, cur: null};
+  rvGramSet(q); return q;
+}
+function rvGramSet(q){
+  const t = q.queue[0]; q.cur = null; if(!t) return;
+  if(t.kind === 'order'){ const w = words(t.e.vi); let sh = shuffled(w.map((v, i) => i)); if(sh.every((v, i) => v === i) && w.length > 1) sh = sh.reverse(); q.cur = {tiles: sh, pick: [], res: null}; }
+  else if(t.kind === 'type') q.cur = {typed: '', res: null};
+  else q.cur = {picked: null, ord: shuffled(t.x.choices.map((v, i) => i))};   // 選択肢は出すたびに混ぜる（正解の位置で当てられないように）
+}
+function rvgMark(id, first){
+  const r = rec(id), now = Date.now();
+  r.seen++; r.last = now;
+  if(first){ r.box = Math.min(MAXBOX, r.box + 1); emit('ans', {i: id, s: 'rvg', o: 1, g: 1, b: bookId}); }
+  else { r.miss++; r.box = 1; emit('ans', {i: id, s: 'rvg', o: 0, b: bookId}); emit('ans', {i: id, s: 'rvg', o: 1, g: 1, b: bookId}); }
+  r.due = now + WAIT[r.box]; srs[id] = r; save('srs', srs);
+}
+function rvGramNext(q, ok){
+  const t = q.queue.shift();
+  if(!ok){ q.miss++; q.missed.add(t.id); q.queue.splice(Math.min(2, q.queue.length), 0, t); }
+  else if(t.kind === 'order') q.queue.unshift(Object.assign({}, t, {kind: 'type'}));   // 並べられたら、すぐ同じ文を日本語から打つ
+  else { q.done++; if(!q.free) rvgMark(t.id, !q.missed.has(t.id)); }
+  rvGramSet(q);
+}
+function rvGramHTML(q, fs){
+  const L = LP.code;
+  if(!q.all) return '';
+  const head = '<div class="qn">' + (q.free ? '全部の問い　' : '今日の文法　') + q.done + ' / ' + q.total + '</div>';
+  const meter = '<div class="rv-meter"><i style="width:' + (q.total ? Math.round(q.done / q.total * 100) : 100) + '%"></i></div>';
+  const t = q.queue[0];
+  if(!t){
+    const nx = rvGramTasks(q.lid, fs).map(x => srs[x.id]).filter(Boolean).map(r => r.due).filter(d => d > Date.now()).sort((a, b) => a - b)[0];
+    return '<div class="rv-q gq">' + meter + '<div class="qv">' + (q.total ? '今日の文法 ' + q.total + '問 おわり' : 'いま確かめる文法の問いはありません') + '</div>' +
+      '<div class="qn">' + (q.total ? '間違えた回数 ' + q.miss + '。' : '') + '解けた問いは、時期が来るまで出しません' + (nx ? '。この課の次は ' + untilText(nx) : '') + '</div>' +
+      '<div class="rv-go"><button id="gqAll">全部の問いをもう一度（復習の時期は変えない）</button></div></div>';
+  }
+  const f = fs.find(z => z.n === t.n) || {}, tag = '<div class="gq-f">公式 ' + t.n + '　' + esc(f.title || '') + '</div>', c = q.cur;
+  let body = '';
+  if(t.kind === 'mc'){
+    const x = t.x, viQ = x.kind === 'mean';
+    body = '<div class="gq-ask">' + (viQ ? 'この文の意味は？' : 'この意味になる正しいベトナム語は？') + '</div>' +
+      '<div class="qv"' + (viQ ? ' lang="' + L + '"' : '') + '>' + esc(x.q) + '</div>' +
+      '<div class="rv-ch">' + c.ord.map(k => [x.choices[k], k]).map(([ch, k]) => '<button data-gch="' + k + '"' + (viQ ? '' : ' lang="' + L + '"') + ' class="' + (c.picked == null ? '' : k === x.a ? 'ok' : k === c.picked ? 'ng' : '') + '"' + (c.picked == null ? '' : ' disabled') + '>' + esc(ch) + '</button>').join('') + '</div>' +
+      (c.picked == null ? '' : '<div class="gq-why"><b class="' + (c.picked === x.a ? 'ok' : 'ng') + '">' + (c.picked === x.a ? 'あたり' : 'ちがいます') + '</b>' + esc(x.why || '') + '</div><div class="rv-go"><button class="primary" id="gqNext">次へ（Enter）</button></div>');
+  }else if(t.kind === 'order'){
+    const w = words(t.e.vi);
+    body = '<div class="gq-ask">語を並べて、この意味の文にする</div><div class="qv gq-ja">' + esc(t.e.ja) + '</div>' +
+      '<div class="gq-line" lang="' + L + '">' + (c.pick.length ? c.pick.map((i, k) => '<button data-gun="' + k + '"' + (c.res ? ' disabled' : '') + '>' + esc(w[i]) + '</button>').join('') : '<span class="gq-ph">下の語を順に押す</span>') + '</div>' +
+      '<div class="gq-tiles" lang="' + L + '">' + c.tiles.map(i => '<button data-gti="' + i + '"' + (c.pick.includes(i) || c.res ? ' disabled class="used"' : '') + '>' + esc(w[i]) + '</button>').join('') + '</div>' +
+      (c.res ? '<div class="gq-why"><b class="' + (c.res === 'ok' ? 'ok' : 'ng') + '">' + (c.res === 'ok' ? '並べられました。次は日本語を見て打ちます' : 'ちがいます') + '</b><span lang="' + L + '">' + esc(t.e.vi) + '</span></div><div class="rv-go"><button class="primary" id="gqNext">次へ（Enter）</button></div>'
+        : '<div class="rv-go"><button class="primary" id="gqOrd"' + (c.pick.length === w.length ? '' : ' disabled') + '>確かめる</button></div>');
+  }else{
+    body = '<div class="gq-ask">この意味のベトナム語を打つ</div><div class="qv gq-ja">' + esc(t.e.ja) + '</div>' +
+      (c.res ? '<section class="rv-exs"><ol><li>' + rvResBox({a: (t.alts || [t.e.vi]).join(' / ')}, {typed: c.typed, mark: c.res}) + '</li></ol></section><div class="rv-go"><button class="primary" id="gqNext">次へ（Enter）</button></div>'
+        : '<div class="rv-exs"><div class="qq"><input id="gqIn" lang="' + L + '" placeholder="ベトナム語で書く（Enter で確かめる）" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button id="gqCk">確かめる</button></div></div>');
+  }
+  return '<div class="rv-q gq">' + meter + head + tag + body + '</div>';
+}
+function rvGramWire(lid, fs){
+  const rv = theater.rv, q = rv.gq; if(!q) return;
+  const t = q.queue[0], c = q.cur, again = () => paintReview();
+  const ga = $('#gqAll'); if(ga) ga.onclick = () => { rv.gq = rvGramQuiz(lid, fs, true); again(); };
+  const nx = $('#gqNext');
+  const go = () => { const ok = t.kind === 'mc' ? c.picked === t.x.a : t.kind === 'order' ? c.res === 'ok' : c.res === 'ok'; rvGramNext(q, ok); again(); const i = $('#gqIn'); if(i) i.focus(); };
+  if(nx){ nx.onclick = go; setTimeout(() => nx.focus(), 0); }
+  document.querySelectorAll('[data-gch]').forEach(b => b.onclick = () => { if(c.picked != null) return; c.picked = +b.dataset.gch; rvRecord('g', lid, t.id, c.picked === t.x.a ? 'ok' : 'ng', t.x.choices[c.picked]); again(); });
+  document.querySelectorAll('[data-gti]').forEach(b => b.onclick = () => { c.pick.push(+b.dataset.gti); again(); });
+  document.querySelectorAll('[data-gun]').forEach(b => b.onclick = () => { c.pick.splice(+b.dataset.gun, 1); again(); });
+  const od = $('#gqOrd'); if(od) od.onclick = () => { const w = words(t.e.vi); const y = c.pick.map(i => w[i]).join(' ').toLowerCase(); c.res = (t.alts || [t.e.vi]).some(a => words(a).join(' ').toLowerCase() === y) ? 'ok' : 'ng'; rvRecord('g', lid, t.id + ':order', c.res, c.pick.map(i => w[i]).join(' ')); again(); };
+  const inp = $('#gqIn');
+  if(inp){
+    const ck = () => { const v = inp.value; if(!v.trim()) return; c.typed = v; c.res = rvGrade({a: (t.alts || [t.e.vi]).join(' / ')}, v); rvRecord('g', lid, t.id + ':type', c.res, v); again(); };
+    inp.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); ck(); } };
+    inp.oninput = e => { if(!e.isComposing && LP.inputMethod === 'telex' && load('telex', true)){ const v = telexLine(inp.value); if(v !== inp.value) inp.value = v; } };
+    $('#gqCk').onclick = ck;
+    setTimeout(() => inp.focus(), 0);
+  }
+}
+/* 単語は間隔をあけて出す（本人 2026-11-23「何回もやって覚えたものは出さなくてよくて、復習の期間に従って出してくれればいい」）。
+   ⭕ 出すのは、この課の初めての語と時期が来た語、それに前の課で時期が来た語（一度でも解いた語だけ）。
+   ⭕ 1語は今までどおり、意味からもベトナム語からも当てるまで出す。終えたとき、1回目で当てていれば箱を1つ上げ、外していれば箱1（10分後）から。
+   ⭕ 間は練習の復習と同じ WAIT（10分・1日・3日・7日・21日）。記録は srs の 'rvw:<語>' で、端末をまたいで記録の列に乗る */
+const rvwId = vi => 'rvw:' + vi;
+function rvVocAll(){ return Object.entries(textbook).flatMap(([lid, t]) => (t.vocab || []).filter(x => x.vi && x.ja).map(x => Object.assign({}, x, {lid}))); }
+function rvwDueList(voc, lid, dueOnly){
+  const now = Date.now(), due = vi => { const r = srs[rvwId(vi)]; return !r || r.due <= now; };
+  const seen = new Set(), mine = voc.filter(w => w.vi && w.ja && due(w.vi) && (!dueOnly || srs[rvwId(w.vi)]) && !seen.has(w.vi) && seen.add(w.vi));   // dueOnly＝「今日の復習」から開いたとき。初めての語は混ぜない
+  const other = rvVocAll().filter(w => w.lid !== lid && !seen.has(w.vi) && srs[rvwId(w.vi)] && due(w.vi) && seen.add(w.vi)).map(w => Object.assign(w, {prev: true}));
+  return {mine, other};
+}
+function rvwMark(vi, first){
+  const id = rvwId(vi), r = rec(id), now = Date.now();
+  r.seen++; r.last = now;
+  if(first){ r.box = Math.min(MAXBOX, r.box + 1); emit('ans', {i: id, s: 'rvw', o: 1, g: 1, b: bookId}); }
+  else { r.miss++; r.box = 1; emit('ans', {i: id, s: 'rvw', o: 0, b: bookId}); emit('ans', {i: id, s: 'rvw', o: 1, g: 1, b: bookId}); }   // 外した語は箱0→1（10分後）。記録の列から組み直しても同じになるよう2つ送る
+  r.due = now + WAIT[r.box]; srs[id] = r; save('srs', srs);
+}
+function rvwWhen(vi){
+  const r = srs[rvwId(vi)];
+  if(!r) return '<span class="rv-when">まだ</span>';
+  return '<span class="rv-when">' + (r.due <= Date.now() ? 'いま復習' : '次は ' + untilText(r.due)) + '</span>';
+}
+function rvWordQuiz(voc, lid, free, dueOnly){
+  const pool = rvVocAll();
+  const {mine, other} = free ? {mine: voc.filter(x => x.vi && x.ja), other: []} : rvwDueList(voc, lid, dueOnly);
+  const queue = shuffled(mine).concat(shuffled(other));
+  const q = {queue, pool, hit: new Map(), missed: new Set(), done: 0, total: queue.length, nOther: other.length, free: !!free, miss: 0, picked: null, dir: 'vj', ch: []};
   rvWordSet(q); return q;
 }
 function rvWordSet(q){
@@ -6439,12 +6590,12 @@ function rvWordSet(q){
 }
 function rvWordPick(q){
   const w = q.queue[0], right = q.dir === 'jv' ? w.vi : w.ja, ok = q.ch[q.picked] === right;
-  if(ok) q.hit.set(w.vi, (q.hit.get(w.vi) || 0) + 1); else { q.hit.set(w.vi, 0); q.miss++; }
+  if(ok) q.hit.set(w.vi, (q.hit.get(w.vi) || 0) + 1); else { q.hit.set(w.vi, 0); q.miss++; q.missed.add(w.vi); }
   return ok;
 }
 function rvWordNext(q){
   const w = q.queue.shift(), n = q.hit.get(w.vi) || 0;
-  if(n >= 2) q.done++;
+  if(n >= 2){ q.done++; if(!q.free) rvwMark(w.vi, !q.missed.has(w.vi)); }
   else q.queue.splice(Math.min(n ? 4 : 2, q.queue.length), 0, w);
   rvWordSet(q);
 }
@@ -6987,7 +7138,26 @@ function untilText(t){
   const m = Math.max(1, Math.round((t - Date.now()) / 60e3));
   return m < 60 ? m + '分後' : m < 1440 ? Math.round(m / 60) + '時間後' : Math.round(m / 1440) + '日後';
 }
-function reviewHTML(){
+/* 「今日の復習」に単語も混ぜる（本人 2026-11-23）。時期が来た語があれば、カードの下に1行と口を出す。押すと、いま開いている課の「単語」を開き、全部の課の時期が来た語をまとめて出す */
+function rvwDueAll(){ const now = Date.now(), seen = new Set(); return rvVocAll().filter(w => { const r = srs[rvwId(w.vi)]; if(!r || r.due > now || seen.has(w.vi)) return false; seen.add(w.vi); return true; }); }
+function rvwReviewHTML(){
+  if(!Object.keys(textbook).length) return '';
+  const n = rvwDueAll().length; if(!n) return '';
+  return '<section class="review-card"><div><b>単語の復習　' + n + ' 語</b><span>前に覚えた語のうち、もう一度確かめる時期が来たものを、全部の課から出します</span></div><button class="primary" id="rvwGo">単語を復習する</button></section>';
+}
+function openWordReview(){
+  const list = mainTracks(), li = flowLessonIndex();
+  let k = list.findIndex(r => r.li === li && textbook[r.x.L.id]); if(k < 0) k = list.findIndex(r => textbook[r.x.L.id]); if(k < 0) return;
+  if(flow) stopFlow();
+  theater = {list, k, all: false, ja: load('theater:ja', true)};
+  theater.subs = theaterSubs(list[k]);
+  $('#theater').hidden = false;
+  openReview(); theater.rv.tab = 'w';
+  const L = list[k].x.L.id; theater.rv.wq = rvWordQuiz((textbook[L].vocab || []), L, false, true);
+  paintReview();
+}
+function reviewHTML(){ return reviewHTML0() + rvwReviewHTML(); }
+function reviewHTML0(){
   if(!pdata) return '';
   if(run && run.book === bookId && run.stage === 'review')
     return '<div class="resume review-card"><div><b>今日の復習：続きから</b><span>' + run.i + ' / ' + run.queue.length + ' 問</span></div><button class="primary" id="runResume">続きから始める</button></div>';
@@ -7420,6 +7590,7 @@ document.addEventListener('click', e => {
   else if(b.classList.contains('jskip')) startStage(b.dataset.stage, true);
   else if(b.id === 'runResume') resumeRun();
   else if(b.id === 'reviewGo') startReview();
+  else if(b.id === 'rvwGo') openWordReview();
 });
 
 /* 操作卓の高さは画面幅で変わる。引いた語の窓が下に潜らないよう、実測して渡す。 */
