@@ -1793,6 +1793,8 @@ header button, .modes button, .seg button, .wf button, .speeds button{white-spac
 .theater .th-top select{box-shadow:none; height:40px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; padding:0 16px}
 .theater .th-top .th-n{color:rgba(244,247,240,.66)}
 .theater .th-top button, .theater .th-bar button, .theater .th-bar .th-rate{height:40px; padding:0 16px; background:#0F1712; color:#F4F7F0; border:1px solid rgba(197,229,178,.26); border-radius:100px; box-shadow:none}
+.theater .th-top button.go{background:#C5E5B2; color:#0B120E; border-color:#C5E5B2; font-weight:600}
+#theater .th-top button.go:hover{background:#D3EDC4; color:#0B120E}
 .theater .th-bar button.primary{background:#C5E5B2; color:#0B120E; border-color:#C5E5B2; font-weight:600}
 #theater .th-bar button:hover, #theater .th-top button:hover{background:#18241C; color:#F4F7F0; border-color:rgba(197,229,178,.26)}
 #theater .th-bar button.primary:hover{background:#D3EDC4; color:#0B120E; border-color:#D3EDC4}
@@ -6060,7 +6062,7 @@ function closeTheater(){
 }
 function theaterPlay(k){
   if(!theater) return;
-  theater.k = Math.max(0, Math.min(k, theater.list.length - 1));
+  theater.k = Math.max(0, Math.min(k, theater.list.length - 1)); theater.laps = 0;
   const r = theater.list[theater.k];
   theater.subs = theaterSubs(r);
   paintTheater();
@@ -6082,9 +6084,16 @@ function theaterEnded(){
   if(!theater) return false;
   if(theater.rv) return true;   // 書き写すで1文を鳴らしていて、音声の終わりまで来ただけ（タブを まとめ に戻さない）
   const r = theater.list[theater.k];
-  if(r && textbook[r.x.L.id]){ openReview(); return true; }   // 誌面の中身がある課は、次へ進まず「この課で習ったこと」へ（本人 2026-11-19）
-  if(theater.all && theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); }
-  else toast(theater.all ? '全部の課の会話を観終えました' : 'この課の会話を観終えました');
+  // ⭕ 終わっても勝手に「この課で習ったこと」へ行かない。頭からくり返し流し、行くのは本人がボタンで決める（本人 2026-11-23「行くタイミングを自分でボタンを押して決められるといい。それまでは連続再生」）。
+  //    全部の課を通しで観ているときは、これまでどおり次の課へ
+  if(theater.all && theater.k + 1 < theater.list.length){ gapTimer = setTimeout(() => theaterPlay(theater.k + 1), 1500); return true; }
+  if(r){
+    theater.laps = (theater.laps || 0) + 1;
+    const b = $('#thRv'); if(b){ b.classList.add('go'); b.textContent = 'この課で習ったことへ（' + theater.laps + '回聞いた）'; }
+    gapTimer = setTimeout(() => { if(!theater || theater.rv) return; audio.currentTime = 0; audio.play().catch(() => {}); }, 1500);
+    return true;
+  }
+  toast(theater.all ? '全部の課の会話を観終えました' : 'この課の会話を観終えました');
   return true;
 }
 /* ---- 会話のあとの「この課で習ったこと」（2026-11-19） ----
@@ -6811,7 +6820,7 @@ function paintTheater(){
       (theater.list.length > 1 ? '<label class="th-pick"><span class="sr">課を選ぶ</span><select id="thPick" aria-label="課を選ぶ">' + theater.list.map((q, i) => '<option value="' + i + '"' + (i === theater.k ? ' selected' : '') + '>' + esc(q.x.L.title) + '</option>').join('') + '</select><svg class="ic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m6 9 6 6 6-6" /></svg></label>'
         : '<b>' + esc(r.x.L.title) + '</b>') +
       '<span class="th-n">' + (theater.k + 1) + ' / ' + theater.list.length + '　' + esc(r.t.name) + '</span>' +
-      (textbook[id] ? '<button class="th-rv" id="thRv">この課で習ったこと</button>' : '') +
+      (textbook[id] ? '<button class="th-rv' + (theater.laps ? ' go' : '') + '" id="thRv">' + (theater.laps ? 'この課で習ったことへ（' + theater.laps + '回聞いた）' : 'この課で習ったこと') + '</button>' : '') +
       '<button class="th-x" id="thClose">閉じる</button>' +
     '</div>' +
     '<div class="th-body"><div class="th-stage">' +
